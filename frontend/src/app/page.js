@@ -1,12 +1,20 @@
 "use client";
-import { useEffect } from "react";
+import { useSession, signIn, signOut } from "next-auth/react";
 
-export default function Home(){
-  useEffect(() => {
-    fetch("http://localhost:5000")
-    .then(res => res.text())
-    .then(data => console.log(data))
-  }, [])
-
-  return <div>Quick Split</div>
+export default function Home() {
+  const { data: session } = useSession(); // check user logged in or not..
+  if (session) {
+    return (
+      <>
+        Signed in as {session.user.email} <br />
+        <button onClick={() => signOut()}>Sign Out</button>
+      </>
+    );
+  }
+  return (
+    <>
+      Not signed in <br />
+      <button onClick={() => signIn()}>Sign in</button>
+    </>
+  );
 }
