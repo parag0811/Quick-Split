@@ -1,8 +1,8 @@
-const jwt = require("jsonwebtoken");
-const dotenv = require("dotenv");
+import dotenv from "dotenv";
 dotenv.config();
+import jwt from "jsonwebtoken";
 
-module.exports = (req, res, next) => {
+const isAuth = (req, res, next) => {
   const token = req.cookies.token;
 
   if (!token) {
@@ -26,3 +26,5 @@ module.exports = (req, res, next) => {
     return res.status(401).json({ message: "Invalid token" });
   }
 };
+
+export default isAuth
