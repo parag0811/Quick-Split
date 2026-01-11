@@ -1,20 +1,12 @@
-"use client";
-import { useSession, signIn, signOut } from "next-auth/react";
+import { redirect } from "next/navigation";
+import Landing from "./components/Landing/Landing.jsx";
+import { getServerSession } from "next-auth";
 
-export default function Home() {
-  const { data: session } = useSession(); // check user logged in or not..
-  if (session) {
-    return (
-      <>
-        Signed in as {session.user.email} <br />
-        <button onClick={() => signOut()}>Sign Out</button>
-      </>
-    );
+export default async function Home() {
+  const  session = await getServerSession(); // check user logged in or not..
+  if (!session) {
+    return <Landing />;
   }
-  return (
-    <>
-      Not signed in <br />
-      <button onClick={() => signIn()}>Sign in</button>
-    </>
-  );
+
+  redirect("/dashboard");
 }
