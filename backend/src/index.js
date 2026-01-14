@@ -7,6 +7,7 @@ dotenv.config();
 
 import auth_route from "./routes/auth-route.js";
 import group_route from "./routes/group-route.js"
+import expense_route from "./routes/expense-route.js"
 
 const app = express();
 
@@ -15,7 +16,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(auth_route);
-app.use(group_route)
+app.use(group_route);
+app.use(expense_route)
 
 app.get("/", (req, res) => {
   res.send("Quick Split API is running...");

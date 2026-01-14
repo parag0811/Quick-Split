@@ -49,6 +49,13 @@ const expenseSchema = new mongoose.Schema(
       required: true,
     },
 
+    splitType: {
+      type: String,
+      required: true,
+      enum: ["equal", "manual", "percentage"],
+      default: "equal",
+    },
+
     splits: {
       type: [splitSchema], // custom % (default is 50-50)
       required: true,
@@ -62,6 +69,12 @@ const expenseSchema = new mongoose.Schema(
 
     notes: {
       type: String,
+    },
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
   },
   { timestamps: true }
