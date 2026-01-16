@@ -1,5 +1,5 @@
 import "./globals.css";
-import SessionWrapper from "./components/SessionWrapper";
+import SessionWrapper from "../components/SessionWrapper.js";
 
 export const metadata = {
   title: "Quick Split",

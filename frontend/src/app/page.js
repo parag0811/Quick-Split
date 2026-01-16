@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import Landing from "./components/Landing/Landing.jsx";
+import Landing from "../components/Landing/Landing.jsx";
 import { getServerSession } from "next-auth";
 
 export default async function Home() {

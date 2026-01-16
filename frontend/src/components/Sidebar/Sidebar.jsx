@@ -1,6 +1,7 @@
+"use client";
 import { Home, Group, ChartColumn, LogOut, Banknote } from "lucide-react";
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen }) {
   const menuItems = [
     { icon: Home, label: "Home", active: true },
     { icon: Group, label: "Groups", active: false },
@@ -10,7 +11,14 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="fixed lg:static inset-y-0 left-0 z-40 w-64 bg-[#1a1b1b] border-r border-gray-800 transform transition-transform duration-300 ease-in-out flex flex-col h-screen">
+    <aside
+      className={`fixed top-16 left-0 z-40 w-64
+  h-[calc(100vh-4rem)]
+  bg-[#1a1b1b]
+  transition-transform duration-300 ease-in-out
+  ${isOpen ? "translate-x-0" : "-translate-x-full"}
+  flex flex-col`}
+    >
       <div className="p-6">
         <div className="flex flex-col items-center justify-center space-y-4 mt-4">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-300 overflow-hidden flex items-center justify-center">
