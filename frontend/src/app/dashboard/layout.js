@@ -1,24 +1,22 @@
 "use client";
 import { useState } from "react";
-import Sidebar from "../../components/Sidebar/Sidebar.jsx";
-import Header from "@/components/Header/Header.jsx";
+import Sidebar from "@/components/Sidebar/Sidebar";
+import Header from "@/components/Header/Header";
 
 export default function DashboardLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-[#0f0f0f]">
       <Sidebar isOpen={isSidebarOpen} />
+
       <div
-        className={`flex flex-col transition-all duration-300 ${
+        className={`flex flex-col flex-1 transition-all duration-300 ${
           isSidebarOpen ? "ml-64" : "ml-0"
         }`}
       >
-        <Header
-          sidebarOpen={isSidebarOpen}
-          toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-        />
-        <main className="p-6">{children}</main>
+        <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+        <main className="flex-1 p-6 py-24 overflow-y-auto">{children}</main>
       </div>
     </div>
   );
