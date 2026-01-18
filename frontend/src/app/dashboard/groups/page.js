@@ -2,7 +2,6 @@
 import { Plus, Users } from "lucide-react";
 
 export default function GroupList() {
-  // Dummy data matching your API schema
   const groups = [
     {
       _id: "1",
