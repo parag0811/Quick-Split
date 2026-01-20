@@ -21,6 +21,24 @@ app.use(group_route);
 app.use(expense_route)
 app.use(settlement_route)
 
+app.use((error, req, res, next) => {
+  const status = error.statusCode || 500;
+  let message = error.message
+  let data = error.data
+
+  if (status===500){
+    message = "Internal Server Error"
+    data = null
+  }
+
+  if ((status === 401 || status === 403)) {
+    message = "Authentication Failed! Please Login Again."
+    data = null
+  }
+
+  res.status(status).json({message, data})
+})
+
 app.get("/", (req, res) => {
   res.send("Quick Split API is running...");
 });

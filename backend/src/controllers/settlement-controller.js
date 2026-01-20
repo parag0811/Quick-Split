@@ -81,7 +81,9 @@ const getSettlement = async (req, res, next) => {
       message: "Settlements Created.",
       settlements: savedSettlements,
     });
-  } catch (error) {}
+  } catch (error) {
+      next(error);
+  }
 };
 
 export default {

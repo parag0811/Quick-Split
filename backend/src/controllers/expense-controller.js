@@ -110,7 +110,9 @@ const addExpense = async (req, res, next) => {
     return res
       .status(201)
       .json({ message: "Expense added to the group.", expense });
-  } catch (error) {}
+  } catch (error) {
+      next(error);
+  }
 };
 
 const balance = async (req, res, next) => {
@@ -155,7 +157,9 @@ const balance = async (req, res, next) => {
       message: "Group balances calculated successfully",
       finalBalance,
     });
-  } catch (error) {}
+  } catch (error) {
+      next(error);
+  }
 };
 
 export default {

@@ -19,12 +19,18 @@ const authUser = async (req, res, next) => {
       });
     }
 
+    if (!process.env.JWT_SECRET) {
+      const error = new Error("JWT secret not configured");
+      error.statusCode = 500;
+      throw error;
+    }
+
     const token = jwt.sign(
       {
         userId: user._id.toString(),
       },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRE }
+      { expiresIn: process.env.JWT_EXPIRE },
     );
 
     res.cookie("token", token, {
@@ -37,7 +43,9 @@ const authUser = async (req, res, next) => {
     return res.status(200).json({
       message: "Login Successfull",
     });
-  } catch (error) {}
+  } catch (error) {
+    next(error);
+  }
 };
 
 const authLogout = async (req, res, next) => {
@@ -50,10 +58,12 @@ const authLogout = async (req, res, next) => {
     });
 
     return res.status(200).json({ message: "Successfully Logged Out" });
-  } catch (error) {}
+  } catch (error) {
+    next(error);
+  }
 };
 
 export default {
-    authUser,
-    authLogout,
-}
+  authUser,
+  authLogout,
+};

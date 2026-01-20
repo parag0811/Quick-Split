@@ -43,7 +43,9 @@ const createGroup = async (req, res, next) => {
       groupId: group._id,
       inviteToken: group.inviteToken,
     });
-  } catch (error) {}
+  } catch (error) {
+    next(error);
+  }
 };
 
 const joinGroup = async (req, res, next) => {
@@ -59,7 +61,7 @@ const joinGroup = async (req, res, next) => {
     }
 
     const alreadyMember = group.members.some(
-      (member) => member.user.toString() === user_id.toString()
+      (member) => member.user.toString() === user_id.toString(),
     );
 
     if (alreadyMember) {
@@ -77,7 +79,9 @@ const joinGroup = async (req, res, next) => {
     await group.save();
 
     return res.status(200).json({ message: "User added Successfully." });
-  } catch (error) {}
+  } catch (error) {
+    next(error);
+  }
 };
 
 const getGroups = async (req, res, next) => {
@@ -85,7 +89,7 @@ const getGroups = async (req, res, next) => {
     const user_id = req.body.id;
 
     const groups = await Group.find({ "members.user": user_id }).select(
-      "name description isPrivate members"
+      "name description isPrivate members",
     );
 
     const formattedGroupData = groups.map((group) => ({
@@ -105,5 +109,5 @@ const getGroups = async (req, res, next) => {
 export default {
   createGroup,
   joinGroup,
-  getGroups
+  getGroups,
 };
