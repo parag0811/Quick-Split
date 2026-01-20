@@ -12,9 +12,9 @@ const addExpense = async (req, res, next) => {
     const group = await Group.findById(group_id);
 
     if (!group.members.toString().includes(user_id)) {
-      return res
-        .status(403)
-        .json({ message: "You are not a member of this group." });
+      const error = new Error("You are not a member of this group.");
+      error.statusCode = 403;
+      throw error;
     }
 
     const {
@@ -37,7 +37,9 @@ const addExpense = async (req, res, next) => {
     const numberOfUsers = involvedUsers.length;
 
     if (numberOfUsers === 0) {
-      return res.status(400).json({ message: "No participants provided." });
+      const error = new Error("No participants provided.");
+      error.statusCode = 400;
+      throw error;
     }
 
     //   Equal Type
@@ -56,7 +58,11 @@ const addExpense = async (req, res, next) => {
 
       finalSplits = involvedUsers.map((p) => {
         if (typeof p.value !== "number") {
-          throw new Error("Manual Splits required amounts for each user.");
+          const error = new Error(
+            "Manual Splits required amounts for each user.",
+          );
+          error.statusCode = 400;
+          throw error;
         }
 
         sum += p.value;
@@ -68,31 +74,39 @@ const addExpense = async (req, res, next) => {
       });
 
       if (Number(sum.toFixed(2)) !== Number(totalAmount.toFixed(2))) {
-        return res.status(400).json({
-          message: "Manual split total does not match expense amount",
-        });
+        const error = new Error(
+          "Manual split total does not match expense amount",
+        );
+        error.statusCode = 400;
+        throw error;
       }
     } else if (splitType === "percentage") {
       let percentSum = 0;
 
       involvedUsers.forEach((p) => {
         if (typeof p.value !== "number") {
-          throw new Error("Percentage Splits required value for each user.");
+          const error = new Error(
+            "Percentage Splits required value for each user.",
+          );
+          error.statusCode = 400;
+          throw error;
         }
         percentSum += p.value;
       });
 
       if (percentSum !== 100) {
-        return res
-          .status(400)
-          .json({ message: "Total Percentage must equal 100%" });
+        const error = new Error("Total Percentage must equal 100%");
+        error.statusCode = 400;
+        throw error;
       }
       finalSplits = involvedUsers.map((p) => ({
         user: p.userId,
         amount: Number(((p.value / 100) * totalAmount).toFixed(2)),
       }));
     } else {
-      return res.status(400).json({ message: "Invalid Split Type." });
+      const error = new Error("Invalid Split Type.");
+      error.statusCode = 400;
+      throw error;
     }
 
     const expense = await Expense.create({
@@ -111,7 +125,7 @@ const addExpense = async (req, res, next) => {
       .status(201)
       .json({ message: "Expense added to the group.", expense });
   } catch (error) {
-      next(error);
+    next(error);
   }
 };
 
@@ -122,12 +136,16 @@ const balance = async (req, res, next) => {
 
     const group = await Group.findById(group_id);
     if (!group) {
-      return res.status(404).json({ message: "Group not found" });
+      const error = new Error("Group not found");
+      error.statusCode = 404;
+      throw error;
     }
     const isMember = group.members.some((m) => m.user.toString() === user_id);
 
     if (!isMember) {
-      return res.status(403).json({ message: "Not authorized" });
+      const error = new Error("Not Authorized.");
+      error.statusCode = 404;
+      throw error;
     }
 
     const expenses = await Expense.find({ group: group_id });
@@ -158,7 +176,7 @@ const balance = async (req, res, next) => {
       finalBalance,
     });
   } catch (error) {
-      next(error);
+    next(error);
   }
 };
 

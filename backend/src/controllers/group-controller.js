@@ -55,9 +55,9 @@ const joinGroup = async (req, res, next) => {
 
     const group = await Group.findOne({ inviteToken });
     if (!group) {
-      return res
-        .status(410)
-        .json({ message: "No group exists or Invalid Token." });
+      const error = new Error("Group does not exist.");
+      error.statusCode = 410;
+      throw error;
     }
 
     const alreadyMember = group.members.some(
@@ -66,7 +66,7 @@ const joinGroup = async (req, res, next) => {
 
     if (alreadyMember) {
       return res.status(200).json({
-        message: " User already a member of the group.",
+        message: "User already a member of the group.",
         groupId: group._id,
       });
     }
@@ -103,7 +103,9 @@ const getGroups = async (req, res, next) => {
     return res.status(200).json({
       groups: formattedGroupData,
     });
-  } catch (error) {}
+  } catch (error) {
+    next(error);
+  }
 };
 
 export default {
