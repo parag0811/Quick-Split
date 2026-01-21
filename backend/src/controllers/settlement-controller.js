@@ -10,15 +10,25 @@ const getSettlement = async (req, res, next) => {
     const group_id = req.params.groupId;
     const user_id = req.user.id;
 
+    if (!mongoose.Types.ObjectId.isValid(group_id)) {
+      const error = new Error("Invalid group id");
+      error.statusCode = 400;
+      throw error;
+    }
+
     const group = await Group.findById(group_id);
     if (!group) {
-      return res.status(404).json({ message: "Group not found" });
+      const error = new Error("Group not found");
+      error.statusCode = 404;
+      throw error;
     }
 
     const isMember = group.members.some((m) => m.user.toString() === user_id);
 
     if (!isMember) {
-      return res.status(403).json({ message: "Not authorized" });
+      const error = new Error("Not Authorized");
+      error.statusCode = 403;
+      throw error;
     }
 
     const expenses = await Expense.find({ group: group_id });
@@ -75,14 +85,17 @@ const getSettlement = async (req, res, next) => {
       if (creditor.amount === 0) j++;
     }
 
-    const savedSettlements = await Settlement.insertMany(settlements);
+    await Settlement.deleteMany({ group: group_id });
 
-    return res.status(201).json({
+    const savedSettlements =
+      settlements.length > 0 ? await Settlement.insertMany(settlements) : [];
+
+    return res.status(200).json({
       message: "Settlements Created.",
       settlements: savedSettlements,
     });
   } catch (error) {
-      next(error);
+    next(error);
   }
 };
 
