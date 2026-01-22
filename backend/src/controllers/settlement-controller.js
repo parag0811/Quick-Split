@@ -99,6 +99,45 @@ const getSettlement = async (req, res, next) => {
   }
 };
 
+const settlementPaid = async (req, res, next) => {
+  try {
+    const settlement_id = req.params.settlementId;
+    const user_id = req.user.id;
+
+    const settlement = await Settlement.findById(settlement_id);
+
+    if (!settlement) {
+      const error = new Error(
+        "Settlements not found. Please generate settlement first.",
+      );
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (user_id.toString() !== settlement.from.toString()) {
+      const error = new Error("Sorry only payers can mark settlement as paid.");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    if (settlement.isSettled) {
+      const error = new Error("The due is already paid.");
+      error.statusCode = 409;
+      throw error;
+    }
+
+    settlement.isSettled = true;
+    await settlement.save();
+
+    return res
+      .status(200)
+      .json({ message: "Settlement marked as paid successfully.", settlement });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getSettlement,
+  settlementPaid,
 };
