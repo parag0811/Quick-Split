@@ -15,4 +15,10 @@ router.post(
   settlement_controller.settlementPaid,
 );
 
+router.get(
+  "/group/:groupId/settlements",
+  isAuth,
+  settlement_controller.getAllSettlement,
+);
+
 export default router;

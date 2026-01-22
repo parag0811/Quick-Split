@@ -5,6 +5,59 @@ import Group from "../models/group.js";
 import Expense from "../models/expense.js";
 import Settlement from "../models/settlement.js";
 
+const getAllSettlement = async (req, res, next) => {
+  try {
+    const user_id = req.user.id;
+    const group_id = req.params.groupId;
+
+    if (!mongoose.Types.ObjectId.isValid(group_id)) {
+      const error = new Error("Invalid group id");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const group = await Group.findById(group_id);
+    if (!group) {
+      const error = new Error("Group not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const isMember = group.members.some((m) => m.user.toString() === user_id);
+
+    if (!isMember) {
+      const error = new Error("Not Authorized");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const settlements = await Settlement.find({ group: group_id })
+      .populate("from", "name email")
+      .populate("to", "name email")
+      .sort({ createdAt: -1 });
+
+    let pendingSettlements = [];
+    let completedSettlements = [];
+
+    settlements.forEach((s) => {
+      if (s.isSettled === true) {
+        completedSettlements.push(s);
+      } else {
+        pendingSettlements.push(s);
+      }
+    });
+
+    return res.status(200).json({
+      message: "Fetched Settlements successfully.",
+      settlements,
+      pendingSettlement,
+      completedSettlement,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getSettlement = async (req, res, next) => {
   try {
     const group_id = req.params.groupId;
@@ -140,4 +193,5 @@ const settlementPaid = async (req, res, next) => {
 export default {
   getSettlement,
   settlementPaid,
+  getAllSettlement,
 };
