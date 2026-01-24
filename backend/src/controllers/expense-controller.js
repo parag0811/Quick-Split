@@ -3,6 +3,7 @@ dotenv.config();
 
 import Group from "../models/group.js";
 import Expense from "../models/expense.js";
+import Settlement from "../models/settlement.js";
 
 const addExpense = async (req, res, next) => {
   try {
@@ -144,7 +145,7 @@ const balance = async (req, res, next) => {
 
     if (!isMember) {
       const error = new Error("Not Authorized.");
-      error.statusCode = 404;
+      error.statusCode = 403;
       throw error;
     }
 
@@ -164,6 +165,18 @@ const balance = async (req, res, next) => {
         const splitUserId = split.user.toString();
         balance[splitUserId] -= split.amount;
       });
+    });
+
+    const settlements = await Settlement.find({
+      group: group_id,
+      isSettled: true,
+    });
+
+    settlements.forEach((s) => {
+      const from = s.from.toString();
+      const to = s.to.toString();
+      balance[from] += s.amount;
+      balance[to] -= s.amount;
     });
 
     const finalBalance = Object.entries(balance).map(([userId, amount]) => ({
