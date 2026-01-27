@@ -193,7 +193,56 @@ const balance = async (req, res, next) => {
   }
 };
 
+const deleteExpense = async (req, res, next) => {
+  try {
+    const user_id = req.user.id;
+    const expense_id = req.params.expenseId;
+
+    const expense = await Expense.findById(expense_id);
+
+    if (!expense) {
+      const error = new Error("Expense not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const group = await Group.find(expense.group);
+    if (!group) {
+      const error = new Error("Group not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const isMember = group.members.some((m) => m.user.toString() === user_id);
+
+    if (!isMember) {
+      const error = new Error("Not Authorized.");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const isExpenseCreator = expense.createdBy.toString() === user_id;
+
+    const isGroupCreator = group.createdBy.toString() === user_id;
+
+    if (!isExpenseCreator && !isGroupCreator) {
+      const error = new Error(
+        "Only expense creator or group creator can delete this expense",
+      );
+      error.statusCode = 403;
+      throw error;
+    }
+
+    await Expense.findByIdAndDelete(expense_id);
+
+    return res.status(200).json({ message: "Deleted expense Successfully." });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   addExpense,
   balance,
+  deleteExpense,
 };

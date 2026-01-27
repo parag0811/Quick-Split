@@ -64,4 +64,6 @@ router.post(
 
 router.post("/group/:groupId/balance", isAuth, expense_controller.balance);
 
+router.delete("/group/expenses/:expenseId/deleteExpense", isAuth, expense_controller.deleteExpense)
+
 export default router;
