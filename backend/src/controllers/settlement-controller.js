@@ -58,7 +58,7 @@ const getAllSettlement = async (req, res, next) => {
   }
 };
 
-const getSettlement = async (req, res, next) => {
+const createSettlement = async (req, res, next) => {
   try {
     const group_id = req.params.groupId;
     const user_id = req.user.id;
@@ -102,6 +102,31 @@ const getSettlement = async (req, res, next) => {
       });
     });
 
+    const settledSettlements = await Settlement.find({
+      group: group_id,
+      isSettled: true,
+    });
+
+    settledSettlements.forEach((s) => {
+      const from = s.from.toString();
+      const to = s.to.toString();
+      balance[from] += s.amount;
+      balance[to] -= s.amount;
+    });
+
+    const nonSettledSettlements = await Settlement.find({
+      group: group_id,
+      isSettled: false,
+    });
+
+    if (nonSettledSettlements.length > 0) {
+      const error = new Error(
+        "Unsettled settlements already exist for the group.",
+      );
+      error.statusCode = 409;
+      throw error;
+    }
+
     let creditors = [];
     let debtors = [];
 
@@ -138,12 +163,10 @@ const getSettlement = async (req, res, next) => {
       if (creditor.amount === 0) j++;
     }
 
-    await Settlement.deleteMany({ group: group_id });
-
     const savedSettlements =
       settlements.length > 0 ? await Settlement.insertMany(settlements) : [];
 
-    return res.status(200).json({
+    return res.status(201).json({
       message: "Settlements Created.",
       settlements: savedSettlements,
     });
@@ -191,7 +214,7 @@ const settlementPaid = async (req, res, next) => {
 };
 
 export default {
-  getSettlement,
+  createSettlement,
   settlementPaid,
   getAllSettlement,
 };

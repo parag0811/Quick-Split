@@ -6,7 +6,7 @@ import isAuth from "../middleware/is-auth.js";
 router.post(
   "/group/:groupId/settlement",
   isAuth,
-  settlement_controller.getSettlement,
+  settlement_controller.createSettlement,
 );
 
 router.post(
