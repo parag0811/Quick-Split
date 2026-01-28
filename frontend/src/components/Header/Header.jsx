@@ -1,4 +1,5 @@
 import { PanelLeft } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 const Header = ({ toggleSidebar }) => {
   return (
@@ -7,7 +8,9 @@ const Header = ({ toggleSidebar }) => {
         <button onClick={toggleSidebar} className="cursor-pointer">
           <PanelLeft size={24} strokeWidth={3} />
         </button>
-        <button className="mr-16 cursor-pointer bg-white text-black px-3 py-1.5 rounded-xl font-semibold hover:text-white hover:bg-[#222255] transition">
+        <button className="mr-16 cursor-pointer bg-white text-black px-3 py-1.5 rounded-xl font-semibold hover:text-white hover:bg-[#222255] transition"
+        onClick={() => signOut({ callbackUrl: "/" })}
+        >
           LogOut
         </button>
       </header>
