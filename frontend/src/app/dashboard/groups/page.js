@@ -1,7 +1,10 @@
 "use client";
 import { Plus, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function GroupList() {
+  const router = useRouter();
+
   const groups = [
     {
       _id: "1",
@@ -119,7 +122,12 @@ export default function GroupList() {
           </div>
           <button className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50">
             <Plus size={20} />
-            <span className="cursor-pointer">Create Group</span>
+            <span
+              className="cursor-pointer"
+              onClick={() => router.push("/dashboard/groups/create")}
+            >
+              Create Group
+            </span>
           </button>
         </div>
 
@@ -148,7 +156,8 @@ export default function GroupList() {
                       <div className="flex items-center space-x-1.5 text-sm text-gray-400">
                         <Users size={14} />
                         <span>
-                          {group.members.length} member{group.members.length !== 1 ? "s" : ""}
+                          {group.members.length} member
+                          {group.members.length !== 1 ? "s" : ""}
                         </span>
                       </div>
                     </div>
@@ -175,8 +184,8 @@ export default function GroupList() {
                 You're not part of any group yet
               </h3>
               <p className="text-gray-500 mb-10 text-center max-w-md text-base">
-                Create your first group to start splitting expenses with friends,
-                family, or colleagues
+                Create your first group to start splitting expenses with
+                friends, family, or colleagues
               </p>
               <button className="flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50 hover:scale-105">
                 <Plus size={22} />
