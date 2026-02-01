@@ -3,28 +3,23 @@ dotenv.config();
 import jwt from "jsonwebtoken";
 
 const isAuth = (req, res, next) => {
-  const token = req.cookies.token;
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
-    const error = new Error("Token not found.");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    const error = new Error("Not Authenticated.");
     error.statusCode = 401;
     return next(error);
   }
 
+  const token = authHeader.split(" ")[1];
   let decodedToken;
   try {
     decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     req.user = { id: decodedToken.userId };
     next();
   } catch (err) {
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV == 'production' ? true : false,
-      sameSite: "None",
-      path: "/",
-    });
     return res.status(401).json({ message: "Invalid token" });
   }
 };
 
-export default isAuth
+export default isAuth;
