@@ -9,6 +9,13 @@ const authUser = async (req, res, next) => {
     const name = req.body.name;
     const email = req.body.email;
     const image = req.body.image;
+    const googleId = req.body.googleId;
+
+    if (!email || !googleId) {
+      const error = new Error("Invalid oAuth Data");
+      error.statusCode = 400;
+      throw error;
+    }
 
     let user = await User.findOne({ email });
     if (!user) {
@@ -33,15 +40,16 @@ const authUser = async (req, res, next) => {
       { expiresIn: process.env.JWT_EXPIRE },
     );
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      path: "/",
-    });
+    // res.cookie("token", token, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+    //   path: "/",
+    // });
 
     return res.status(200).json({
       message: "Login Successfull",
+      token
     });
   } catch (error) {
     next(error);
