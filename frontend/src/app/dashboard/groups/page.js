@@ -1,90 +1,29 @@
 "use client";
 import { Plus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
+import { useEffect, useState } from "react";
 
 export default function GroupList() {
   const router = useRouter();
 
-  const groups = [
-    {
-      _id: "1",
-      name: "Weekend Trip Planning",
-      description: "Planning our upcoming mountain trip expenses",
-      members: [
-        { user: "user1", joinedAt: new Date() },
-        { user: "user2", joinedAt: new Date() },
-        { user: "user3", joinedAt: new Date() },
-        { user: "user4", joinedAt: new Date() },
-        { user: "user5", joinedAt: new Date() },
-      ],
-      createdBy: "user1",
-    },
-    {
-      _id: "2",
-      name: "Apartment Expenses",
-      description: "Shared apartment utilities and groceries",
-      members: [
-        { user: "user1", joinedAt: new Date() },
-        { user: "user2", joinedAt: new Date() },
-        { user: "user3", joinedAt: new Date() },
-      ],
-      createdBy: "user1",
-    },
-    {
-      _id: "3",
-      name: "Office Lunch Group",
-      description: "Daily lunch orders and coffee runs",
-      members: [
-        { user: "user1", joinedAt: new Date() },
-        { user: "user2", joinedAt: new Date() },
-        { user: "user3", joinedAt: new Date() },
-        { user: "user4", joinedAt: new Date() },
-        { user: "user5", joinedAt: new Date() },
-        { user: "user6", joinedAt: new Date() },
-        { user: "user7", joinedAt: new Date() },
-        { user: "user8", joinedAt: new Date() },
-      ],
-      createdBy: "user2",
-    },
-    {
-      _id: "4",
-      name: "Birthday Party",
-      description: "Sarah's surprise birthday party planning",
-      members: [
-        { user: "user1", joinedAt: new Date() },
-        { user: "user2", joinedAt: new Date() },
-        { user: "user3", joinedAt: new Date() },
-        { user: "user4", joinedAt: new Date() },
-        { user: "user5", joinedAt: new Date() },
-        { user: "user6", joinedAt: new Date() },
-      ],
-      createdBy: "user3",
-    },
-    {
-      _id: "5",
-      name: "Gym Membership",
-      description: "Shared gym and fitness expenses",
-      members: [
-        { user: "user1", joinedAt: new Date() },
-        { user: "user2", joinedAt: new Date() },
-      ],
-      createdBy: "user1",
-    },
-    {
-      _id: "6",
-      name: "Study Group",
-      description: "Books and study material costs",
-      members: [
-        { user: "user1", joinedAt: new Date() },
-        { user: "user2", joinedAt: new Date() },
-        { user: "user3", joinedAt: new Date() },
-        { user: "user4", joinedAt: new Date() },
-      ],
-      createdBy: "user4",
-    },
-  ];
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const showEmptyState = false;
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const data = apiFetch("/groups/my-groups");
+        setGroups(data);
+      } catch (error) {
+        console.error("Failed to fetch groups:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGroups();
+  }, []);
 
   const getGroupColor = (name) => {
     const colors = [
@@ -120,18 +59,18 @@ export default function GroupList() {
               Manage and track your group expenses
             </p>
           </div>
-          <button className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50">
+          <button
+            onClick={() => router.push("/dashboard/groups/create")}
+            className="cursor-pointer flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50"
+          >
             <Plus size={20} />
-            <span
-              className="cursor-pointer"
-              onClick={() => router.push("/dashboard/groups/create")}
-            >
-              Create Group
-            </span>
+            <span>Create Group</span>
           </button>
         </div>
 
-        {!showEmptyState ? (
+        {loading ? (
+          <p className="text-white">Loading...</p>
+        ) : groups.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
             {groups.map((group) => {
               const color = getGroupColor(group.name);
@@ -187,7 +126,10 @@ export default function GroupList() {
                 Create your first group to start splitting expenses with
                 friends, family, or colleagues
               </p>
-              <button className="flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50 hover:scale-105">
+              <button
+                onClick={() => router.push("/dashboard/groups/create")}
+                className="cursor-pointer flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50 hover:scale-105"
+              >
                 <Plus size={22} />
                 <span className="text-base">Create your first group</span>
               </button>

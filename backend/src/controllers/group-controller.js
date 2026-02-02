@@ -88,7 +88,7 @@ const joinGroup = async (req, res, next) => {
 
 const getGroups = async (req, res, next) => {
   try {
-    const user_id = req.body.id;
+    const user_id = req.user.id;
 
     const groups = await Group.find({ "members.user": user_id }).select(
       "name description isPrivate members",
