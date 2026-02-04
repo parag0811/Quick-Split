@@ -14,7 +14,7 @@ export default function GroupList() {
     const fetchGroups = async () => {
       try {
         const data = await apiFetch("/groups/my-groups");
-        setGroups(data);
+        setGroups(data.groups);
       } catch (error) {
         console.error("Failed to fetch groups:", error);
       } finally {
@@ -78,7 +78,7 @@ export default function GroupList() {
 
               return (
                 <div
-                  key={group._id}
+                  key={group.groupId}
                   className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 hover:border-gray-700 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 cursor-pointer group"
                 >
                   {/* Group Icon & Name */}
@@ -95,8 +95,8 @@ export default function GroupList() {
                       <div className="flex items-center space-x-1.5 text-sm text-gray-400">
                         <Users size={14} />
                         <span>
-                          {group.members.length} member
-                          {group.members.length !== 1 ? "s" : ""}
+                          {group.memberCount} member
+                          {group.memberCount !== 1 ? "s" : ""}
                         </span>
                       </div>
                     </div>

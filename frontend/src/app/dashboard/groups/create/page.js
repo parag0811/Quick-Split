@@ -1,22 +1,44 @@
 "use client";
 import { apiFetch } from "@/lib/api";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function GroupForm() {
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+  });
+
   const [inviteToken, setInviteToken] = useState(null);
+  const [errors, setErrors] = useState({});
+  const router = useRouter();
 
-  const handleSubmit = async (formData) => {
-    const payload = Object.fromEntries(formData.entries());
-
-    const data = await apiFetch("/create-group", {
-      method: "POST",
-      body: payload,
-    });
-
-    setInviteToken(data.inviteToken);
-    console.log(data.inviteToken)
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrors({});
 
+    try {
+      const data = await apiFetch("/create-group", {
+        method: "POST",
+        body: formData,
+      });
+
+      setInviteToken(data.inviteToken);
+      console.log(data.inviteToken);
+    } catch (error) {
+      if (error.validation) {
+        const fieldErrors = {};
+        error.validation.forEach((e) => {
+          fieldErrors[e.path] = e.msg;
+        });
+        setErrors(fieldErrors);
+      }
+    }
+  };
 
   return (
     <div className="w-full min-h-screen p-4 sm:p-6 lg:p-8">
@@ -31,7 +53,7 @@ export default function GroupForm() {
             </p>
           </div>
 
-          <form className="space-y-6" action={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit} noValidate>
             {/* Group Name */}
             <div>
               <label
@@ -44,10 +66,15 @@ export default function GroupForm() {
                 type="text"
                 id="name"
                 name="name"
+                value={formData.name}
+                onChange={handleChange}
                 required
                 className="w-full px-4 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition placeholder-gray-500"
                 placeholder="Enter group name"
               />
+              {errors.name && (
+                <p className="text-red-400 text-sm mt-1">{errors.name}</p>
+              )}
             </div>
 
             {/* Description */}
@@ -62,9 +89,17 @@ export default function GroupForm() {
                 id="description"
                 name="description"
                 rows="4"
+                value={formData.description}
+                onChange={handleChange}
                 className="w-full px-4 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition resize-none placeholder-gray-500"
-                placeholder="Describe your group (optional)"
+                placeholder="Describe your group"
               ></textarea>
+              {errors.description && (
+                <p className="text-red-400 text-sm mt-1">
+                  {errors.description}
+                </p>
+              )}
+
               <p className="mt-1 text-xs text-gray-500">
                 Help others understand what this group is about
               </p>
@@ -79,6 +114,7 @@ export default function GroupForm() {
                 Create Group
               </button>
               <button
+                onClick={() => router.push("/dashboard/groups")}
                 type="button"
                 className="w-full sm:w-auto px-6 py-2.5 bg-gray-800 text-gray-300 font-medium rounded-lg border border-gray-700 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-offset-2 focus:ring-offset-gray-900 transition cursor-pointer"
               >
@@ -101,15 +137,18 @@ export default function GroupForm() {
                   />
                   <button
                     onClick={() => navigator.clipboard.writeText(inviteToken)}
-                    className="px-3 py-1 bg-blue-600 rounded text-white text-sm"
+                    className="px-3 py-1 bg-blue-600 rounded text-white text-sm cursor-pointer"
                   >
                     Copy
                   </button>
                 </div>
 
                 <button
-                  onClick={() => setInviteToken(null)}
-                  className="mt-4 w-full bg-gray-700 py-2 rounded text-gray-300"
+                  onClick={() => {
+                    setInviteToken(null);
+                    router.push("/dashboard/groups");
+                  }}
+                  className="mt-4 w-full bg-gray-700 py-2 rounded text-gray-300 cursor-pointer"
                 >
                   Close
                 </button>

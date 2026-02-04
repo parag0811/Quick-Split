@@ -90,14 +90,13 @@ const getGroups = async (req, res, next) => {
     const user_id = req.user.id;
 
     const groups = await Group.find({ "members.user": user_id }).select(
-      "name description isPrivate members",
+      "name description members",
     );
 
     const formattedGroupData = groups.map((group) => ({
       groupId: group._id,
       name: group.name,
       description: group.description,
-      isPrivate: group.isPrivate,
       memberCount: group.members.length,
     }));
 
