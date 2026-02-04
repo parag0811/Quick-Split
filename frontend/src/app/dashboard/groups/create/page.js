@@ -146,7 +146,7 @@ export default function GroupForm() {
                 <button
                   onClick={() => {
                     setInviteToken(null);
-                    router.push("/dashboard/groups");
+                    router.push(`/dashboard/groups/${group.groupId}`);
                   }}
                   className="mt-4 w-full bg-gray-700 py-2 rounded text-gray-300 cursor-pointer"
                 >

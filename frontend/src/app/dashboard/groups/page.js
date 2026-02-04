@@ -16,7 +16,7 @@ export default function GroupList() {
         const data = await apiFetch("/groups/my-groups");
         setGroups(data.groups);
       } catch (error) {
-        console.error("Failed to fetch groups:", error);
+        console.log("Failed to fetch groups:", error);
       } finally {
         setLoading(false);
       }
@@ -79,6 +79,7 @@ export default function GroupList() {
               return (
                 <div
                   key={group.groupId}
+                  onClick={() => router.push(`/dashboard/groups/${group.groupId}`)}
                   className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 hover:border-gray-700 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 cursor-pointer group"
                 >
                   {/* Group Icon & Name */}

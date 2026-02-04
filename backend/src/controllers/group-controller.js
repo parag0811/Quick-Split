@@ -113,14 +113,24 @@ const getGroupSummary = async (req, res, next) => {
     const group_id = req.params.groupId;
     const user_id = req.user.id;
 
-    const group = await Group.findById(group_id);
+    const group = await Group.findById(group_id).populate(
+      "members.user",
+      "name email image",
+    );
     if (!group) {
       const error = new Error("Group not found.");
       error.statusCode = 404;
       throw error;
     }
 
-    const isMember = group.members.some((m) => m.user.toString() === user_id);
+    const members = group.members.map((m) => ({
+      _id: m.user._id,
+      name: m.user.name,
+      email: m.user.email,
+      image: m.user.image,
+    }));
+
+    const isMember = group.members.some((m) => m.user._id.toString() === user_id);
 
     if (!isMember) {
       const error = new Error("Not Authorized");
@@ -138,7 +148,7 @@ const getGroupSummary = async (req, res, next) => {
     let balance = {};
 
     group.members.forEach((m) => {
-      balance[m.user.toString()] = 0;
+      balance[m.user._id.toString()] = 0;
     });
 
     expenses.forEach((expense) => {
@@ -150,6 +160,10 @@ const getGroupSummary = async (req, res, next) => {
         balance[splitUserId] -= split.amount;
       });
     });
+
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.totalAmount, 0);
+
+    const expenseCount = expenses.length;
 
     const yourBalance = Number(balance[user_id].toFixed(2));
 
@@ -172,6 +186,10 @@ const getGroupSummary = async (req, res, next) => {
       }
     });
 
+    const pendingSettlements = settlements.length;
+
+    const isSettled = pendingSettlements === 0;
+
     return res.status(200).json({
       message: "Group Summary fetched successfully.",
       group: {
@@ -179,6 +197,10 @@ const getGroupSummary = async (req, res, next) => {
         name: group.name,
         description: group.description,
       },
+      members,
+      totalExpenses,
+      expenseCount,
+      isSettled,
       yourBalance,
       youOwe,
       youGet,
