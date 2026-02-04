@@ -1,6 +1,23 @@
-'use client';
+"use client";
+import { apiFetch } from "@/lib/api";
+import { useState } from "react";
 
 export default function GroupForm() {
+  const [inviteToken, setInviteToken] = useState(null);
+
+  const handleSubmit = async (formData) => {
+    const payload = Object.fromEntries(formData.entries());
+
+    const data = await apiFetch("/create-group", {
+      method: "POST",
+      body: payload,
+    });
+
+    setInviteToken(data.inviteToken);
+    console.log(data.inviteToken)
+  };
+
+
   return (
     <div className="w-full min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
@@ -14,7 +31,7 @@ export default function GroupForm() {
             </p>
           </div>
 
-          <form className="space-y-6">
+          <form className="space-y-6" action={handleSubmit}>
             {/* Group Name */}
             <div>
               <label
@@ -53,81 +70,6 @@ export default function GroupForm() {
               </p>
             </div>
 
-            {/* Privacy Setting */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-3">
-                Privacy Settings
-              </label>
-              <div className="space-y-3">
-                <div className="flex items-start">
-                  <input
-                    type="radio"
-                    id="private"
-                    name="isPrivate"
-                    value="true"
-                    defaultChecked
-                    className="mt-1 h-4 w-4 text-blue-500 focus:ring-blue-500 bg-gray-800 border-gray-600 cursor-pointer"
-                  />
-                  <div className="ml-3">
-                    <label
-                      htmlFor="private"
-                      className="block text-sm font-medium text-white cursor-pointer"
-                    >
-                      Private Group
-                    </label>
-                    <p className="text-xs text-gray-500">
-                      Only invited members can join this group
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start">
-                  <input
-                    type="radio"
-                    id="public"
-                    name="isPrivate"
-                    value="false"
-                    className="mt-1 h-4 w-4 text-blue-500 focus:ring-blue-500 bg-gray-800 border-gray-600 cursor-pointer"
-                  />
-                  <div className="ml-3">
-                    <label
-                      htmlFor="public"
-                      className="block text-sm font-medium text-white cursor-pointer"
-                    >
-                      Public Group
-                    </label>
-                    <p className="text-xs text-gray-500">
-                      Anyone can discover and join this group
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Invite Token Option */}
-            <div className="border-t border-gray-800 pt-6">
-              <div className="flex items-start">
-                <input
-                  type="checkbox"
-                  id="inviteToken"
-                  name="inviteToken"
-                  defaultChecked
-                  className="mt-1 h-4 w-4 text-blue-500 focus:ring-blue-500 bg-gray-800 border-gray-600 rounded cursor-pointer"
-                />
-                <div className="ml-3">
-                  <label
-                    htmlFor="inviteToken"
-                    className="block text-sm font-medium text-white cursor-pointer"
-                  >
-                    Generate Invite Link
-                  </label>
-                  <p className="text-xs text-gray-500">
-                    Create a shareable invite link for this group
-                  </p>
-                </div>
-              </div>
-            </div>
-
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-800">
               <button
@@ -144,6 +86,36 @@ export default function GroupForm() {
               </button>
             </div>
           </form>
+          {inviteToken && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
+              <div className="bg-[#1a1a1a] p-6 rounded-lg border border-gray-700 w-[90%] max-w-md">
+                <h3 className="text-xl font-semibold text-white mb-3">
+                  Invite Link Generated
+                </h3>
+
+                <div className="flex items-center gap-2 bg-gray-800 p-2 rounded">
+                  <input
+                    readOnly
+                    value={inviteToken}
+                    className="flex-1 bg-transparent text-gray-300 outline-none"
+                  />
+                  <button
+                    onClick={() => navigator.clipboard.writeText(inviteToken)}
+                    className="px-3 py-1 bg-blue-600 rounded text-white text-sm"
+                  >
+                    Copy
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setInviteToken(null)}
+                  className="mt-4 w-full bg-gray-700 py-2 rounded text-gray-300"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

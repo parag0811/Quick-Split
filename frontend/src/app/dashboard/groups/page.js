@@ -13,7 +13,7 @@ export default function GroupList() {
   useEffect(() => {
     const fetchGroups = async () => {
       try {
-        const data = apiFetch("/groups/my-groups");
+        const data = await apiFetch("/groups/my-groups");
         setGroups(data);
       } catch (error) {
         console.error("Failed to fetch groups:", error);

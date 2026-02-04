@@ -35,11 +35,6 @@ const groupSchema = new mongoose.Schema({
     type: String,
     default: true,
   },
-
-  isPrivate: {
-    type: Boolean,
-    default: true,
-  },
 });
 
 export default mongoose.model("Group", groupSchema);

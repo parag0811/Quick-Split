@@ -10,7 +10,7 @@ const createGroup = async (req, res, next) => {
   try {
     const creator_id = req.user.id;
 
-    const { name, description, isPrivate } = req.body;
+    const { name, description } = req.body;
 
     const generateInviteToken = (groupName) => {
       const slug = groupName
@@ -37,7 +37,6 @@ const createGroup = async (req, res, next) => {
       createdBy: creator_id,
       members,
       inviteToken: inviteToken,
-      isPrivate,
     });
 
     return res.status(201).json({
