@@ -8,14 +8,21 @@ import {
   TrendingDown,
   CheckCircle2,
   AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  Users,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function GroupOverview() {
   const { groupId } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showAllMembers, setShowAllMembers] = useState(false);
+
+  const router = useRouter()
 
   useEffect(() => {
     const fetchGroupDetails = async () => {
@@ -62,39 +69,105 @@ export default function GroupOverview() {
             </div>
           </div>
 
-          {/* Members */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center">
-              {data.members.slice(0, 4).map((member, index) => (
-                <div
-                  key={member._id}
-                  className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-[#0f0f0f] -ml-2 first:ml-0 overflow-hidden"
-                  style={{ zIndex: data.members.length - index }}
-                >
-                  {member.image ? (
-                    <img 
-                      src={member.image} 
-                      alt={member.name} 
-                      className="w-full h-full object-cover" 
-                    />
-                  ) : (
-                    member.name.charAt(0).toUpperCase()
+          {/* Members Preview */}
+          <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center">
+                  <Users size={20} className="text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Members</h3>
+                  <p className="text-xs text-gray-400">
+                    {data.members.length} member
+                    {data.members.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAllMembers(!showAllMembers)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-sm text-gray-300 cursor-pointer"
+              >
+                {showAllMembers ? (
+                  <>
+                    <ChevronUp size={16} />
+                    Hide
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={16} />
+                    Show All
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Member Avatars Preview */}
+            {!showAllMembers && (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center">
+                  {data.members.slice(0, 5).map((member, index) => (
+                    <div
+                      key={member._id}
+                      className="w-9 h-9 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-[#1a1a1a] -ml-2 first:ml-0 overflow-hidden"
+                      style={{ zIndex: data.members.length - index }}
+                      title={member.name}
+                    >
+                      {member.image ? (
+                        <img
+                          src={member.image}
+                          alt={member.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        member.name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                  ))}
+                  {data.members.length > 5 && (
+                    <div className="w-9 h-9 bg-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-gray-400 border-2 border-[#1a1a1a] -ml-2">
+                      +{data.members.length - 5}
+                    </div>
                   )}
                 </div>
-              ))}
-              {data.members.length > 4 && (
-                <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-400 border-2 border-[#0f0f0f] -ml-2">
-                  +{data.members.length - 4}
-                </div>
-              )}
-            </div>
-            <span className="text-sm text-gray-400">
-              {data.members.length} member
-              {data.members.length !== 1 ? "s" : ""}
-            </span>
+              </div>
+            )}
+
+            {/* Full Members List */}
+            {showAllMembers && (
+              <div className="space-y-2 mt-2">
+                {data.members.map((member) => (
+                  <div
+                    key={member._id}
+                    className="flex items-center gap-3 p-3 bg-[#151515] rounded-lg border border-gray-800 hover:border-gray-700 transition-colors"
+                  >
+                    <div className="w-10 h-10 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-sm font-bold text-white overflow-hidden flex-shrink-0">
+                      {member.image ? (
+                        <img
+                          src={member.image}
+                          alt={member.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        member.name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">
+                        {member.name}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">
+                        {member.email}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {/* Total Expenses */}
           <div className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all">
@@ -148,7 +221,7 @@ export default function GroupOverview() {
             </div>
           </div>
 
-          {/* Settlement Status */}
+          {/* Pending Settlements */}
           <div className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all">
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm font-medium text-gray-400">
@@ -177,10 +250,102 @@ export default function GroupOverview() {
           </div>
         </div>
 
+        {/* Settlement Details */}
+        {!data.isSettled && (data.youOwe.length > 0 || data.youGet.length > 0) && (
+          <div className="mb-8 space-y-4">
+            {/* You Owe */}
+            {data.youOwe.length > 0 && (
+              <div className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-rose-800/30 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-rose-400 mb-3 flex items-center gap-2">
+                  <TrendingDown size={16} />
+                  You Owe
+                </h3>
+                <div className="space-y-2">
+                  {data.youOwe.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden">
+                          {item.to.image ? (
+                            <img
+                              src={item.to.image}
+                              alt={item.to.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            item.to.name.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">
+                            {item.to.name}
+                          </p>
+                          <p className="text-xs text-gray-400">{item.to.email}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-rose-400">
+                          €{item.amount.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* You Get */}
+            {data.youGet.length > 0 && (
+              <div className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-emerald-800/30 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                  <TrendingUp size={16} />
+                  You Get Back
+                </h3>
+                <div className="space-y-2">
+                  {data.youGet.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden">
+                          {item.from.image ? (
+                            <img
+                              src={item.from.image}
+                              alt={item.from.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            item.from.name.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">
+                            {item.from.name}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {item.from.email}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-emerald-400">
+                          €{item.amount.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Expenses */}
-          <button className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-cyan-700 hover:bg-[#1f1f1f] transition-all duration-200 text-left group">
+          <button onClick={() => router.push(`/dashboard/groups/${data.group.id}/expense`)} className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-cyan-700 hover:bg-[#1f1f1f] transition-all duration-200 text-left group cursor-pointer">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-cyan-600/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Receipt size={24} className="text-cyan-400" />
@@ -195,8 +360,7 @@ export default function GroupOverview() {
             <p className="text-sm text-gray-400">View all recorded expenses</p>
           </button>
 
-          {/* Settlement */}
-          <button className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-emerald-700 hover:bg-[#1f1f1f] transition-all duration-200 text-left group">
+          <button className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-emerald-700 hover:bg-[#1f1f1f] transition-all duration-200 text-left group cursor-pointer">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-emerald-600/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <ArrowRightLeft size={24} className="text-emerald-400" />
@@ -211,8 +375,7 @@ export default function GroupOverview() {
             <p className="text-sm text-gray-400">See who owes whom</p>
           </button>
 
-          {/* Analytics */}
-          <button className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-purple-700 hover:bg-[#1f1f1f] transition-all duration-200 text-left group">
+          <button className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-purple-700 hover:bg-[#1f1f1f] transition-all duration-200 text-left group cursor-pointer">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <BarChart3 size={24} className="text-purple-400" />
@@ -227,27 +390,6 @@ export default function GroupOverview() {
             <p className="text-sm text-gray-400">View spending insights</p>
           </button>
         </div>
-
-        {/* Pending Settlements Alert */}
-        {!data.isSettled && (
-          <div className="mt-6 bg-gradient-to-r from-amber-950/30 to-orange-950/30 border border-amber-800/30 rounded-xl p-5">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-amber-600/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                <AlertCircle size={18} className="text-amber-400" />
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-amber-300 mb-1">
-                  Pending Settlements
-                </h4>
-                <p className="text-sm text-amber-400/80 leading-relaxed">
-                  This group has {data.youOwe.length + data.youGet.length} pending payment
-                  {(data.youOwe.length + data.youGet.length) !== 1 ? "s" : ""}. Visit the
-                  Settlement page to see details and mark payments as complete.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
