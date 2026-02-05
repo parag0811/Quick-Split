@@ -5,6 +5,43 @@ import Group from "../models/group.js";
 import Expense from "../models/expense.js";
 import Settlement from "../models/settlement.js";
 
+const getAllExpense = async (req, res, next) => {
+  try {
+    const user_id = req.user.id;
+    const group_id = req.params.id;
+
+    const group = await Group.findById(group_id);
+
+    if (!group) {
+      const error = new Error("Group not found");
+      error.statusCode = 404;
+      throw error;
+    }
+    const isMember = group.members.some((m) => m.user.toString() === user_id);
+
+    if (!isMember) {
+      const error = new Error("You are not a member of this group.");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const expenses = await Expense.find({ group: group_id })
+      .populate("paidBy", "name email")
+      .populate("createdBy", "name email")
+      .sort({ createdAt: -1 });
+
+    return res
+      .status(200)
+      .json({
+        message: "All Expenses fetched.",
+        count: expenses.length,
+        expenses,
+      });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const addExpense = async (req, res, next) => {
   try {
     const user_id = req.user.id;
@@ -12,7 +49,14 @@ const addExpense = async (req, res, next) => {
 
     const group = await Group.findById(group_id);
 
-    if (!group.members.toString().includes(user_id)) {
+    if (!group) {
+      const error = new Error("Group not found");
+      error.statusCode = 404;
+      throw error;
+    }
+    const isMember = group.members.some((m) => m.user.toString() === user_id);
+
+    if (!isMember) {
       const error = new Error("You are not a member of this group.");
       error.statusCode = 403;
       throw error;
@@ -242,6 +286,7 @@ const deleteExpense = async (req, res, next) => {
 };
 
 export default {
+  getAllExpense,
   addExpense,
   balance,
   deleteExpense,
