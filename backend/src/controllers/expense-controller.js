@@ -8,7 +8,7 @@ import Settlement from "../models/settlement.js";
 const getAllExpense = async (req, res, next) => {
   try {
     const user_id = req.user.id;
-    const group_id = req.params.id;
+    const group_id = req.params.groupId;
 
     const group = await Group.findById(group_id);
 
