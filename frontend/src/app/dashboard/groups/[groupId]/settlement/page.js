@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
+  Receipt,
+  Plus,
   CheckCircle2,
   Download,
   Share2,
@@ -14,6 +16,7 @@ import { useParams } from "next/navigation";
 export default function SettlementPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [markingPaid, setMarkingAsPaid] = useState(false);
   const [data, setData] = useState(null);
 
   const { groupId } = useParams();
@@ -36,12 +39,9 @@ export default function SettlementPage() {
   const handleGenerateSettlement = async () => {
     setIsGenerating(true);
     try {
-      const response = await apiFetch(
-        `/group/${groupId}/settlements/generate`,
-        {
-          method: "POST",
-        },
-      );
+      const response = await apiFetch(`/group/${groupId}/settlement`, {
+        method: "POST",
+      });
       setData(response);
     } catch (error) {
       console.log("Error generating settlements", error);
@@ -49,6 +49,15 @@ export default function SettlementPage() {
       setIsGenerating(false);
     }
   };
+
+  // const markAsPaid = async () => {
+  //   setMarkingAsPaid(true)
+  //   try {
+  //     const response = await apiFetch(`/group/settlement/${settlementId}/mark-paid`)
+  //   } catch (error) {
+      
+  //   }
+  // };
 
   if (loading) {
     return (
@@ -76,6 +85,37 @@ export default function SettlementPage() {
       </div>
     );
   }
+
+  // if (data.settlements.length === 0) {
+  //   return (
+  //     <div className="mt-10 border border-dashed border-gray-700 rounded-xl p-8 text-center bg-[#121212]">
+  //       <div className="flex justify-center mb-4">
+  //         <div className="w-12 h-12 rounded-full bg-emerald-600/20 flex items-center justify-center">
+  //           <Receipt size={24} className="text-emerald-400" />
+  //         </div>
+  //       </div>
+
+  //       <h3 className="text-lg font-semibold text-gray-200 mb-1">
+  //         No expenses recorded yet
+  //       </h3>
+
+  //       <p className="text-sm text-gray-400 mb-6">
+  //         Add your first expense to start tracking and enable settlements.
+  //       </p>
+
+  //       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+  //         <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gradient-to-r from-pink-600 to-rose-600 text-white text-sm font-medium hover:from-pink-700 hover:to-rose-700 transition">
+  //           <Plus size={16} />
+  //           Add Expense
+  //         </button>
+
+  //         <span className="text-xs text-gray-500">
+  //           Settlements appear automatically after expenses are added
+  //         </span>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   const { message, settlements, pendingSettlements, completedSettlements } =
     data;

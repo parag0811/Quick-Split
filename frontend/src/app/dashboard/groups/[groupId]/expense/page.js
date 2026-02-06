@@ -9,9 +9,13 @@ import {
   Split,
 } from "lucide-react";
 import { useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function ExpensePage() {
+
+  const router =  useRouter()
+
   const [expandedExpense, setExpandedExpense] = useState(null);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
@@ -79,7 +83,7 @@ export default function ExpensePage() {
               {message} · {count} expense{count !== 1 ? "s" : ""}
             </p>
           </div>
-          <button className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50">
+          <button onClick={() =>  router.push(`/dashboard/groups/${groupId}/expense/create`)} className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50">
             <Plus size={20} />
             <span>Add Expense</span>
           </button>
