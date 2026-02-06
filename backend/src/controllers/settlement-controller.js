@@ -10,12 +10,6 @@ const getAllSettlement = async (req, res, next) => {
     const user_id = req.user.id;
     const group_id = req.params.groupId;
 
-    if (!mongoose.Types.ObjectId.isValid(group_id)) {
-      const error = new Error("Invalid group id");
-      error.statusCode = 400;
-      throw error;
-    }
-
     const group = await Group.findById(group_id);
     if (!group) {
       const error = new Error("Group not found");
@@ -50,10 +44,11 @@ const getAllSettlement = async (req, res, next) => {
     return res.status(200).json({
       message: "Fetched Settlements successfully.",
       settlements,
-      pendingSettlement,
-      completedSettlement,
+      pendingSettlements,
+      completedSettlements,
     });
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };

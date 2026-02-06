@@ -360,7 +360,7 @@ export default function GroupOverview() {
             <p className="text-sm text-gray-400">View all recorded expenses</p>
           </button>
 
-          <button className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-emerald-700 hover:bg-[#1f1f1f] transition-all duration-200 text-left group cursor-pointer">
+          <button onClick={() => router.push(`/dashboard/groups/${data.group.id}/settlement`)} className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-emerald-700 hover:bg-[#1f1f1f] transition-all duration-200 text-left group cursor-pointer">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-emerald-600/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <ArrowRightLeft size={24} className="text-emerald-400" />
