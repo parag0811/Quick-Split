@@ -1,72 +1,68 @@
 "use client";
 import { signIn } from "next-auth/react";
-import { useSession } from "next-auth/react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 const Landing = () => {
-  const { data: session } = useSession();
-
+  const router = useRouter()
   
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center text-center px-6">
-      <h1 className="text-5xl font-bold mb-4">Quick Split</h1>
-      <p className="text-3xl">
-        Split group expenses, track payments, and settle balances easily
-      </p>
+    <main className="relative min-h-screen overflow-hidden">
+      <div
+        className="
+          absolute inset-0
+          bg-[linear-gradient(180deg,rgba(0,0,0,0.5),rgba(0,0,0,0.4),rgba(0,0,0,0.6)),url('/images/q_s_bg.jpg')]
+          bg-cover bg-center
+        "
+      />
+      <div
+        className="
+          absolute inset-0
+          bg-[url('/noise.png')]
+          opacity-[0.04]
+          pointer-events-none
+        "
+      />
 
-      <div className="mt-10 flex items-center justify-center gap-4">
-        <button className="cursor-pointer bg-[#222255] text-white px-6 py-3 rounded hover:text-black hover:bg-[#FFFFFF] transition">
-          Get Started
-        </button>
-        <button
-          className="cursor-pointer bg-white text-black px-6 py-3 rounded hover:text-white hover:bg-[#222255] transition"
-          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-6">
+        <motion.h1
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="text-5xl md:text-7xl font-bold mb-6"
         >
-          Sign In
-        </button>
-      </div>
+          Quick Split
+        </motion.h1>
 
-      <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
-        <div className="p-6 bg-[#111] rounded-lg hover:bg-[#1a1a1a] transition">
-          <h3 className="text-xl font-semibold mb-2">Smart Splits</h3>
-          <p className="text-gray-400">
-            Split expenses equally or customize amounts with ease.
-          </p>
-        </div>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+          className="text-xl md:text-2xl text-gray-300 mb-12"
+        >
+          Split expenses with friends. No stress. No confusion.
+        </motion.p>
 
-        <div className="p-6 bg-[#111] rounded-lg hover:bg-[#1a1a1a] transition">
-          <h3 className="text-xl font-semibold mb-2">Payment Tracking</h3>
-          <p className="text-gray-400">
-            Track who has paid and who still owes in real time.
-          </p>
-        </div>
-
-        <div className="p-6 bg-[#111] rounded-lg hover:bg-[#1a1a1a] transition">
-          <h3 className="text-xl font-semibold mb-2">Group Expenses</h3>
-          <p className="text-gray-400">
-            Manage trips, roommates, or events in separate groups.
-          </p>
-        </div>
-
-        <div className="p-6 bg-[#111] rounded-lg hover:bg-[#1a1a1a] transition">
-          <h3 className="text-xl font-semibold mb-2">Clear Balances</h3>
-          <p className="text-gray-400">
-            Instantly see who owes whom and settle faster.
-          </p>
-        </div>
-      </div>
-
-      <section className="mt-16 max-w-3xl text-center">
-        <h2 className="text-3xl font-bold mb-4">Contact</h2>
-        <p className="text-gray-400 text-lg">
-          Have questions or feedback? Reach out at{" "}
-          <a
-            href="mailto:support@quicksplit.app"
-            className="text-orange-400 hover:underline"
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4"
+        >
+          <button
+            className="w-full sm:w-auto cursor-pointer bg-[#222255] text-white px-8 py-3 rounded-lg hover:bg-white hover:text-black transition-all duration-300"
+            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
           >
-            support@quicksplit.app
-          </a>
-        </p>
-      </section>
+            Get Started
+          </button>
+          <button
+            className="w-full sm:w-auto cursor-pointer bg-white text-black px-8 py-3 rounded-lg hover:bg-[#222255] hover:text-white transition-all duration-300"
+            onClick={() => router.push("/how-it-works")}
+          >
+            See How It Works
+          </button>
+        </motion.div>
+      </div>
     </main>
   );
 };
