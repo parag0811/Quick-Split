@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   X,
   DollarSign,
@@ -12,40 +12,39 @@ import {
   Check,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 
-export default function CreateExpenseForm({ onSubmit }) {
+export default function CreateExpenseForm() {
+  const [members, setMembers] = useState([]);
+  const { groupId } = useParams();
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const res = await apiFetch(`/groups/${groupId}/summary`);
+        setMembers(res.members);
+      } catch (error) {
+        console.log("Failed to fetch members: ", error);
+      }
+    };
+    fetchMembers();
+  }, [groupId]);
+
   const router = useRouter();
 
-  const {groupId} = useParams();
+  const [error, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     title: "",
-    amount: "",
+    totalAmount: "",
     paidBy: "",
-    splitType: "equal", // equal, unequal, percentage
-    date: new Date().toISOString().split("T")[0],
     category: "",
+    notes: "",
+    splitType: "equal", // equal, manual, percentage
     participants: [],
   });
 
-  const [splits, setSplits] = useState([]);
-
-  const groupMembers = [
-    { _id: "1", name: "Sneha Kumar", avatar: "SK" },
-    { _id: "2", name: "Riya Sharma", avatar: "RS" },
-    { _id: "3", name: "Nirika Patel", avatar: "NP" },
-    { _id: "4", name: "Arjun Singh", avatar: "AS" },
-  ];
-
-  const categories = [
-    "Food & Dining",
-    "Transportation",
-    "Accommodation",
-    "Entertainment",
-    "Shopping",
-    "Utilities",
-    "Other",
-  ];
+  const categories = ["food", "travel", "rent", "shopping", "other"];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -64,15 +63,39 @@ export default function CreateExpenseForm({ onSubmit }) {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const payload = {
+    ...formData,
+    participants: formData.participants.map((id) => ({
+      userId: id,
+    })),
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    setErrors({});
+
+    try {
+      const data = await apiFetch(`/group/${groupId}/expense/add`, {
+        method: "POST",
+        body: payload,
+      });
+      console.log(data);
+      router.push(`/dashboard/groups/${groupId}/expense`);
+    } catch (error) {
+      if (error.validation) {
+        const fieldErrors = {};
+        error.validation.forEach((e) => {
+          fieldErrors[e.path] = e.msg;
+        });
+        setErrors(fieldErrors);
+      }
+    }
   };
 
   const selectAllParticipants = () => {
     setFormData((prev) => ({
       ...prev,
-      participants: groupMembers.map((m) => m._id),
+      participants: members.map((m) => m._id),
     }));
   };
 
@@ -96,7 +119,7 @@ export default function CreateExpenseForm({ onSubmit }) {
           </div>
           <button
             onClick={() => router.push(`/dashboard/groups/${groupId}/expense`)}
-            className="p-2 hover:bg-[#252525] rounded-lg transition-all text-gray-400 hover:text-white"
+            className="p-2 hover:bg-[#252525] rounded-lg transition-all text-gray-400 hover:text-white cursor-pointer"
           >
             <X size={20} />
           </button>
@@ -130,17 +153,17 @@ export default function CreateExpenseForm({ onSubmit }) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   <div className="flex items-center gap-2">
                     <DollarSign size={16} />
-                    Amount
+                    Total Amount
                   </div>
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                    €
+                    ₹
                   </span>
                   <input
                     type="number"
-                    name="amount"
-                    value={formData.amount}
+                    name="totalAmount"
+                    value={formData.totalAmount}
                     onChange={handleInputChange}
                     placeholder="0.00"
                     step="0.01"
@@ -178,7 +201,7 @@ export default function CreateExpenseForm({ onSubmit }) {
               </div>
             </div>
 
-            {/* Paid By & Date Row */}
+            {/* Paid By & Notes Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Paid By */}
               <div>
@@ -198,7 +221,7 @@ export default function CreateExpenseForm({ onSubmit }) {
                   <option value="" className="bg-[#1a1a1a]">
                     Select member
                   </option>
-                  {groupMembers.map((member) => (
+                  {members.map((member) => (
                     <option
                       key={member._id}
                       value={member._id}
@@ -210,21 +233,21 @@ export default function CreateExpenseForm({ onSubmit }) {
                 </select>
               </div>
 
-              {/* Date */}
+              {/* Notes */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   <div className="flex items-center gap-2">
-                    <Calendar size={16} />
-                    Date
+                    <FileText size={16} />
+                    Notes
                   </div>
                 </label>
                 <input
-                  type="date"
-                  name="date"
-                  value={formData.date}
+                  type="text"
+                  name="notes"
+                  value={formData.notes}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 rounded-lg text-white focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600 transition-all"
-                  required
+                  placeholder="Add a description (optional)"
+                  className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600 transition-all"
                 />
               </div>
             </div>
@@ -242,7 +265,7 @@ export default function CreateExpenseForm({ onSubmit }) {
                       target: { name: "splitType", value: "equal" },
                     })
                   }
-                  className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                     formData.splitType === "equal"
                       ? "bg-cyan-600 text-white"
                       : "bg-[#0f0f0f] text-gray-400 border border-gray-800 hover:border-gray-700"
@@ -254,16 +277,16 @@ export default function CreateExpenseForm({ onSubmit }) {
                   type="button"
                   onClick={() =>
                     handleInputChange({
-                      target: { name: "splitType", value: "unequal" },
+                      target: { name: "splitType", value: "manual" },
                     })
                   }
-                  className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                     formData.splitType === "unequal"
                       ? "bg-cyan-600 text-white"
                       : "bg-[#0f0f0f] text-gray-400 border border-gray-800 hover:border-gray-700"
                   }`}
                 >
-                  Unequal
+                  Manual
                 </button>
                 <button
                   type="button"
@@ -272,7 +295,7 @@ export default function CreateExpenseForm({ onSubmit }) {
                       target: { name: "splitType", value: "percentage" },
                     })
                   }
-                  className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                     formData.splitType === "percentage"
                       ? "bg-cyan-600 text-white"
                       : "bg-[#0f0f0f] text-gray-400 border border-gray-800 hover:border-gray-700"
@@ -293,7 +316,7 @@ export default function CreateExpenseForm({ onSubmit }) {
                   <button
                     type="button"
                     onClick={selectAllParticipants}
-                    className="text-xs text-cyan-400 hover:text-cyan-300 transition-all"
+                    className="text-xs text-cyan-400 hover:text-cyan-300 transition-all cursor-pointer"
                   >
                     Select All
                   </button>
@@ -301,7 +324,7 @@ export default function CreateExpenseForm({ onSubmit }) {
                   <button
                     type="button"
                     onClick={clearAllParticipants}
-                    className="text-xs text-gray-400 hover:text-gray-300 transition-all"
+                    className="text-xs text-gray-400 hover:text-gray-300 transition-all cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -309,14 +332,14 @@ export default function CreateExpenseForm({ onSubmit }) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {groupMembers.map((member) => {
+                {members.map((member) => {
                   const isSelected = formData.participants.includes(member._id);
                   return (
                     <button
                       key={member._id}
                       type="button"
                       onClick={() => toggleParticipant(member._id)}
-                      className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+                      className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
                         isSelected
                           ? "bg-cyan-950/30 border-cyan-600/50 hover:border-cyan-600"
                           : "bg-[#0f0f0f] border-gray-800 hover:border-gray-700"
@@ -364,13 +387,13 @@ export default function CreateExpenseForm({ onSubmit }) {
                 onClick={() =>
                   router.push(`/dashboard/groups/${groupId}/expense`)
                 }
-                className="flex-1 px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 hover:bg-[#252525] text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all"
+                className="flex-1 px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 hover:bg-[#252525] text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-cyan-900/30 hover:shadow-cyan-900/50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-cyan-900/30 hover:shadow-cyan-900/50 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Plus size={18} />
                 Add Expense

@@ -45,7 +45,7 @@ const getAllExpense = async (req, res, next) => {
 const addExpense = async (req, res, next) => {
   try {
     const user_id = req.user.id;
-    const group_id = req.params.id;
+    const group_id = req.params.groupId;
 
     const group = await Group.findById(group_id);
 
@@ -113,7 +113,7 @@ const addExpense = async (req, res, next) => {
         sum += p.value;
         return {
           user: p.userId,
-          amount: p.share,
+          amount: p.value,
           isPaid: false,
         };
       });
