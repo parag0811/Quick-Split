@@ -2,6 +2,8 @@
 import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
 
 export default function GroupForm() {
   const [formData, setFormData] = useState({
@@ -17,6 +19,7 @@ export default function GroupForm() {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -41,122 +44,219 @@ export default function GroupForm() {
   };
 
   return (
-    <div className="w-full min-h-screen p-4 sm:p-6 lg:p-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 p-6 sm:p-8">
-          <div className="mb-6">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+        className="bg-[#1a1a1a] border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex items-center justify-between p-6 border-b border-gray-800"
+        >
+          <div>
+            <h2 className="text-2xl font-bold text-white">
               Create a New Group
             </h2>
-            <p className="mt-2 text-sm text-gray-400">
+            <p className="text-sm text-gray-400 mt-1">
               Fill in the details below to create your group
             </p>
           </div>
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => router.push("/dashboard/groups")}
+            className="p-2 hover:bg-[#252525] rounded-lg transition-all text-gray-400 hover:text-white cursor-pointer"
+          >
+            <X size={20} />
+          </motion.button>
+        </motion.div>
 
-          <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-            {/* Group Name */}
-            <div>
+        <form onSubmit={handleSubmit} noValidate className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
               <label
                 htmlFor="name"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
                 Group Name <span className="text-red-400">*</span>
               </label>
-              <input
+              <motion.input
+                whileFocus={{ scale: 1.005 }}
+                transition={{ type: "spring", stiffness: 300 }}
                 type="text"
                 id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition placeholder-gray-500"
+                className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 text-white rounded-lg focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600 transition-all placeholder-gray-500"
                 placeholder="Enter group name"
               />
-              {errors.name && (
-                <p className="text-red-400 text-sm mt-1">{errors.name}</p>
-              )}
-            </div>
+              <AnimatePresence>
+                {errors.name && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-red-400 text-sm mt-1"
+                  >
+                    {errors.name}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </motion.div>
 
-            {/* Description */}
-            <div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
               <label
                 htmlFor="description"
                 className="block text-sm font-medium text-gray-300 mb-2"
               >
                 Description
               </label>
-              <textarea
+              <motion.textarea
+                whileFocus={{ scale: 1.005 }}
+                transition={{ type: "spring", stiffness: 300 }}
                 id="description"
                 name="description"
                 rows="4"
                 value={formData.description}
                 onChange={handleChange}
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition resize-none placeholder-gray-500"
+                className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 text-white rounded-lg focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600 transition-all resize-none placeholder-gray-500"
                 placeholder="Describe your group"
-              ></textarea>
-              {errors.description && (
-                <p className="text-red-400 text-sm mt-1">
-                  {errors.description}
-                </p>
-              )}
+              ></motion.textarea>
+              <AnimatePresence>
+                {errors.description && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-red-400 text-sm mt-1"
+                  >
+                    {errors.description}
+                  </motion.p>
+                )}
+              </AnimatePresence>
 
               <p className="mt-1 text-xs text-gray-500">
                 Help others understand what this group is about
               </p>
-            </div>
+            </motion.div>
+          </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-800">
-              <button
-                type="submit"
-                className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 transition cursor-pointer"
-              >
-                Create Group
-              </button>
-              <button
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="p-6 border-t border-gray-800 bg-[#1a1a1a]"
+          >
+            <div className="flex gap-3">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/groups")}
                 type="button"
-                className="w-full sm:w-auto px-6 py-2.5 bg-gray-800 text-gray-300 font-medium rounded-lg border border-gray-700 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-offset-2 focus:ring-offset-gray-900 transition cursor-pointer"
+                className="flex-1 px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 hover:bg-[#252525] text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all cursor-pointer"
               >
                 Cancel
-              </button>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-cyan-900/30 hover:shadow-cyan-900/50 cursor-pointer"
+              >
+                Create Group
+              </motion.button>
             </div>
-          </form>
-          {inviteToken && (
-            <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
-              <div className="bg-[#1a1a1a] p-6 rounded-lg border border-gray-700 w-[90%] max-w-md">
-                <h3 className="text-xl font-semibold text-white mb-3">
-                  Invite Link Generated
-                </h3>
+          </motion.div>
+        </form>
 
-                <div className="flex items-center gap-2 bg-gray-800 p-2 rounded">
+        <AnimatePresence>
+          {inviteToken && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className="bg-[#1a1a1a] p-6 rounded-lg border border-gray-700 w-[90%] max-w-md"
+              >
+                <motion.h3
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-xl font-semibold text-white mb-3"
+                >
+                  Invite Link Generated
+                </motion.h3>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="flex items-center gap-2 bg-gray-800 p-2 rounded"
+                >
                   <input
                     readOnly
                     value={inviteToken}
                     className="flex-1 bg-transparent text-gray-300 outline-none"
                   />
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => navigator.clipboard.writeText(inviteToken)}
                     className="px-3 py-1 bg-blue-600 rounded text-white text-sm cursor-pointer"
                   >
                     Copy
-                  </button>
-                </div>
+                  </motion.button>
+                </motion.div>
 
-                <button
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => {
                     setInviteToken(null);
-                    router.push(`/dashboard/groups/${group.groupId}`);
+                    router.push(`/dashboard/groups`);
                   }}
                   className="mt-4 w-full bg-gray-700 py-2 rounded text-gray-300 cursor-pointer"
                 >
                   Close
-                </button>
-              </div>
-            </div>
+                </motion.button>
+              </motion.div>
+            </motion.div>
           )}
-        </div>
-      </div>
-    </div>
+        </AnimatePresence>
+      </motion.div>
+    </motion.div>
   );
 }
