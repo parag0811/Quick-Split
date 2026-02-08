@@ -1,13 +1,14 @@
 "use client";
-import { Home, Group, ChartColumn, LogOut, Banknote } from "lucide-react";
+import { Home, Group } from "lucide-react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 export default function Sidebar({ isOpen }) {
+  const pathname = usePathname();
+
   const menuItems = [
-    { icon: Home, label: "Home", active: true },
-    { icon: Group, label: "Groups", active: false },
-    { icon: Banknote, label: "Expense", active: false },
-    { icon: ChartColumn, label: "Analytics", active: false },
-    { icon: LogOut, label: "Log Out", active: false },
+    { icon: Home, label: "Home", href: "/dashboard" },
+    { icon: Group, label: "Groups", href: "/dashboard/groups" },
   ];
 
   return (
@@ -40,15 +41,22 @@ export default function Sidebar({ isOpen }) {
         <ul className="space-y-1 px-3">
           {menuItems.map((item, index) => {
             const Icon = item.icon;
+            const isActive = pathname === item.href;
             return (
               <li key={index}>
-                <button
-                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg
-                      transition-all duration-200 cursor-pointer"
+                <Link
+                  href={item.href}
+                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg
+                      transition-all duration-200 cursor-pointer
+                      ${
+                        isActive
+                          ? "bg-cyan-500/10 text-cyan-400"
+                          : "text-gray-400 hover:bg-gray-800/50 hover:text-gray-200"
+                      }`}
                 >
-                  <Icon size={24} strokeWidth={3} />
+                  <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
                   <span className="font-semibold text-lg">{item.label}</span>
-                </button>
+                </Link>
               </li>
             );
           })}

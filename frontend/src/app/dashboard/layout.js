@@ -1,24 +1,17 @@
 "use client";
 import { useState } from "react";
-import Sidebar from "@/components/Sidebar/Sidebar";
-import Header from "@/components/Header/Header";
-import { useSession } from "next-auth/react";
-import Loader from "@/components/Loader/Loading";
+import Sidebar from "@/components/Layout/Sidebar";
+import Header from "@/components/Layout/Header";
 
 export default function DashboardLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
-  const { data: session, status } = useSession();
-
-  if (status === "loading") return <Loader />;
-  if (!session?.backendToken) return <Loader />;
 
   return (
     <div className="min-h-screen flex bg-[#0f0f0f]">
       <Sidebar isOpen={isSidebarOpen} />
 
       <div
-        className={`flex flex-col flex-1 transition-all duration-300 ${
+        className={`flex flex-col flex-1 ml-64 transition-all duration-300 ${
           isSidebarOpen ? "ml-64" : "ml-0"
         }`}
       >
