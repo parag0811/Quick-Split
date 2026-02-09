@@ -79,7 +79,11 @@ const joinGroup = async (req, res, next) => {
 
     await group.save();
 
-    return res.status(200).json({ message: "User added Successfully." });
+    return res 
+      .status(200)
+      .json({ message: "User added Successfully.", 
+        groupId: group._id 
+      });
   } catch (error) {
     next(error);
   }
@@ -130,7 +134,9 @@ const getGroupSummary = async (req, res, next) => {
       image: m.user.image,
     }));
 
-    const isMember = group.members.some((m) => m.user._id.toString() === user_id);
+    const isMember = group.members.some(
+      (m) => m.user._id.toString() === user_id,
+    );
 
     if (!isMember) {
       const error = new Error("Not Authorized");
