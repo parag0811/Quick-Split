@@ -79,11 +79,9 @@ const joinGroup = async (req, res, next) => {
 
     await group.save();
 
-    return res 
+    return res
       .status(200)
-      .json({ message: "User added Successfully.", 
-        groupId: group._id 
-      });
+      .json({ message: "User added Successfully.", groupId: group._id });
   } catch (error) {
     next(error);
   }
@@ -216,9 +214,41 @@ const getGroupSummary = async (req, res, next) => {
   }
 };
 
+const deleteGroup = async (req, res, next) => {
+  try {
+    const user_id = req.user.id;
+
+    const group_id = req.params.groupId;
+
+    const group = await Group.findById(group_id);
+
+    if (!group) {
+      const error = new Error("Group does not exist or already deleted.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (user_id !== group.createdBy.toString()) {
+      const error = new Error("Only group admin can delete the group.");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    await Expense.deleteMany({group : group_id})
+    await Settlement.deleteMany({group : group_id})
+
+    await Group.findByIdAndDelete(group_id);
+
+    return res.status(200).json({ message: "Group deleted successfully." });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   createGroup,
   joinGroup,
   getGroups,
   getGroupSummary,
+  deleteGroup
 };

@@ -37,6 +37,12 @@ router.post("/groups/join-group", isAuth, group_controller.joinGroup);
 
 router.get("/groups/my-groups", isAuth, group_controller.getGroups);
 
-router.get("/groups/:groupId/summary", isAuth, group_controller.getGroupSummary);
+router.get(
+  "/groups/:groupId/summary",
+  isAuth,
+  group_controller.getGroupSummary,
+);
+
+router.delete("/groups/:groupId/delete", isAuth, group_controller.deleteGroup);
 
 export default router;

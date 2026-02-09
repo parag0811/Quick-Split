@@ -11,6 +11,9 @@ import {
   ChevronDown,
   ChevronUp,
   Users,
+  Trash2,
+  UserMinus,
+  X,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -22,6 +25,10 @@ export default function GroupOverview() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAllMembers, setShowAllMembers] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
 
   const router = useRouter();
 
@@ -39,6 +46,31 @@ export default function GroupOverview() {
     };
     fetchGroupDetails();
   }, [groupId]);
+
+  const handleDeleteGroup = async () => {
+    if (deleteConfirmation !== data.group.name) return;
+
+    setDeleting(true);
+    try {
+      const response = await apiFetch(`/groups/${groupId}/delete`, {
+        method: "DELETE",
+      });
+      console.log(response);
+      setError(response.error);
+      console.log(error)
+      router.push("/dashboard/groups");
+    } catch (error) {
+      console.log("Error deleting", error);
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmation("");
+      setShowDeleteModal(false);
+    }
+  };
+
+  // const handleRemoveMember = (memberId, memberName) => {
+
+  // };
 
   if (loading || !data) {
     return (
@@ -78,7 +110,12 @@ export default function GroupOverview() {
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 200,
+                  damping: 15,
+                  delay: 0.2,
+                }}
                 className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-2xl shadow-lg"
               >
                 🏔️
@@ -94,6 +131,20 @@ export default function GroupOverview() {
                 <p className="text-gray-400">{data.group.description}</p>
               </motion.div>
             </div>
+
+            {/* Delete Group Button */}
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowDeleteModal(true)}
+              className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-600/50 hover:border-rose-600 text-rose-400 rounded-lg font-medium transition-all duration-200"
+            >
+              <Trash2 size={18} />
+              <span className="hidden sm:inline">Delete Group</span>
+            </motion.button>
           </div>
 
           {/* Members Preview */}
@@ -156,7 +207,11 @@ export default function GroupOverview() {
                         key={member._id}
                         initial={{ opacity: 0, scale: 0, x: -20 }}
                         animate={{ opacity: 1, scale: 1, x: 0 }}
-                        transition={{ delay: index * 0.05, type: "spring", stiffness: 200 }}
+                        transition={{
+                          delay: index * 0.05,
+                          type: "spring",
+                          stiffness: 200,
+                        }}
                         whileHover={{ scale: 1.2, zIndex: 999 }}
                         className="w-9 h-9 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-[#1a1a1a] -ml-2 first:ml-0 overflow-hidden"
                         style={{ zIndex: data.members.length - index }}
@@ -195,19 +250,32 @@ export default function GroupOverview() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
                       whileHover={{ scale: 1.02, x: 5 }}
-                      className="flex items-center gap-3 p-3 bg-[#151515] rounded-lg border border-gray-800 hover:border-gray-700 transition-colors"
+                      className="flex items-center justify-between gap-3 p-3 bg-[#151515] rounded-lg border border-gray-800 hover:border-gray-700 transition-colors group"
                     >
-                      <div className="w-10 h-10 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-sm font-bold text-white overflow-hidden flex-shrink-0">
-                        {member.name.charAt(0).toUpperCase()}
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-sm font-bold text-white overflow-hidden flex-shrink-0">
+                          {member.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white truncate">
+                            {member.name}
+                          </p>
+                          <p className="text-xs text-gray-400 truncate">
+                            {member.email}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">
-                          {member.name}
-                        </p>
-                        <p className="text-xs text-gray-400 truncate">
-                          {member.email}
-                        </p>
-                      </div>
+
+                      {/* Remove Member Button */}
+                      <motion.button
+                        className="group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-600/50 hover:border-rose-600 text-rose-400 rounded-lg text-xs font-medium cursor-pointer"
+                        onClick={() =>
+                          handleRemoveMember(member._id, member.name)
+                        }
+                      >
+                        <UserMinus size={14} />
+                        <span>Remove</span>
+                      </motion.button>
                     </motion.div>
                   ))}
                 </motion.div>
@@ -326,133 +394,144 @@ export default function GroupOverview() {
               transition={{ delay: 0.8, type: "spring", stiffness: 200 }}
               className={`text-3xl font-bold mb-1 ${data.isSettled ? "text-emerald-400" : "text-amber-400"}`}
             >
-              {data.isSettled ? "Settled" : `${data.youOwe.length + data.youGet.length}`}
+              {data.isSettled
+                ? "Settled"
+                : `${data.youOwe.length + data.youGet.length}`}
             </motion.div>
             <div className="text-xs text-gray-500">
               {data.isSettled
                 ? "All balanced"
-                : `Pending payment${(data.youOwe.length + data.youGet.length) !== 1 ? "s" : ""}`}
+                : `Pending payment${data.youOwe.length + data.youGet.length !== 1 ? "s" : ""}`}
             </div>
           </motion.div>
         </div>
 
         {/* Settlement Details */}
         <AnimatePresence>
-          {!data.isSettled && (data.youOwe.length > 0 || data.youGet.length > 0) && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5, delay: 0.8 }}
-              className="mb-8 space-y-4"
-            >
-              {/* You Owe */}
-              {data.youOwe.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.9 }}
-                  className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-rose-800/30 rounded-xl p-5"
-                >
-                  <h3 className="text-sm font-semibold text-rose-400 mb-3 flex items-center gap-2">
-                    <TrendingDown size={16} />
-                    You Owe
-                  </h3>
-                  <div className="space-y-2">
-                    {data.youOwe.map((item, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.9 + index * 0.1 }}
-                        whileHover={{ scale: 1.02, x: 5 }}
-                        className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <motion.div
-                            whileHover={{ scale: 1.2, rotate: 5 }}
-                            className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden"
-                          >
-                            {item.to.name.charAt(0).toUpperCase()}
-                          </motion.div>
-                          <div>
-                            <p className="text-sm font-medium text-white">
-                              {item.to.name}
-                            </p>
-                            <p className="text-xs text-gray-400">{item.to.email}</p>
-                          </div>
-                        </div>
+          {!data.isSettled &&
+            (data.youOwe.length > 0 || data.youGet.length > 0) && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5, delay: 0.8 }}
+                className="mb-8 space-y-4"
+              >
+                {/* You Owe */}
+                {data.youOwe.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.9 }}
+                    className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-rose-800/30 rounded-xl p-5"
+                  >
+                    <h3 className="text-sm font-semibold text-rose-400 mb-3 flex items-center gap-2">
+                      <TrendingDown size={16} />
+                      You Owe
+                    </h3>
+                    <div className="space-y-2">
+                      {data.youOwe.map((item, index) => (
                         <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 1 + index * 0.1, type: "spring" }}
-                          className="text-right"
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.9 + index * 0.1 }}
+                          whileHover={{ scale: 1.02, x: 5 }}
+                          className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg"
                         >
-                          <p className="text-lg font-bold text-rose-400">
-                            €{item.amount.toFixed(2)}
-                          </p>
+                          <div className="flex items-center gap-3">
+                            <motion.div
+                              whileHover={{ scale: 1.2, rotate: 5 }}
+                              className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden"
+                            >
+                              {item.to.name.charAt(0).toUpperCase()}
+                            </motion.div>
+                            <div>
+                              <p className="text-sm font-medium text-white">
+                                {item.to.name}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {item.to.email}
+                              </p>
+                            </div>
+                          </div>
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{
+                              delay: 1 + index * 0.1,
+                              type: "spring",
+                            }}
+                            className="text-right"
+                          >
+                            <p className="text-lg font-bold text-rose-400">
+                              €{item.amount.toFixed(2)}
+                            </p>
+                          </motion.div>
                         </motion.div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
 
-              {/* You Get */}
-              {data.youGet.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 1 }}
-                  className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-emerald-800/30 rounded-xl p-5"
-                >
-                  <h3 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2">
-                    <TrendingUp size={16} />
-                    You Get Back
-                  </h3>
-                  <div className="space-y-2">
-                    {data.youGet.map((item, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 1 + index * 0.1 }}
-                        whileHover={{ scale: 1.02, x: 5 }}
-                        className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <motion.div
-                            whileHover={{ scale: 1.2, rotate: 5 }}
-                            className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden"
-                          >
-                            {item.from.name.charAt(0).toUpperCase()}
-                          </motion.div>
-                          <div>
-                            <p className="text-sm font-medium text-white">
-                              {item.from.name}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              {item.from.email}
-                            </p>
-                          </div>
-                        </div>
+                {/* You Get */}
+                {data.youGet.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 1 }}
+                    className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-emerald-800/30 rounded-xl p-5"
+                  >
+                    <h3 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                      <TrendingUp size={16} />
+                      You Get Back
+                    </h3>
+                    <div className="space-y-2">
+                      {data.youGet.map((item, index) => (
                         <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 1.1 + index * 0.1, type: "spring" }}
-                          className="text-right"
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 1 + index * 0.1 }}
+                          whileHover={{ scale: 1.02, x: 5 }}
+                          className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg"
                         >
-                          <p className="text-lg font-bold text-emerald-400">
-                            €{item.amount.toFixed(2)}
-                          </p>
+                          <div className="flex items-center gap-3">
+                            <motion.div
+                              whileHover={{ scale: 1.2, rotate: 5 }}
+                              className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden"
+                            >
+                              {item.from.name.charAt(0).toUpperCase()}
+                            </motion.div>
+                            <div>
+                              <p className="text-sm font-medium text-white">
+                                {item.from.name}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {item.from.email}
+                              </p>
+                            </div>
+                          </div>
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{
+                              delay: 1.1 + index * 0.1,
+                              type: "spring",
+                            }}
+                            className="text-right"
+                          >
+                            <p className="text-lg font-bold text-emerald-400">
+                              €{item.amount.toFixed(2)}
+                            </p>
+                          </motion.div>
                         </motion.div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
         </AnimatePresence>
 
         {/* Quick Actions */}
@@ -465,7 +544,9 @@ export default function GroupOverview() {
           <motion.button
             whileHover={{ scale: 1.05, y: -5 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => router.push(`/dashboard/groups/${data.group.id}/expense`)}
+            onClick={() =>
+              router.push(`/dashboard/groups/${data.group.id}/expense`)
+            }
             className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-cyan-700 hover:bg-[#1f1f1f] transition-all duration-200 text-left group cursor-pointer"
           >
             <div className="flex items-center justify-between mb-4">
@@ -494,7 +575,9 @@ export default function GroupOverview() {
           <motion.button
             whileHover={{ scale: 1.05, y: -5 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => router.push(`/dashboard/groups/${data.group.id}/settlement`)}
+            onClick={() =>
+              router.push(`/dashboard/groups/${data.group.id}/settlement`)
+            }
             className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-emerald-700 hover:bg-[#1f1f1f] transition-all duration-200 text-left group cursor-pointer"
           >
             <div className="flex items-center justify-between mb-4">
@@ -549,6 +632,105 @@ export default function GroupOverview() {
           </motion.button>
         </motion.div>
       </div>
+
+      {/* Delete Group Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => {
+              setShowDeleteModal(false);
+              setDeleteConfirmation("");
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#1a1a1a] border border-rose-800/30 rounded-xl p-6 w-full max-w-md shadow-2xl"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-rose-600/20 rounded-lg flex items-center justify-center border border-rose-600/50">
+                    <Trash2 size={24} className="text-rose-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">
+                      Delete Group
+                    </h2>
+                    <p className="text-sm text-gray-400">
+                      This action cannot be undone
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmation("");
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="space-y-4 mb-6">
+                <div className="p-4 bg-rose-600/10 border border-rose-600/30 rounded-lg">
+                  <p className="text-sm text-rose-300">
+                    <strong>Warning:</strong> Deleting this group will
+                    permanently remove all expenses, settlements, and member
+                    data. This action cannot be undone.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Type{" "}
+                    <span className="font-bold text-white">
+                      {data.group.name}
+                    </span>{" "}
+                    to confirm
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmation}
+                    onChange={(e) => setDeleteConfirmation(e.target.value)}
+                    placeholder="Enter group name"
+                    className="w-full px-4 py-3 bg-[#0f0f0f] border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-rose-600 focus:ring-2 focus:ring-rose-600/20 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmation("");
+                  }}
+                  className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-all duration-200 border border-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteGroup}
+                  disabled={deleteConfirmation !== data.group.name || deleting}
+                  className="flex-1 px-4 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-600"
+                >
+                  {deleting ? "Deleting..." : "Delete Group"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
