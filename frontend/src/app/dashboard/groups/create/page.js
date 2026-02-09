@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { toastSuccess } from "@/lib/toast";
 
 export default function GroupForm() {
   const [formData, setFormData] = useState({
@@ -29,7 +30,7 @@ export default function GroupForm() {
         method: "POST",
         body: formData,
       });
-
+      toastSuccess(`${data.message}`)
       setInviteToken(data.inviteToken);
       console.log(data.inviteToken);
     } catch (error) {
