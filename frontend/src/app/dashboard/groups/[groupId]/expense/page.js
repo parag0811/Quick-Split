@@ -58,8 +58,7 @@ export default function ExpensePage() {
     yesterday.setDate(yesterday.getDate() - 1);
 
     if (date.toDateString() === today.toDateString()) return "Today";
-    if (date.toDateString() === yesterday.toDateString())
-      return "Yesterday";
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
 
     return date.toLocaleDateString("en-US", {
       month: "short",
@@ -69,10 +68,10 @@ export default function ExpensePage() {
   };
 
   const getSplitDescription = (expense) => {
-    const count = expense.splitBetween?.length ?? 0;
+    const count = expense.splits?.length ?? 0;
     return expense.splitType === "equal"
       ? `Split equally among ${count} member${count !== 1 ? "s" : ""}`
-      : `Split unequally among ${count} member${count !== 1 ? "s" : ""}`;
+      : `${expense.splitType} Split among ${count} member${count !== 1 ? "s" : ""}`;
   };
 
   if (loading) {
@@ -87,6 +86,7 @@ export default function ExpensePage() {
     );
   }
 
+  console.log(data)
   const { expenses, message, count } = data;
 
   return (
@@ -108,9 +108,7 @@ export default function ExpensePage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Expenses
-            </h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Expenses</h1>
             <p className="text-gray-400">
               {message} · {count} expense{count !== 1 ? "s" : ""}
             </p>
@@ -123,9 +121,7 @@ export default function ExpensePage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() =>
-              router.push(
-                `/dashboard/groups/${groupId}/expense/create`
-              )
+              router.push(`/dashboard/groups/${groupId}/expense/create`)
             }
             className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-pink-900/30"
           >
@@ -184,7 +180,7 @@ export default function ExpensePage() {
 
                       <div className="flex flex-wrap items-center gap-3 text-sm mb-3">
                         <span className="text-gray-500">
-                          {formatDate(expense.date)}
+                          {formatDate(expense.createdAt)}
                         </span>
                         <span className="text-gray-700">•</span>
                         <span className="text-gray-400">
@@ -198,25 +194,15 @@ export default function ExpensePage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           {expense.splitType === "equal" ? (
-                            <Users
-                              size={16}
-                              className="text-emerald-500"
-                            />
+                            <Users size={16} className="text-emerald-500" />
                           ) : (
-                            <Split
-                              size={16}
-                              className="text-amber-500"
-                            />
+                            <Split size={16} className="text-amber-500" />
                           )}
-                          <span>
-                            {getSplitDescription(expense)}
-                          </span>
+                          <span>{getSplitDescription(expense)}</span>
                         </div>
 
                         <div className="flex items-center gap-1 text-xs text-gray-500">
-                          <span>
-                            {isExpanded ? "Hide" : "View"} details
-                          </span>
+                          <span>{isExpanded ? "Hide" : "View"} details</span>
                           <motion.div
                             animate={{ rotate: isExpanded ? 180 : 0 }}
                             transition={{ duration: 0.3 }}
@@ -274,9 +260,9 @@ export default function ExpensePage() {
                             </motion.h4>
 
                             <div className="space-y-2">
-                              {expense.splitBetween?.map((member, idx) => (
+                              {expense.splits?.map((member, idx) => (
                                 <motion.div
-                                  key={`${expense._id}-${member.userId}`}
+                                  key={`${expense._id}-${member.user._id}`}
                                   initial={{ opacity: 0, x: -20 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ delay: 0.2 + idx * 0.05 }}
@@ -284,10 +270,10 @@ export default function ExpensePage() {
                                   className="flex items-center justify-between py-2 px-3 bg-[#1a1a1a] rounded-lg"
                                 >
                                   <span className="text-sm text-gray-300">
-                                    {member.name ?? "Member"}
+                                    {member.user.name ?? "Member"}
                                   </span>
                                   <span className="text-sm font-semibold text-white">
-                                    €{member.amount ?? 0}
+                                    ₹{member.amount ?? 0}
                                   </span>
                                 </motion.div>
                               ))}
@@ -344,9 +330,7 @@ export default function ExpensePage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() =>
-                    router.push(
-                      `/dashboard/groups/${groupId}/expense/create`
-                    )
+                    router.push(`/dashboard/groups/${groupId}/expense/create`)
                   }
                   className="flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-lg font-medium"
                 >

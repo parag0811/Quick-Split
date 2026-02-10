@@ -28,6 +28,7 @@ const getAllExpense = async (req, res, next) => {
     const expenses = await Expense.find({ group: group_id })
       .populate("paidBy", "name email")
       .populate("createdBy", "name email")
+      .populate("splits.user", "name email")
       .sort({ createdAt: -1 });
 
     return res
