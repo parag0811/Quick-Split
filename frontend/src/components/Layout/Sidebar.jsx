@@ -2,6 +2,8 @@
 import { Home, Group } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useEffect } from "react";
 
 export default function Sidebar({ isOpen }) {
   const pathname = usePathname();
@@ -11,6 +13,7 @@ export default function Sidebar({ isOpen }) {
     { icon: Group, label: "Groups", href: "/dashboard/groups" },
   ];
 
+  const { data: session} = useSession()
   return (
     <aside
       className={`fixed top-16 left-0 z-40 w-64
@@ -24,14 +27,14 @@ export default function Sidebar({ isOpen }) {
         <div className="flex flex-col items-center justify-center space-y-4 mt-4">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-300 overflow-hidden flex items-center justify-center">
             <img
-              src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop"
-              alt="Janice Chandler"
+              src={session?.user?.image || ""}
+              alt={session?.user?.name}
               className="w-full h-full object-cover"
             />
           </div>
           <div className="flex-1">
             <h2 className="text-gray-300 font-semibold text-2xl">
-              Janice Chandler
+              {session?.user?.name || "Name"}
             </h2>
           </div>
         </div>

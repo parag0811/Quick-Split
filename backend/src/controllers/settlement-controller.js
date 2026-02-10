@@ -58,12 +58,6 @@ const createSettlement = async (req, res, next) => {
     const group_id = req.params.groupId;
     const user_id = req.user.id;
 
-    if (!mongoose.Types.ObjectId.isValid(group_id)) {
-      const error = new Error("Invalid group id");
-      error.statusCode = 400;
-      throw error;
-    }
-
     const group = await Group.findById(group_id);
     if (!group) {
       const error = new Error("Group not found");
@@ -166,6 +160,7 @@ const createSettlement = async (req, res, next) => {
       settlements: savedSettlements,
     });
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };
