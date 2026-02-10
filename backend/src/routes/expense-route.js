@@ -6,7 +6,7 @@ import expense_controller from "../controllers/expense-controller.js";
 import isAuth from "../middleware/is-auth.js";
 
 const allowedCategories = ["food", "travel", "rent", "shopping", "other"];
-const allowedSplitTypes = ["equal", "number", "percentage"];
+const allowedSplitTypes = ["equal", "manual", "percentage"];
 
 const expenseValidation = [
   body("title")

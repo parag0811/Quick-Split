@@ -117,8 +117,9 @@ const addExpense = async (req, res, next) => {
           isPaid: false,
         };
       });
+      const totalAmountNum = Number(totalAmount);
 
-      if (Number(sum.toFixed(2)) !== Number(totalAmount.toFixed(2))) {
+      if (Number(sum.toFixed(2)) !== Number(totalAmountNum.toFixed(2))) {
         const error = new Error(
           "Manual split total does not match expense amount",
         );
@@ -170,6 +171,7 @@ const addExpense = async (req, res, next) => {
       .status(201)
       .json({ message: "Expense added to the group.", expense });
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };
