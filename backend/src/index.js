@@ -34,7 +34,7 @@ app.use((error, req, res, next) => {
     data = null
   }
 
-  if ((status === 401 || status === 403)) {
+  if ((status === 401)) {
     message = "Authentication Failed! Please Login Again."
     data = null
   }

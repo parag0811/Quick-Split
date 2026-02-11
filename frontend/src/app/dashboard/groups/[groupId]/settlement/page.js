@@ -11,27 +11,30 @@ import {
 import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 export default function SettlementPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isMarkingPaid, setIsMarkingPaid] = useState(false);
   const [data, setData] = useState(null);
-  const [error, setError] = useState(null)
+  // const [error, setError] = useState(null);
 
   const { groupId } = useParams();
 
+  const fetchSettlements = async () => {
+    try {
+      const response = await apiFetch(`/group/${groupId}/settlements`);
+      setData(response);
+    } catch (error) {
+      toastError(error?.message || "Failed to load settlements");
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchSettlements = async () => {
-      try {
-        const response = await apiFetch(`/group/${groupId}/settlements`);
-        setData(response);
-        console.log(response);
-      } catch (error) {
-        console.log("Error fetching data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchSettlements();
   }, [groupId]);
 
@@ -41,12 +44,30 @@ export default function SettlementPage() {
       const response = await apiFetch(`/group/${groupId}/settlement`, {
         method: "POST",
       });
-      setData(response);
+      toastSuccess(response.message, "Settlement generated successfully!");
+      await fetchSettlements();
     } catch (error) {
-      console.log("Error generating settlements", error);
-      setError(error)
+      toastError(error?.message, "Failed to generate settlement.");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const markAsPaid = async (settlementId) => {
+    setIsMarkingPaid(true);
+    try {
+      const response = await apiFetch(
+        `/group/settlement/${settlementId}/mark-paid`,
+        {
+          method: "POST",
+        },
+      );
+      toastSuccess(response.message);
+      await fetchSettlements();
+    } catch (error) {
+      toastError(error?.message);
+    } finally {
+      setIsMarkingPaid(false);
     }
   };
 
@@ -101,7 +122,10 @@ export default function SettlementPage() {
               whileTap={{ scale: 0.97 }}
               className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:from-cyan-600/50 disabled:to-blue-600/50 text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-cyan-900/30 disabled:cursor-not-allowed"
             >
-              <RefreshCw size={14} className={isGenerating ? "animate-spin" : ""} />
+              <RefreshCw
+                size={14}
+                className={isGenerating ? "animate-spin" : ""}
+              />
               {isGenerating ? "Generating..." : "Generate Settlement"}
             </motion.button>
           </div>
@@ -117,7 +141,8 @@ export default function SettlementPage() {
               <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-950/30 border border-amber-800/30 rounded-lg">
                 <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
                 <span className="text-sm font-medium text-amber-400">
-                  {pending.length} pending settlement{pending.length !== 1 ? "s" : ""}
+                  {pending.length} pending settlement
+                  {pending.length !== 1 ? "s" : ""}
                 </span>
               </div>
               {completedSettlements?.length > 0 && (
@@ -145,7 +170,12 @@ export default function SettlementPage() {
                 className="w-20 h-20 bg-[#252525] rounded-full flex items-center justify-center mb-6"
                 initial={{ scale: 0.7, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.35, duration: 0.4, type: "spring", stiffness: 200 }}
+                transition={{
+                  delay: 0.35,
+                  duration: 0.4,
+                  type: "spring",
+                  stiffness: 200,
+                }}
               >
                 <Receipt size={36} className="text-gray-600" />
               </motion.div>
@@ -163,7 +193,8 @@ export default function SettlementPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.3 }}
               >
-                Generate a settlement plan to see who owes what and settle all balances in the fewest transactions.
+                Generate a settlement plan to see who owes what and settle all
+                balances in the fewest transactions.
               </motion.p>
               <motion.button
                 onClick={handleGenerateSettlement}
@@ -199,7 +230,8 @@ export default function SettlementPage() {
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 flex-1">
                     <div className="w-12 h-12 bg-gradient-to-br from-rose-600 to-red-600 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
-                      {settlement.payer?.avatar || settlement.from?.name?.substring(0, 2).toUpperCase()}
+                      {settlement.payer?.avatar ||
+                        settlement.from?.name?.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
                       <div className="text-sm text-gray-500 mb-0.5">Payer</div>
@@ -222,24 +254,34 @@ export default function SettlementPage() {
 
                   <div className="flex items-center gap-3 flex-1 justify-end">
                     <div className="text-right">
-                      <div className="text-sm text-gray-500 mb-0.5">Receiver</div>
+                      <div className="text-sm text-gray-500 mb-0.5">
+                        Receiver
+                      </div>
                       <div className="text-base font-semibold text-white">
                         {settlement.to?.name || "Unknown"}
                       </div>
                     </div>
                     <div className="w-12 h-12 bg-gradient-to-br from-emerald-600 to-green-600 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
-                      {settlement.to?.avatar || settlement.receiver?.name?.substring(0, 2).toUpperCase()}
+                      {settlement.to?.avatar ||
+                        settlement.receiver?.name
+                          ?.substring(0, 2)
+                          .toUpperCase()}
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-800">
                   <p className="text-center text-gray-400 text-sm">
-                    <span className="text-rose-400 font-medium">{settlement.from?.name || "Unknown"}</span>
+                    <span className="text-rose-400 font-medium">
+                      {settlement.from?.name || "Unknown"}
+                    </span>
                     {" pays "}
-                    <span className="text-emerald-400 font-medium">{settlement.to?.name || "Unknown"}</span>
-                    {" "}
-                    <span className="text-white font-semibold">₹{settlement.amount?.toFixed(2) || "0.00"}</span>
+                    <span className="text-emerald-400 font-medium">
+                      {settlement.to?.name || "Unknown"}
+                    </span>{" "}
+                    <span className="text-white font-semibold">
+                      ₹{settlement.amount?.toFixed(2) || "0.00"}
+                    </span>
                   </p>
                 </div>
 
@@ -247,6 +289,7 @@ export default function SettlementPage() {
                   <motion.button
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
+                    onClick={() => markAsPaid( settlement._id)}
                     className="w-full py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all duration-200"
                   >
                     Mark as Paid
@@ -258,7 +301,10 @@ export default function SettlementPage() {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + pending.length * 0.08, duration: 0.35 }}
+              transition={{
+                delay: 0.2 + pending.length * 0.08,
+                duration: 0.35,
+              }}
               className="bg-gradient-to-br from-cyan-950/20 to-blue-950/20 border border-cyan-800/30 rounded-xl p-5"
             >
               <div className="flex gap-3">
@@ -270,7 +316,8 @@ export default function SettlementPage() {
                     Settlement Instructions
                   </h3>
                   <p className="text-xs text-cyan-400/70 leading-relaxed">
-                    Complete all payments listed above to settle this group. Use "Generate Settlement" if new expenses were added.
+                    Complete all payments listed above to settle this group. Use
+                    "Generate Settlement" if new expenses were added.
                   </p>
                 </div>
               </div>

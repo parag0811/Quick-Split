@@ -12,7 +12,7 @@ const getAllSettlement = async (req, res, next) => {
 
     const group = await Group.findById(group_id);
     if (!group) {
-      const error = new Error("Group not found");
+      const error = new Error("Group is not found");
       error.statusCode = 404;
       throw error;
     }
@@ -20,7 +20,7 @@ const getAllSettlement = async (req, res, next) => {
     const isMember = group.members.some((m) => m.user.toString() === user_id);
 
     if (!isMember) {
-      const error = new Error("Not Authorized");
+      const error = new Error("Not a member of this group.");
       error.statusCode = 403;
       throw error;
     }
@@ -48,7 +48,7 @@ const getAllSettlement = async (req, res, next) => {
       completedSettlements,
     });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     next(error);
   }
 };
@@ -60,7 +60,7 @@ const createSettlement = async (req, res, next) => {
 
     const group = await Group.findById(group_id);
     if (!group) {
-      const error = new Error("Group not found");
+      const error = new Error("Group is not found");
       error.statusCode = 404;
       throw error;
     }
@@ -68,7 +68,7 @@ const createSettlement = async (req, res, next) => {
     const isMember = group.members.some((m) => m.user.toString() === user_id);
 
     if (!isMember) {
-      const error = new Error("Not Authorized");
+      const error = new Error("Not a member of the group.");
       error.statusCode = 403;
       throw error;
     }
@@ -110,7 +110,7 @@ const createSettlement = async (req, res, next) => {
 
     if (nonSettledSettlements.length > 0) {
       const error = new Error(
-        "Unsettled settlements already exist for the group.",
+        "Unsettled settlements already exist for the group. Settle them first.",
       );
       error.statusCode = 409;
       throw error;
@@ -152,6 +152,14 @@ const createSettlement = async (req, res, next) => {
       if (creditor.amount === 0) j++;
     }
 
+    if(settlements.length === 0){
+      const error = new Error(
+        "No new expenses to settle.",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
     const savedSettlements =
       settlements.length > 0 ? await Settlement.insertMany(settlements) : [];
 
@@ -160,7 +168,7 @@ const createSettlement = async (req, res, next) => {
       settlements: savedSettlements,
     });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     next(error);
   }
 };
@@ -199,6 +207,7 @@ const settlementPaid = async (req, res, next) => {
       .status(200)
       .json({ message: "Settlement marked as paid successfully.", settlement });
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };
