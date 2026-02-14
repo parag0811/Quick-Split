@@ -45,4 +45,10 @@ router.get(
 
 router.delete("/groups/:groupId/delete", isAuth, group_controller.deleteGroup);
 
+router.post(
+  "/groups/:groupId/members/:memberId",
+  isAuth,
+  group_controller.removeMember,
+);
+
 export default router;

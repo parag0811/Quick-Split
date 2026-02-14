@@ -234,12 +234,115 @@ const deleteGroup = async (req, res, next) => {
       throw error;
     }
 
-    await Expense.deleteMany({group : group_id})
-    await Settlement.deleteMany({group : group_id})
+    await Expense.deleteMany({ group: group_id });
+    await Settlement.deleteMany({ group: group_id });
 
     await Group.findByIdAndDelete(group_id);
 
     return res.status(200).json({ message: "Group deleted successfully." });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const removeMember = async (req, res, next) => {
+  try {
+    const user_id = req.user.id;
+    const group_id = req.params.groupId;
+    const member_id = req.params.memberId;
+
+    const group = await Group.findById(group_id);
+    if (!group) {
+      const error = new Error("Group not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (group.members.length === 1) {
+      const error = new Error("Can not remove the last member.");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const isRequesterMember = group.createdBy.toString() === user_id.toString();
+
+    if (!isRequesterMember) {
+      const error = new Error("Only creator can remove the members.");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const isTargetMember = group.members.some(
+      (m) => m.user.toString() === member_id.toString(),
+    );
+
+    if (!isTargetMember) {
+      const error = new Error("Member not found in this group.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const hasPendingSettlement = await Settlement.findOne({
+      group: group_id,
+      isSettled: false,
+      $or: [{ from: member_id }, { to: member_id }],
+    });
+
+    if (hasPendingSettlement) {
+      const error = new Error(
+        "Member has active settlements. Settle them first.",
+      );
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const expenses = await Expense.find({ group: group_id });
+
+    let balance = {};
+
+    group.members.forEach((m) => {
+      balance[m.user.toString()] = 0;
+    });
+
+    expenses.forEach((expense) => {
+      const payerId = expense.paidBy.toString();
+      balance[payerId] += expense.totalAmount;
+
+      expense.splits.forEach((split) => {
+        const splitUserId = split.user.toString();
+        balance[splitUserId] -= split.amount;
+      });
+    });
+
+    const completedSettlements = await Settlement.find({
+      group: group_id,
+      isSettled: true,
+    });
+
+    completedSettlements.forEach((s) => {
+      const from = s.from.toString();
+      const to = s.to.toString();
+      balance[from] += s.amount;
+      balance[to] -= s.amount;
+    });
+
+    if (balance[member_id.toString()] !== 0) {
+      const error = new Error(
+        "Member has non-zero balance. Clear all dues before removal.",
+      );
+      error.statusCode = 403;
+      throw error;
+    }
+
+    group.members = group.members.filter(
+      (m) => m.user.toString() !== member_id.toString(),
+    );
+
+    await group.save();
+
+    return res.status(200).json({
+      message: "Member removed successfully.",
+    });
   } catch (error) {
     next(error);
   }
@@ -250,5 +353,6 @@ export default {
   joinGroup,
   getGroups,
   getGroupSummary,
-  deleteGroup
+  deleteGroup,
+  removeMember,
 };
