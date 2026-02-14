@@ -1,11 +1,28 @@
 "use client";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 const Landing = () => {
-  const router = useRouter()
-  
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const { data: session, status } = useSession();
+
+  const redirect = searchParams.get("redirect");
+
+  useEffect(() => {
+    if (status === "loading") return;
+    if (session) {
+      if (redirect) {
+        router.push(redirect);
+      } else {
+        router.push("/dashboard");
+      }
+    }
+  }, [session, status, redirect]);
+
   return (
     <main className="relative min-h-screen overflow-hidden">
       <div
@@ -51,7 +68,11 @@ const Landing = () => {
         >
           <button
             className="w-full sm:w-auto cursor-pointer bg-[#222255] text-white px-8 py-3 rounded-lg hover:bg-white hover:text-black transition-all duration-300"
-            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            onClick={() =>
+              signIn("google", {
+                callbackUrl: redirect ? redirect : "/dashboard",
+              })
+            }
           >
             Get Started
           </button>
