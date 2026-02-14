@@ -35,6 +35,9 @@ const groupSchema = new mongoose.Schema({
     type: String,
     default: true,
   },
+  inviteTokenExpiresAt: {
+    type: Date,
+  },
 });
 
 export default mongoose.model("Group", groupSchema);

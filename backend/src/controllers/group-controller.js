@@ -23,6 +23,10 @@ const createGroup = async (req, res, next) => {
     };
 
     const inviteToken = generateInviteToken(name);
+    const INVITE_EXPIRY_HOURS = 24;
+
+    const duration = INVITE_EXPIRY_HOURS * 60 * 60 * 1000;
+    const inviteTokenExpiresAt = new Date(Date.now() + duration);
 
     const members = [
       {
@@ -37,12 +41,16 @@ const createGroup = async (req, res, next) => {
       createdBy: creator_id,
       members,
       inviteToken: inviteToken,
+      inviteTokenExpiresAt,
     });
+
+    const inviteLink = `${process.env.CLIENT_URL}/join/${group.inviteToken}`;
 
     return res.status(201).json({
       message: "Group Created Successfully.",
       groupId: group._id,
-      inviteToken: group.inviteToken,
+      inviteLink,
+      inviteTokenExpiresAt: group.inviteTokenExpiresAt,
     });
   } catch (error) {
     next(error);
@@ -57,7 +65,18 @@ const joinGroup = async (req, res, next) => {
     const group = await Group.findOne({ inviteToken });
     if (!group) {
       const error = new Error("Group does not exist.");
-      error.statusCode = 410;
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (
+      !group.inviteTokenExpiresAt ||
+      Date.now() > group.inviteTokenExpiresAt
+    ) {
+      const error = new Error(
+        "Invite Token is expired. Ask admin to generate new token.",
+      );
+      error.statusCode = 403;
       throw error;
     }
 
@@ -82,6 +101,60 @@ const joinGroup = async (req, res, next) => {
     return res
       .status(200)
       .json({ message: "User added Successfully.", groupId: group._id });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const generateNewToken = async (req, res, next) => {
+  try {
+    const user_id = req.user.id;
+    const group_id = req.params.groupId;
+
+    const group = await Group.findById(group_id);
+
+    if (!group) {
+      const error = new Error("Group does not exist.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (user_id.toString() !== group.createdBy.toString()) {
+      const error = new Error(
+        "Only group creator can re-generate invite token.",
+      );
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const generateInviteToken = (groupName) => {
+      const slug = groupName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+      const randomString = crypto.randomBytes(16).toString("hex");
+      return `${slug}_${randomString}`;
+    };
+
+    const inviteToken = generateInviteToken(group.name);
+
+    const INVITE_EXPIRY_HOURS = 24;
+    const duration = INVITE_EXPIRY_HOURS * 60 * 60 * 1000;
+    const inviteTokenExpiresAt = new Date(Date.now() + duration);
+
+    group.inviteToken = inviteToken;
+    group.inviteTokenExpiresAt = inviteTokenExpiresAt;
+
+    await group.save();
+
+    const inviteLink = `${process.env.CLIENT_URL}/join/${group.inviteToken}`;
+
+    return res.status(200).json({
+      message: "Invite token regenerated successfully.",
+      inviteLink,
+      inviteTokenExpiresAt: group.inviteTokenExpiresAt,
+    });
   } catch (error) {
     next(error);
   }
@@ -351,6 +424,7 @@ const removeMember = async (req, res, next) => {
 export default {
   createGroup,
   joinGroup,
+  generateNewToken,
   getGroups,
   getGroupSummary,
   deleteGroup,
