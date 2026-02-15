@@ -56,11 +56,15 @@ export default function GroupOverview() {
         method: "DELETE",
       });
       console.log(response);
-      setError(response.error);
-      console.log(error)
-      router.push("/dashboard/groups");
+      if (response.error) {
+        setError(response.error);
+        console.log(error);
+      } else {
+        router.push("/dashboard/groups");
+      }
     } catch (error) {
       console.log("Error deleting", error);
+      setError(error.message || "Failed to delete group");
     } finally {
       setDeleting(false);
       setDeleteConfirmation("");
@@ -68,9 +72,10 @@ export default function GroupOverview() {
     }
   };
 
-  // const handleRemoveMember = (memberId, memberName) => {
-
-  // };
+  const handleRemoveMember = async (memberId, memberName) => {
+    // TODO: Implement member removal
+    console.log("Remove member:", memberId, memberName);
+  };
 
   if (loading || !data) {
     return (
@@ -89,6 +94,33 @@ export default function GroupOverview() {
 
   const isPositiveBalance = data.yourBalance > 0;
   const isZeroBalance = data.yourBalance === 0;
+
+  // Helper function to render member avatar
+  const renderMemberAvatar = (member, size = "default") => {
+    const sizeClasses = {
+      small: "w-8 h-8 text-xs",
+      default: "w-9 h-9 text-xs",
+      medium: "w-10 h-10 text-sm",
+    };
+
+    if (member.image) {
+      return (
+        <img
+          src={member.image}
+          alt={member.name}
+          className={`${sizeClasses[size]} rounded-full object-cover border-2 border-[#1a1a1a]`}
+        />
+      );
+    }
+
+    return (
+      <div
+        className={`${sizeClasses[size]} bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center font-bold text-white border-2 border-[#1a1a1a]`}
+      >
+        {member.name.charAt(0).toUpperCase()}
+      </div>
+    );
+  };
 
   return (
     <motion.div
@@ -128,7 +160,9 @@ export default function GroupOverview() {
                 <h1 className="text-3xl font-bold text-white mb-2">
                   {data.group.name}
                 </h1>
-                <p className="text-gray-400">{data.group.description}</p>
+                {data.group.description && (
+                  <p className="text-gray-400">{data.group.description}</p>
+                )}
               </motion.div>
             </div>
 
@@ -213,11 +247,11 @@ export default function GroupOverview() {
                           stiffness: 200,
                         }}
                         whileHover={{ scale: 1.2, zIndex: 999 }}
-                        className="w-9 h-9 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-[#1a1a1a] -ml-2 first:ml-0 overflow-hidden"
+                        className="-ml-2 first:ml-0 overflow-hidden"
                         style={{ zIndex: data.members.length - index }}
                         title={member.name}
                       >
-                        {member.name.charAt(0).toUpperCase()}
+                        {renderMemberAvatar(member, "default")}
                       </motion.div>
                     ))}
                     {data.members.length > 5 && (
@@ -253,8 +287,8 @@ export default function GroupOverview() {
                       className="flex items-center justify-between gap-3 p-3 bg-[#151515] rounded-lg border border-gray-800 hover:border-gray-700 transition-colors group"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-sm font-bold text-white overflow-hidden flex-shrink-0">
-                          {member.name.charAt(0).toUpperCase()}
+                        <div className="flex-shrink-0">
+                          {renderMemberAvatar(member, "medium")}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-white truncate">
@@ -268,7 +302,7 @@ export default function GroupOverview() {
 
                       {/* Remove Member Button */}
                       <motion.button
-                        className="group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-600/50 hover:border-rose-600 text-rose-400 rounded-lg text-xs font-medium cursor-pointer"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-600/50 hover:border-rose-600 text-rose-400 rounded-lg text-xs font-medium cursor-pointer"
                         onClick={() =>
                           handleRemoveMember(member._id, member.name)
                         }
@@ -442,9 +476,8 @@ export default function GroupOverview() {
                           <div className="flex items-center gap-3">
                             <motion.div
                               whileHover={{ scale: 1.2, rotate: 5 }}
-                              className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden"
                             >
-                              {item.to.name.charAt(0).toUpperCase()}
+                              {renderMemberAvatar(item.to, "small")}
                             </motion.div>
                             <div>
                               <p className="text-sm font-medium text-white">
@@ -499,9 +532,8 @@ export default function GroupOverview() {
                           <div className="flex items-center gap-3">
                             <motion.div
                               whileHover={{ scale: 1.2, rotate: 5 }}
-                              className="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-white overflow-hidden"
                             >
-                              {item.from.name.charAt(0).toUpperCase()}
+                              {renderMemberAvatar(item.from, "small")}
                             </motion.div>
                             <div>
                               <p className="text-sm font-medium text-white">
@@ -690,6 +722,12 @@ export default function GroupOverview() {
                   </p>
                 </div>
 
+                {error && (
+                  <div className="p-4 bg-red-600/10 border border-red-600/30 rounded-lg">
+                    <p className="text-sm text-red-300">{error}</p>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Type{" "}
@@ -714,6 +752,7 @@ export default function GroupOverview() {
                   onClick={() => {
                     setShowDeleteModal(false);
                     setDeleteConfirmation("");
+                    setError("");
                   }}
                   className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-all duration-200 border border-gray-700"
                 >

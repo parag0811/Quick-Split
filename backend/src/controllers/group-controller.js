@@ -198,13 +198,6 @@ const getGroupSummary = async (req, res, next) => {
       throw error;
     }
 
-    const members = group.members.map((m) => ({
-      _id: m.user._id,
-      name: m.user.name,
-      email: m.user.email,
-      image: m.user.image,
-    }));
-
     const isMember = group.members.some(
       (m) => m.user._id.toString() === user_id,
     );
@@ -215,17 +208,29 @@ const getGroupSummary = async (req, res, next) => {
       throw error;
     }
 
+    const members = group.members.map((m) => ({
+      _id: m.user._id,
+      name: m.user.name,
+      email: m.user.email,
+      image: m.user.image,
+    }));
+
     const expenses = await Expense.find({ group: group_id });
 
-    const settlements = await Settlement.find({
+    const settledSettlements = await Settlement.find({
+      group: group_id,
+      isSettled: true,
+    });
+
+    const unsettledSettlements = await Settlement.find({
       group: group_id,
       isSettled: false,
     }).populate("from to", "name email");
 
     let balance = {};
 
-    group.members.forEach((m) => {
-      balance[m.user._id.toString()] = 0;
+    members.forEach((m) => {
+      balance[m._id.toString()] = 0;
     });
 
     expenses.forEach((expense) => {
@@ -237,17 +242,27 @@ const getGroupSummary = async (req, res, next) => {
         balance[splitUserId] -= split.amount;
       });
     });
+    settledSettlements.forEach((s) => {
+      const from = s.from.toString();
+      const to = s.to.toString();
+
+      if (balance[from] !== undefined) {
+        balance[from] += s.amount;
+      }
+
+      if (balance[to] !== undefined) {
+        balance[to] -= s.amount;
+      }
+    });
 
     const totalExpenses = expenses.reduce((sum, e) => sum + e.totalAmount, 0);
 
-    const expenseCount = expenses.length;
-
-    const yourBalance = Number(balance[user_id].toFixed(2));
+    const yourBalance = Number((balance[user_id] || 0).toFixed(2));
 
     let youOwe = [];
     let youGet = [];
 
-    settlements.forEach((s) => {
+    unsettledSettlements.forEach((s) => {
       if (s.from._id.toString() === user_id) {
         youOwe.push({
           to: s.to,
@@ -263,9 +278,7 @@ const getGroupSummary = async (req, res, next) => {
       }
     });
 
-    const pendingSettlements = settlements.length;
-
-    const isSettled = pendingSettlements === 0;
+    const isSettled = unsettledSettlements.length === 0;
 
     return res.status(200).json({
       message: "Group Summary fetched successfully.",
@@ -276,7 +289,7 @@ const getGroupSummary = async (req, res, next) => {
       },
       members,
       totalExpenses,
-      expenseCount,
+      expenseCount: expenses.length,
       isSettled,
       yourBalance,
       youOwe,
