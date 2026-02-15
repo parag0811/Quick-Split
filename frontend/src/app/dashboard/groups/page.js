@@ -30,38 +30,6 @@ export default function GroupList() {
     fetchGroups();
   }, []);
 
-  const handleJoinGroup = async () => {
-    if (!inviteToken.trim()) {
-      setError("Please enter an invite token");
-      return;
-    }
-
-    setJoining(true);
-    setError("");
-
-    try {
-      const data = await apiFetch("/groups/join-group", {
-        method: "POST",
-        body:{inviteToken : inviteToken.trim()}
-      });
-
-      const updatedData = await apiFetch("/groups/my-groups");
-      setGroups(updatedData.groups);
-
-      setShowJoinModal(false);
-      setInviteToken("");
-      setError("");
-
-      if (data.groupId) {
-        router.push(`/dashboard/groups/${data.groupId}`);
-      }
-    } catch (error) {
-      setError(error.message || "Failed to join group. Please check your invite token.");
-    } finally {
-      setJoining(false);
-    }
-  };
-
   const getGroupColor = (name) => {
     const colors = [
       "bg-purple-600",
@@ -117,17 +85,7 @@ export default function GroupList() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-3"
-          >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowJoinModal(true)}
-              className="cursor-pointer flex items-center justify-center space-x-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-all duration-200 border border-gray-700 hover:border-gray-600"
-            >
-              <UserPlus size={20} />
-              <span>Join Group</span>
-            </motion.button>
-            
+          > 
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

@@ -23,11 +23,11 @@ export default function JoinPage() {
       try {
         const response = await apiFetch("/groups/join-group", {
           method: "POST",
-          body: JSON.stringify({ inviteToken }),
+          body:{ inviteToken },
         });
 
         toastSuccess(response.message);
-        router.push(`/groups/${response.groupId}`);
+        router.push(`/dashboard/groups/${response.groupId}`);
       } catch (error) {
         toastError(error.message);
         router.push("/dashboard");
@@ -35,7 +35,7 @@ export default function JoinPage() {
     };
 
     joinGroup();
-  }, [status]);
+  }, [status, inviteToken]);
 
   return <p>Joining group...</p>;
 }
