@@ -3,6 +3,7 @@ const router = express.Router();
 import { body } from "express-validator";
 import auth_controller from "../controllers/auth-controller.js";
 import expressValidation from "../middleware/validator.js";
+import isAuth from "../middleware/is-auth.js"
 
 const authValidate = [
   body("name").notEmpty().withMessage("Name is required.").trim(),
@@ -25,6 +26,8 @@ router.post(
   auth_controller.authUser,
 );
 
-router.post("/auth/logout", auth_controller.authLogout);
+router.get("/auth/user/profile", isAuth, auth_controller.getMyProfile)
+
+router.put("/auth/user/update-profile", isAuth, auth_controller.updateMyProfile)
 
 export default router;

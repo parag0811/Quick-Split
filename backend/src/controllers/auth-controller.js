@@ -2,7 +2,10 @@ import dotenv from "dotenv";
 dotenv.config();
 import jwt from "jsonwebtoken";
 
+import cloudinary from "../../config/cloudinary.js";
 import User from "../models/user.js";
+import Group from "../models/group.js";
+import Expense from "../models/expense.js";
 
 const authUser = async (req, res, next) => {
   try {
@@ -19,10 +22,18 @@ const authUser = async (req, res, next) => {
 
     let user = await User.findOne({ email });
     if (!user) {
+      let uploadedImageUrl = image;
+
+      if (image) {
+        const upload = await cloudinary.uploader.upload(image, {
+          folder: "quicksplit/profile",
+        });
+        uploadedImageUrl = upload.secure_url;
+      }
       user = await User.create({
         name,
         email,
-        image,
+        image: uploadedImageUrl,
       });
     }
 
@@ -40,32 +51,99 @@ const authUser = async (req, res, next) => {
       { expiresIn: process.env.JWT_EXPIRE },
     );
 
-    // res.cookie("token", token, {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === "production",
-    //   sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-    //   path: "/",
-    // });
-
     return res.status(200).json({
       message: "Login Successfull",
-      token
+      token,
     });
   } catch (error) {
     next(error);
   }
 };
 
-const authLogout = async (req, res, next) => {
+const getMyProfile = async (req, res, next) => {
   try {
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      sameSite: "None",
-      path: "/",
+    const user_id = req.user.id;
+
+    const user = await User.findById(user_id).select("name email image");
+    if (!user) {
+      const error = new Error("User not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const groups = await Group.find({ "members.user": user_id }).select("_id");
+
+    const groupIds = groups.map((g) => g._id);
+
+    const expenses = await Expense.find({ group: { $in: groupIds } });
+
+    let totalPaid = 0;
+    let totalOwed = 0;
+
+    expenses.forEach((exp) => {
+      if (exp.paidBy.toString() === user_id) {
+        totalPaid += exp.totalAmount;
+      }
+
+      exp.splits.forEach((split) => {
+        if (split.user.toString() === user_id) {
+          totalOwed += split.amount;
+        }
+      });
     });
 
-    return res.status(200).json({ message: "Successfully Logged Out" });
+    const netBalance = Number((totalPaid - totalOwed).toFixed(2));
+
+    return res.status(200).json({
+      message: "User profile fetched successfully.",
+      user,
+      stats: {
+        totalGroups: groups.length,
+        totalPaid: Number(totalPaid.toFixed(2)),
+        totalOwed: Number(totalOwed.toFixed(2)),
+        netBalance,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateMyProfile = async (req, res, next) => {
+  try {
+    const user_id = req.user.id;
+    const { name, image } = req.body;
+
+    const user = await User.findById(user_id);
+    if (!user) {
+      const error = new Error("User not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (name !== undefined) {
+      user.name = name.trim();
+    }
+
+    if (image) {
+      const uploaded = await cloudinary.uploader.upload(image, {
+        folder: "quicksplit/profile",
+      });
+
+      user.image = uploaded.secure_url;
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Profile updated successfully.",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -73,5 +151,6 @@ const authLogout = async (req, res, next) => {
 
 export default {
   authUser,
-  authLogout,
+  getMyProfile,
+  updateMyProfile,
 };

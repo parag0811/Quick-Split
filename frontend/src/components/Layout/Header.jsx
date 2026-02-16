@@ -1,13 +1,15 @@
 "use client";
-import { PanelLeft, LogOut, ChevronDown } from "lucide-react";
+import { PanelLeft, LogOut, ChevronDown, User } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const Header = ({ toggleSidebar, title }) => {
   const { data: session } = useSession();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const router = useRouter()
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -91,7 +93,18 @@ const Header = ({ toggleSidebar, title }) => {
                     {session.user.email}
                   </p>
                 </div>
-
+                <button
+                  onClick={() => {
+                    setIsDropdownOpen(false);
+                    router.push("/dashboard/profile")
+                  }}
+                  className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <User size={18} />
+                  <span className="text-sm font-medium cursor-pointer">
+                    Profile
+                  </span>
+                </button>
                 <button
                   onClick={() => {
                     setIsDropdownOpen(false);
@@ -100,7 +113,9 @@ const Header = ({ toggleSidebar, title }) => {
                   className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-red-500/10 transition-colors"
                 >
                   <LogOut size={18} />
-                  <span className="text-sm font-medium cursor-pointer">Logout</span>
+                  <span className="text-sm font-medium cursor-pointer">
+                    Logout
+                  </span>
                 </button>
               </motion.div>
             )}
