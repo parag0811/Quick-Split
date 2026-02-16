@@ -6,6 +6,7 @@ import cloudinary from "../../config/cloudinary.js";
 import User from "../models/user.js";
 import Group from "../models/group.js";
 import Expense from "../models/expense.js";
+import Settlement from "../models/settlement.js";
 
 const authUser = async (req, res, next) => {
   try {
@@ -73,9 +74,9 @@ const getMyProfile = async (req, res, next) => {
 
     const groups = await Group.find({ "members.user": user_id }).select("_id");
 
-    const groupIds = groups.map((g) => g._id);
-
-    const expenses = await Expense.find({ group: { $in: groupIds } });
+    const expenses = await Expense.find({
+      $or: [{ paidBy: user_id }, { "splits.user": user_id }],
+    });
 
     let totalPaid = 0;
     let totalOwed = 0;
@@ -149,8 +150,79 @@ const updateMyProfile = async (req, res, next) => {
   }
 };
 
+const getUserSummary = async (req, res, next) => {
+  try {
+    const user_id = req.user.id;
+
+    const user = await User.findById(user_id).select("name email image");
+    if (!user) {
+      const error = new Error("User not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const totalGroups = await Group.countDocuments({
+      "members.user": user_id,
+    });
+
+    const expenses = await Expense.find({
+      $or: [{ paidBy: user_id }, { "splits.user": user_id }],
+    });
+
+    let totalPaid = 0;
+    let totalOwed = 0;
+
+    expenses.forEach((exp) => {
+      if (exp.paidBy.toString() === user_id) {
+        totalPaid += exp.totalAmount;
+      }
+
+      exp.splits.forEach((split) => {
+        if (split.user.toString() === user_id) {
+          totalOwed += split.amount;
+        }
+      });
+    });
+
+    const netBalance = Number((totalPaid - totalOwed).toFixed(2));
+
+    const recentSettlements = await Settlement.find({
+      $or: [{ from: user_id }, { to: user_id }],
+    })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate("from to", "name");
+
+    const formattedSettlements = recentSettlements.map((s) => ({
+      id: s._id,
+      amount: s.amount,
+      isSettled: s.isSettled,
+      direction:
+        s.from._id.toString() === user_id ? "you_paid" : "you_received",
+      from: s.from.name,
+      to: s.to.name,
+      createdAt: s.createdAt,
+    }));
+
+    return res.status(200).json({
+      message: "User summary fetched successfully.",
+      user,
+      stats: {
+        totalGroups,
+        totalPaid: Number(totalPaid.toFixed(2)),
+        totalOwed: Number(totalOwed.toFixed(2)),
+        netBalance,
+      },
+      recentSettlements: formattedSettlements,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   authUser,
   getMyProfile,
   updateMyProfile,
+  getUserSummary,
 };

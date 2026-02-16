@@ -434,6 +434,126 @@ const removeMember = async (req, res, next) => {
   }
 };
 
+const groupAnalytics = async (req, res, next) => {
+  try {
+    const user_id = req.user.id;
+    const group_id = req.params.groupId;
+
+    const group = await Group.findById(group_id);
+    if (!group) {
+      const error = new Error("Group not found.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const isMember = group.members.some(
+      (m) => m.user._id.toString() === user_id,
+    );
+
+    if (!isMember) {
+      const error = new Error("Not Authorized");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    const overviewAgg = await Expense.aggregate([
+      { $match: { group: objectGroupId } },
+      {
+        $group: {
+          _id: null,
+          totalSpent: { $sum: "$totalAmount" },
+          expenseCount: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const overview = overviewAgg[0] || {
+      totalSpent: 0,
+      expenseCount: 0,
+    };
+
+    const memberContribution = await Expense.aggregate([
+      { $match: { group: objectGroupId } },
+      {
+        $group: {
+          _id: "$paidBy",
+          totalPaid: { $sum: "$totalAmount" },
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $project: {
+          _id: 0,
+          userId: "$user._id",
+          name: "$user.name",
+          totalPaid: 1,
+        },
+      },
+      { $sort: { totalPaid: -1 } },
+    ]);
+
+    const dailyTrend = await Expense.aggregate([
+      { $match: { group: objectGroupId } },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+            day: { $dayOfMonth: "$createdAt" },
+          },
+          total: { $sum: "$totalAmount" },
+        },
+      },
+      {
+        $sort: {
+          "_id.year": 1,
+          "_id.month": 1,
+          "_id.day": 1,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          date: {
+            $concat: [
+              { $toString: "$_id.year" },
+              "-",
+              { $toString: "$_id.month" },
+              "-",
+              { $toString: "$_id.day" },
+            ],
+          },
+          total: 1,
+        },
+      },
+    ]);
+
+    return res.status(200).json({
+      message: "Group analytics fetched successfully.",
+      group: {
+        id: group._id,
+        name: group.name,
+      },
+      overview: {
+        totalSpent: Number((overview.totalSpent || 0).toFixed(2)),
+        expenseCount: overview.expenseCount || 0,
+      },
+      memberContribution,
+      dailyTrend,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   createGroup,
   joinGroup,
@@ -442,4 +562,5 @@ export default {
   getGroupSummary,
   deleteGroup,
   removeMember,
+  groupAnalytics,
 };

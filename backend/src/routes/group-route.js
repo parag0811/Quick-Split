@@ -51,4 +51,6 @@ router.post(
   group_controller.removeMember,
 );
 
+router.get("/groups/:groupId/analytics", isAuth, group_controller.groupAnalytics)
+
 export default router;
