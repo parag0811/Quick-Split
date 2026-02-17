@@ -168,6 +168,12 @@ const addExpense = async (req, res, next) => {
       createdBy: user_id,
     });
 
+    const io = req.app.get("io")
+    io.to(group_id.toString()).emit("expense-added", {
+      message : "New expense added",
+      expense
+    })
+
     return res
       .status(201)
       .json({ message: "Expense added to the group.", expense });
@@ -281,6 +287,11 @@ const deleteExpense = async (req, res, next) => {
     }
 
     await Expense.findByIdAndDelete(expense_id);
+
+    const io = req.app.get("io")
+    io.to(group_id.toString()).emit("expense-deleted", {
+      expenseId : expense._id.toString()
+    })
 
     return res.status(200).json({ message: "Deleted expense Successfully." });
   } catch (error) {

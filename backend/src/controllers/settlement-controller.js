@@ -163,6 +163,11 @@ const createSettlement = async (req, res, next) => {
     const savedSettlements =
       settlements.length > 0 ? await Settlement.insertMany(settlements) : [];
 
+    const io = req.app.get("io")
+    io.to(group_id.toString()).emit("settlements-generated", {
+      settlements : savedSettlements
+    })
+
     return res.status(201).json({
       message: "Settlements Created.",
       settlements: savedSettlements,
@@ -202,6 +207,11 @@ const settlementPaid = async (req, res, next) => {
 
     settlement.isSettled = true;
     await settlement.save();
+
+    const io = req.app.get("io")
+    io.to(group_id.toString()).emit("settlements-paid", {
+      settlementId : settlement._id.toString()
+    })
 
     return res
       .status(200)
