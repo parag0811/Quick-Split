@@ -1,5 +1,7 @@
 import "./globals.css";
 import SessionWrapper from "../components/SessionWrapper.js";
+import { Provider } from "react-redux";
+import { store } from "../../store/store";
 
 export const metadata = {
   title: "Quick Split",
@@ -11,7 +13,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <SessionWrapper>{children}</SessionWrapper>
+        <Provider store={store}>
+          <SessionWrapper>{children}</SessionWrapper>
+        </Provider>
       </body>
     </html>
   );
