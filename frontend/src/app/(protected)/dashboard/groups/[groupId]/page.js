@@ -19,6 +19,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import GroupSocketListener from "@/components/socket/GroupSocketListener";
 
 export default function GroupOverview() {
   const { groupId } = useParams();
@@ -123,6 +124,8 @@ export default function GroupOverview() {
   };
 
   return (
+    <>
+    <GroupSocketListener groupId={groupId}/>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -771,5 +774,6 @@ export default function GroupOverview() {
         )}
       </AnimatePresence>
     </motion.div>
+    </>
   );
 }
