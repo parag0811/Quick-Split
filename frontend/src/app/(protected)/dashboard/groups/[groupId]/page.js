@@ -24,7 +24,7 @@ import GroupSocketListener from "@/components/socket/GroupSocketListener";
 export default function GroupOverview() {
   const { groupId } = useParams();
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [showAllMembers, setShowAllMembers] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
@@ -33,19 +33,21 @@ export default function GroupOverview() {
 
   const router = useRouter();
 
+  const fetchGroupDetails = async () => {
+    try {
+      setLoading(true)
+      const response = await apiFetch(`/groups/${groupId}/summary`);
+      console.log(response);
+      setData(response);
+    } catch (error) {
+      console.log("Error fetching: ", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchGroupDetails = async () => {
-      try {
-        const response = await apiFetch(`/groups/${groupId}/summary`);
-        console.log(response);
-        setData(response);
-      } catch (error) {
-        console.log("Error fetching: ", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchGroupDetails();
+    if (groupId) fetchGroupDetails();
   }, [groupId]);
 
   const handleDeleteGroup = async () => {
@@ -125,7 +127,7 @@ export default function GroupOverview() {
 
   return (
     <>
-    <GroupSocketListener groupId={groupId}/>
+    <GroupSocketListener groupId={groupId} onDataChange={fetchGroupDetails}/>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
