@@ -127,7 +127,7 @@ export default function GroupOverview() {
 
   return (
     <>
-    <GroupSocketListener groupId={groupId} onDataChange={fetchGroupDetails}/>
+    <GroupSocketListener groupId={groupId}/>
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}

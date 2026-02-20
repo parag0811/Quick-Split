@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { getSocket } from "@/lib/socket";
-import { triggerRefresh } from "@/store/groupSlice";
+import { triggerRefresh } from "../../../store/groupSlice";
 import { toastSuccess, toastInfo } from "@/lib/toast";
 
 export default function GroupSocketListener({ groupId }) {

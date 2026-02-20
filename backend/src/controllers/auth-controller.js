@@ -23,18 +23,18 @@ const authUser = async (req, res, next) => {
 
     let user = await User.findOne({ email });
     if (!user) {
-      let uploadedImageUrl = image;
+      // let uploadedImageUrl = image;
 
-      if (image) {
-        const upload = await cloudinary.uploader.upload(image, {
-          folder: "quicksplit/profile",
-        });
-        uploadedImageUrl = upload.secure_url;
-      }
+      // if (image) {
+      //   const upload = await cloudinary.uploader.upload(image, {
+      //     folder: "quicksplit/profile",
+      //   });
+      //   uploadedImageUrl = upload.secure_url;
+      // }
       user = await User.create({
         name,
         email,
-        image: uploadedImageUrl,
+        image,
       });
     }
 
@@ -57,6 +57,7 @@ const authUser = async (req, res, next) => {
       token,
     });
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };

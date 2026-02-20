@@ -13,6 +13,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import GroupSocketListener from "@/components/socket/GroupSocketListener";
+import { useSelector } from "react-redux";
 
 export default function ExpensePage() {
   const router = useRouter();
@@ -26,6 +27,8 @@ export default function ExpensePage() {
     message: "",
     count: 0,
   });
+
+  const refreshKey = useSelector((state) => state.group.refreshKey)
 
   const fetchExpenses = async () => {
     try {
@@ -45,7 +48,7 @@ export default function ExpensePage() {
 
   useEffect(() => {
     if (groupId) fetchExpenses();
-  }, [groupId]);
+  }, [groupId, refreshKey]);
 
   const toggleExpand = (id) => {
     setExpandedExpense((prev) => (prev === id ? null : id));

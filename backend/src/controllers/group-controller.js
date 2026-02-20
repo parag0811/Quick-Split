@@ -204,7 +204,7 @@ const getGroupSummary = async (req, res, next) => {
     }
 
     const isMember = group.members.some(
-      (m) => m.user._id.toString() === user_id,
+      (m) => m.user && m.user._id.toString() === user_id,
     );
 
     if (!isMember) {
@@ -213,7 +213,7 @@ const getGroupSummary = async (req, res, next) => {
       throw error;
     }
 
-    const members = group.members.map((m) => ({
+    const members = group.members.filter((m) => m.user).map((m) => ({
       _id: m.user._id,
       name: m.user.name,
       email: m.user.email,
@@ -301,6 +301,7 @@ const getGroupSummary = async (req, res, next) => {
       youGet,
     });
   } catch (error) {
+    console.log(error)
     next(error);
   }
 };
