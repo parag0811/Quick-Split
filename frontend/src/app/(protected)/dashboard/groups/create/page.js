@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, Check, Link2, Clock, ExternalLink } from "lucide-react";
-import { toastSuccess } from "@/lib/toast";
+import { toastSuccess, toastError } from "@/lib/toast";
 
 export default function GroupForm() {
   const [formData, setFormData] = useState({
@@ -49,24 +49,37 @@ export default function GroupForm() {
     e.preventDefault();
     setErrors({});
 
+    if (!formData.name.trim()) {
+      const fieldErrors = { name: "Group name is required" };
+      setErrors(fieldErrors);
+      toastError("Please fill in all required fields");
+      return;
+    }
+
     try {
       const data = await apiFetch("/create-group", {
         method: "POST",
         body: formData,
       });
-      toastSuccess(data.message);
+      if (data?.message) {
+        toastSuccess(data.message);
+      }
       setInviteData({
         groupId: data.groupId,
         inviteLink: data.inviteLink,
         inviteTokenExpiresAt: data.inviteTokenExpiresAt,
       });
     } catch (error) {
-      if (error.validation) {
+      if (error.validation && Array.isArray(error.validation)) {
         const fieldErrors = {};
         error.validation.forEach((e) => {
           fieldErrors[e.path] = e.msg;
         });
         setErrors(fieldErrors);
+        toastError("Please check the form for errors");
+      } else {
+        const errorMessage = error?.message || "Failed to create group";
+        toastError(errorMessage);
       }
     }
   };

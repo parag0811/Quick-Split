@@ -43,6 +43,8 @@ router.get(
   group_controller.getGroupSummary,
 );
 
+router.post("/groups/:groupId/regenerate-invite", isAuth, group_controller.generateNewToken)
+
 router.delete("/groups/:groupId/delete", isAuth, group_controller.deleteGroup);
 
 router.post(

@@ -14,6 +14,11 @@ import {
   Trash2,
   UserMinus,
   X,
+  RefreshCw,
+  Copy,
+  Check,
+  Link2,
+  Clock,
 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -30,6 +35,9 @@ export default function GroupOverview() {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [regeneratingInvite, setRegeneratingInvite] = useState(false);
+  const [inviteData, setInviteData] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   const router = useRouter();
 
@@ -75,6 +83,47 @@ export default function GroupOverview() {
     }
   };
 
+  const handleRegenerateInvite = async () => {
+    setRegeneratingInvite(true);
+    try {
+      const response = await apiFetch(`/groups/${groupId}/regenerate-invite`, {
+        method: "POST",
+      });
+      if (response?.message) {
+        setError("");
+        setInviteData({
+          inviteLink: response.inviteLink,
+          inviteTokenExpiresAt: response.inviteTokenExpiresAt,
+        });
+      } else {
+        setError(response?.error || "Failed to regenerate invite link");
+      }
+    } catch (error) {
+      setError(error?.message || "Failed to regenerate invite link");
+    } finally {
+      setRegeneratingInvite(false);
+    }
+  };
+
+  const handleCopyInvite = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteData.inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
+
+  const formatExpiryTime = (expiryDate) => {
+    const date = new Date(expiryDate);
+    const now = new Date();
+    const hoursLeft = Math.floor((date - now) / (1000 * 60 * 60));
+    const minutesLeft = Math.floor(((date - now) % (1000 * 60 * 60)) / (1000 * 60));
+    if (hoursLeft > 0) return `Expires in ${hoursLeft}h ${minutesLeft}m`;
+    return `Expires in ${minutesLeft}m`;
+  };
+
   const handleRemoveMember = async (memberId, memberName) => {
     // TODO: Implement member removal
     console.log("Remove member:", memberId, memberName);
@@ -97,8 +146,7 @@ export default function GroupOverview() {
 
   const isPositiveBalance = data.yourBalance > 0;
   const isZeroBalance = data.yourBalance === 0;
-
-  // Helper function to render member avatar
+ 
   const renderMemberAvatar = (member, size = "default") => {
     const sizeClasses = {
       small: "w-8 h-8 text-xs",
@@ -118,7 +166,7 @@ export default function GroupOverview() {
 
     return (
       <div
-        className={`${sizeClasses[size]} bg-gradient-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center font-bold text-white border-2 border-[#1a1a1a]`}
+        className={`${sizeClasses[size]} bg-linear-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center font-bold text-white border-2 border-[#1a1a1a]`}
       >
         {member.name.charAt(0).toUpperCase()}
       </div>
@@ -135,6 +183,30 @@ export default function GroupOverview() {
       className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8"
     >
       <div className="max-w-5xl mx-auto">
+        {/* Error Banner */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="mb-4 p-3 bg-red-900/30 border border-red-700/50 rounded-lg flex items-start justify-between gap-3"
+            >
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 shrink-0" />
+                <span className="text-sm text-red-300">{error}</span>
+              </div>
+              <button
+                onClick={() => setError("")}
+                className="text-red-400 hover:text-red-300 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -153,7 +225,7 @@ export default function GroupOverview() {
                   damping: 15,
                   delay: 0.2,
                 }}
-                className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-2xl shadow-lg"
+                className="w-16 h-16 bg-linear-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-2xl shadow-lg"
               >
                 🏔️
               </motion.div>
@@ -171,19 +243,47 @@ export default function GroupOverview() {
               </motion.div>
             </div>
 
-            {/* Delete Group Button */}
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowDeleteModal(true)}
-              className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-600/50 hover:border-rose-600 text-rose-400 rounded-lg font-medium transition-all duration-200"
-            >
-              <Trash2 size={18} />
-              <span className="hidden sm:inline">Delete Group</span>
-            </motion.button>
+            {/* Regenerate Invite & Delete Group Buttons */}
+            <div className="flex items-center gap-2">
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.35 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleRegenerateInvite}
+                disabled={regeneratingInvite}
+                className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/50 hover:border-blue-600 text-blue-400 rounded-lg font-medium transition-all duration-200 disabled:opacity-50"
+              >
+                <motion.div
+                  animate={regeneratingInvite ? { rotate: 360 } : { rotate: 0 }}
+                  transition={
+                    regeneratingInvite
+                      ? { duration: 1, repeat: Infinity, ease: "linear" }
+                      : { duration: 0.3 }
+                  }
+                >
+                  <RefreshCw size={18} />
+                </motion.div>
+                <span className="hidden sm:inline">
+                  {regeneratingInvite ? "Regenerating..." : "Regenerate Invite"}
+                </span>
+              </motion.button>
+
+              {/* Delete Group Button */}
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowDeleteModal(true)}
+                className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-600/50 hover:border-rose-600 text-rose-400 rounded-lg font-medium transition-all duration-200"
+              >
+                <Trash2 size={18} />
+                <span className="hidden sm:inline">Delete Group</span>
+              </motion.button>
+            </div>
           </div>
 
           {/* Members Preview */}
@@ -292,7 +392,7 @@ export default function GroupOverview() {
                       className="flex items-center justify-between gap-3 p-3 bg-[#151515] rounded-lg border border-gray-800 hover:border-gray-700 transition-colors group"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                           {renderMemberAvatar(member, "medium")}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -331,7 +431,7 @@ export default function GroupOverview() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
             whileHover={{ scale: 1.03, y: -5 }}
-            className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all"
+            className="bg-linear-to-br from-[#1a1a1a] to-[#151515] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm font-medium text-gray-400">
@@ -365,7 +465,7 @@ export default function GroupOverview() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.6 }}
             whileHover={{ scale: 1.03, y: -5 }}
-            className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all"
+            className="bg-linear-to-br from-[#1a1a1a] to-[#151515] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="text-sm font-medium text-gray-400">
@@ -462,7 +562,7 @@ export default function GroupOverview() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5, delay: 0.9 }}
-                    className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-rose-800/30 rounded-xl p-5"
+                    className="bg-linear-to-br from-[#1a1a1a] to-[#151515] border border-rose-800/30 rounded-xl p-5"
                   >
                     <h3 className="text-sm font-semibold text-rose-400 mb-3 flex items-center gap-2">
                       <TrendingDown size={16} />
@@ -479,9 +579,7 @@ export default function GroupOverview() {
                           className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg"
                         >
                           <div className="flex items-center gap-3">
-                            <motion.div
-                              whileHover={{ scale: 1.2, rotate: 5 }}
-                            >
+                            <motion.div whileHover={{ scale: 1.2, rotate: 5 }}>
                               {renderMemberAvatar(item.to, "small")}
                             </motion.div>
                             <div>
@@ -496,10 +594,7 @@ export default function GroupOverview() {
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            transition={{
-                              delay: 1 + index * 0.1,
-                              type: "spring",
-                            }}
+                            transition={{ delay: 1 + index * 0.1, type: "spring" }}
                             className="text-right"
                           >
                             <p className="text-lg font-bold text-rose-400">
@@ -518,7 +613,7 @@ export default function GroupOverview() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5, delay: 1 }}
-                    className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-emerald-800/30 rounded-xl p-5"
+                    className="bg-linear-to-br from-[#1a1a1a] to-[#151515] border border-emerald-800/30 rounded-xl p-5"
                   >
                     <h3 className="text-sm font-semibold text-emerald-400 mb-3 flex items-center gap-2">
                       <TrendingUp size={16} />
@@ -535,9 +630,7 @@ export default function GroupOverview() {
                           className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg"
                         >
                           <div className="flex items-center gap-3">
-                            <motion.div
-                              whileHover={{ scale: 1.2, rotate: 5 }}
-                            >
+                            <motion.div whileHover={{ scale: 1.2, rotate: 5 }}>
                               {renderMemberAvatar(item.from, "small")}
                             </motion.div>
                             <div>
@@ -552,10 +645,7 @@ export default function GroupOverview() {
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
-                            transition={{
-                              delay: 1.1 + index * 0.1,
-                              type: "spring",
-                            }}
+                            transition={{ delay: 1.1 + index * 0.1, type: "spring" }}
                             className="text-right"
                           >
                             <p className="text-lg font-bold text-emerald-400">
@@ -771,6 +861,171 @@ export default function GroupOverview() {
                   {deleting ? "Deleting..." : "Delete Group"}
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Regenerate Invite Modal */}
+      <AnimatePresence>
+        {inviteData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setInviteData(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-[#1a1a1a] border border-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
+            >
+              {/* Header */}
+              <div className="p-6 border-b border-gray-800">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <motion.div
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: "spring", delay: 0.1 }}
+                      className="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center"
+                    >
+                      <RefreshCw size={22} className="text-white" />
+                    </motion.div>
+                    <div>
+                      <motion.h3
+                        initial={{ opacity: 0, x: -15 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 }}
+                        className="text-xl font-bold text-white"
+                      >
+                        New Invite Link
+                      </motion.h3>
+                      <motion.p
+                        initial={{ opacity: 0, x: -15 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-sm text-gray-400"
+                      >
+                        Your invite has been regenerated
+                      </motion.p>
+                    </div>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setInviteData(null)}
+                    className="p-2 hover:bg-[#252525] rounded-lg transition-all text-gray-400 hover:text-white cursor-pointer"
+                  >
+                    <X size={20} />
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-4">
+                {/* Invite Link */}
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                >
+                  <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-1.5">
+                    <Link2 size={14} />
+                    Invite Link
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 px-4 py-3 bg-[#0f0f0f] border border-gray-800 rounded-lg text-gray-300 text-sm font-mono truncate">
+                      {inviteData.inviteLink}
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleCopyInvite}
+                      className="shrink-0 px-4 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg font-medium transition-all shadow-lg shadow-cyan-900/30 cursor-pointer flex items-center gap-2"
+                    >
+                      <AnimatePresence mode="wait">
+                        {copied ? (
+                          <motion.div
+                            key="check"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0 }}
+                            className="flex items-center gap-1.5"
+                          >
+                            <Check size={16} />
+                            <span className="hidden sm:inline text-sm">Copied!</span>
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="copy"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0 }}
+                            className="flex items-center gap-1.5"
+                          >
+                            <Copy size={16} />
+                            <span className="hidden sm:inline text-sm">Copy</span>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.button>
+                  </div>
+                </motion.div>
+
+                {/* Expiry */}
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex items-start gap-3 p-4 bg-amber-600/10 border border-amber-600/30 rounded-lg"
+                >
+                  <Clock size={18} className="text-amber-400 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-400">
+                      {formatExpiryTime(inviteData.inviteTokenExpiresAt)}
+                    </p>
+                    <p className="text-xs text-amber-300/70 mt-0.5">
+                      Expires on{" "}
+                      {new Date(inviteData.inviteTokenExpiresAt).toLocaleString()}
+                    </p>
+                  </div>
+                </motion.div>
+
+                {/* Info */}
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
+                  className="p-4 bg-blue-600/10 border border-blue-600/30 rounded-lg"
+                >
+                  <p className="text-sm text-blue-300">
+                    <strong>💡 Note:</strong> The old invite link is now invalid. Share this new link with anyone you want to invite.
+                  </p>
+                </motion.div>
+              </div>
+
+              {/* Footer */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="p-6 border-t border-gray-800"
+              >
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setInviteData(null)}
+                  className="w-full px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-900/30 cursor-pointer"
+                >
+                  Done
+                </motion.button>
+              </motion.div>
             </motion.div>
           </motion.div>
         )}

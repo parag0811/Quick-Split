@@ -4,24 +4,31 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toastError } from "@/lib/toast";
 
 export default function GroupList() {
   const router = useRouter();
 
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showJoinModal, setShowJoinModal] = useState(false);
-  const [inviteToken, setInviteToken] = useState("");
-  const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchGroups = async () => {
       try {
         const data = await apiFetch("/groups/my-groups");
-        setGroups(data.groups);
-      } catch (error) {
-        console.log("Failed to fetch groups:", error);
+        if (data?.groups && Array.isArray(data.groups)) {
+          setGroups(data.groups);
+          setError("");
+        } else {
+          setError("Invalid response format");
+          setGroups([]);
+        }
+      } catch (err) {
+        const errorMessage = err?.message || "Failed to load groups";
+        setError(errorMessage);
+        toastError(errorMessage);
+        setGroups([]);
       } finally {
         setLoading(false);
       }
@@ -78,14 +85,14 @@ export default function GroupList() {
               Manage and track your group expenses
             </p>
           </motion.div>
-          
+
           {/* Action Buttons */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-3"
-          > 
+          >
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -99,6 +106,22 @@ export default function GroupList() {
         </motion.div>
 
         <AnimatePresence mode="wait">
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-rose-600/20 border border-rose-600/50 rounded-lg p-4 mb-6 flex items-center justify-between"
+            >
+              <p className="text-rose-400">{error}</p>
+              <button
+                onClick={() => setError("")}
+                className="text-rose-400 hover:text-rose-300"
+              >
+                <X size={20} />
+              </button>
+            </motion.div>
+          )}
           {loading ? (
             <motion.p
               initial={{ opacity: 0 }}
@@ -108,7 +131,7 @@ export default function GroupList() {
             >
               Loading...
             </motion.p>
-          ) : groups.length > 0 ? (
+          ) : groups && groups.length > 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -133,7 +156,9 @@ export default function GroupList() {
                     }}
                     whileHover={{ scale: 1.03, y: -5 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push(`/dashboard/groups/${group.groupId}`)}
+                    onClick={() =>
+                      router.push(`/dashboard/groups/${group.groupId}`)
+                    }
                     className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 hover:border-gray-700 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 cursor-pointer group"
                   >
                     {/* Group Icon & Name */}
@@ -218,16 +243,6 @@ export default function GroupList() {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowJoinModal(true)}
-                    className="cursor-pointer flex items-center space-x-2 px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-all duration-200 border border-gray-700 hover:border-gray-600"
-                  >
-                    <UserPlus size={22} />
-                    <span className="text-base">Join a group</span>
-                  </motion.button>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
                     onClick={() => router.push("/dashboard/groups/create")}
                     className="cursor-pointer flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50"
                   >
@@ -240,111 +255,6 @@ export default function GroupList() {
           )}
         </AnimatePresence>
       </div>
-
-      {/* Join Group Modal */}
-      <AnimatePresence>
-        {showJoinModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={() => {
-              setShowJoinModal(false);
-              setInviteToken("");
-              setError("");
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl"
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-pink-600 to-rose-600 rounded-lg flex items-center justify-center">
-                    <UserPlus size={20} className="text-white" />
-                  </div>
-                  <h2 className="text-xl font-semibold text-white">Join Group</h2>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowJoinModal(false);
-                    setInviteToken("");
-                    setError("");
-                  }}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              {/* Modal Body */}
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Invite Token
-                  </label>
-                  <input
-                    type="text"
-                    value={inviteToken}
-                    onChange={(e) => {
-                      setInviteToken(e.target.value);
-                      setError("");
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !joining) {
-                        handleJoinGroup();
-                      }
-                    }}
-                    placeholder="Enter your invite token"
-                    className="w-full px-4 py-3 bg-[#0f0f0f] border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-pink-600 focus:ring-2 focus:ring-pink-600/20 transition-all"
-                    autoFocus
-                  />
-                  {error && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-red-500 text-sm mt-2"
-                    >
-                      {error}
-                    </motion.p>
-                  )}
-                </div>
-
-                <p className="text-sm text-gray-500">
-                  Ask a group member for an invite token to join their group
-                </p>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="flex space-x-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowJoinModal(false);
-                    setInviteToken("");
-                    setError("");
-                  }}
-                  className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-all duration-200 border border-gray-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleJoinGroup}
-                  disabled={joining || !inviteToken.trim()}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-pink-600 disabled:hover:to-rose-600"
-                >
-                  {joining ? "Joining..." : "Join Group"}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }
