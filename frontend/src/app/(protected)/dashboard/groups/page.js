@@ -1,10 +1,9 @@
 "use client";
-import { Plus, Users, UserPlus, X } from "lucide-react";
+import { Plus, Users, RotateCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { toastError } from "@/lib/toast";
 
 export default function GroupList() {
   const router = useRouter();
@@ -13,29 +12,28 @@ export default function GroupList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        const data = await apiFetch("/groups/my-groups");
-        if (data?.groups && Array.isArray(data.groups)) {
-          setGroups(data.groups);
-          setError("");
-        } else {
-          setError("Invalid response format");
-          setGroups([]);
-        }
-      } catch (err) {
-        const errorMessage = err?.message || "Failed to load groups";
-        setError(errorMessage);
-        toastError(errorMessage);
+  const fetchGroups = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await apiFetch("/groups/my-groups");
+      if (data?.groups && Array.isArray(data.groups)) {
+        setGroups(data.groups);
+      } else {
+        setError("We couldn't load your groups. Please try again.");
         setGroups([]);
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchGroups();
+    } catch (err) {
+      setError(err?.message || "Failed to load groups. Please try again.");
+      setGroups([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
 
   const getGroupColor = (name) => {
     const colors = [
@@ -50,14 +48,12 @@ export default function GroupList() {
       "bg-amber-600",
       "bg-violet-600",
     ];
-    const index = name.length % colors.length;
-    return colors[index];
+    return colors[name.length % colors.length];
   };
 
   const getGroupEmoji = (name) => {
     const emojis = ["🎯", "💼", "⚙️", "💰", "💻", "🎨", "🎉", "📚", "🏋️", "🌟"];
-    const index = name.length % emojis.length;
-    return emojis[index];
+    return emojis[name.length % emojis.length];
   };
 
   return (
@@ -67,8 +63,8 @@ export default function GroupList() {
       transition={{ duration: 0.5 }}
       className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8"
     >
-      {/* Page Header */}
       <div className="max-w-7xl mx-auto">
+        {/* Page Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -81,17 +77,13 @@ export default function GroupList() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <h1 className="text-3xl font-bold text-white mb-2">Groups</h1>
-            <p className="text-gray-400">
-              Manage and track your group expenses
-            </p>
+            <p className="text-gray-400">Manage and track your group expenses</p>
           </motion.div>
 
-          {/* Action Buttons */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-3"
           >
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -106,33 +98,64 @@ export default function GroupList() {
         </motion.div>
 
         <AnimatePresence mode="wait">
-          {error && (
+          {!loading && error && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-rose-600/20 border border-rose-600/50 rounded-lg p-4 mb-6 flex items-center justify-between"
+              key="error"
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              transition={{ duration: 0.35 }}
+              className="flex flex-col items-center justify-center py-28 px-4"
             >
-              <p className="text-rose-400">{error}</p>
+              <div className="w-20 h-20 bg-red-500/10 rounded-2xl border border-red-500/20 flex items-center justify-center mb-6">
+                <span className="text-red-400 text-3xl">!</span>
+              </div>
+              <h2 className="text-xl font-bold text-white mb-2">
+                Couldn't load groups
+              </h2>
+              <p className="text-gray-400 text-sm text-center max-w-sm mb-8">
+                {error}
+              </p>
               <button
-                onClick={() => setError("")}
-                className="text-rose-400 hover:text-rose-300"
+                onClick={fetchGroups}
+                className="flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 shadow-lg shadow-cyan-500/20 text-sm"
               >
-                <X size={20} />
+                <RotateCcw className="w-4 h-4" />
+                <span>Retry</span>
               </button>
             </motion.div>
           )}
-          {loading ? (
-            <motion.p
+
+          {loading && (
+            <motion.div
+              key="loading"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-white"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5"
             >
-              Loading...
-            </motion.p>
-          ) : groups && groups.length > 0 ? (
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 animate-pulse"
+                >
+                  <div className="flex items-start space-x-3 mb-4">
+                    <div className="w-12 h-12 bg-gray-800 rounded-lg flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gray-800 rounded w-3/4" />
+                      <div className="h-3 bg-gray-800 rounded w-1/2" />
+                    </div>
+                  </div>
+                  <div className="h-3 bg-gray-800 rounded w-full mb-2" />
+                  <div className="h-3 bg-gray-800 rounded w-2/3" />
+                </div>
+              ))}
+            </motion.div>
+          )}
+
+          {!loading && !error && groups.length > 0 && (
             <motion.div
+              key="groups"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
@@ -149,24 +172,21 @@ export default function GroupList() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{
                       duration: 0.4,
-                      delay: 0.1 + index * 0.05,
+                      delay: 0.05 + index * 0.05,
                       type: "spring",
                       stiffness: 200,
                       damping: 20,
                     }}
                     whileHover={{ scale: 1.03, y: -5 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() =>
-                      router.push(`/dashboard/groups/${group.groupId}`)
-                    }
+                    onClick={() => router.push(`/dashboard/groups/${group.groupId}`)}
                     className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 hover:border-gray-700 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 cursor-pointer group"
                   >
-                    {/* Group Icon & Name */}
                     <div className="flex items-start space-x-3 mb-4">
                       <motion.div
                         whileHover={{ scale: 1.15, rotate: 5 }}
                         transition={{ type: "spring", stiffness: 300 }}
-                        className={`w-12 h-12 ${color} rounded-lg flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-105 transition-transform shadow-lg`}
+                        className={`w-12 h-12 ${color} rounded-lg flex items-center justify-center text-2xl flex-shrink-0 shadow-lg`}
                       >
                         {emoji}
                       </motion.div>
@@ -177,14 +197,12 @@ export default function GroupList() {
                         <div className="flex items-center space-x-1.5 text-sm text-gray-400">
                           <Users size={14} />
                           <span>
-                            {group.memberCount} member
-                            {group.memberCount !== 1 ? "s" : ""}
+                            {group.memberCount} member{group.memberCount !== 1 ? "s" : ""}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Description */}
                     {group.description && (
                       <p className="text-sm text-gray-500 line-clamp-2">
                         {group.description}
@@ -194,9 +212,11 @@ export default function GroupList() {
                 );
               })}
             </motion.div>
-          ) : (
-            /* Empty State */
+          )}
+
+          {!loading && !error && groups.length === 0 && (
             <motion.div
+              key="empty"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -231,25 +251,21 @@ export default function GroupList() {
                   transition={{ duration: 0.5, delay: 0.4 }}
                   className="text-gray-500 mb-10 text-center max-w-md text-base"
                 >
-                  Create your first group to start splitting expenses with
-                  friends, family, or colleagues
+                  Create your first group to start splitting expenses with friends,
+                  family, or colleagues
                 </motion.p>
-                <motion.div
+                <motion.button
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5, delay: 0.5, type: "spring" }}
-                  className="flex flex-col sm:flex-row gap-3"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push("/dashboard/groups/create")}
+                  className="cursor-pointer flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50"
                 >
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => router.push("/dashboard/groups/create")}
-                    className="cursor-pointer flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50"
-                  >
-                    <Plus size={22} />
-                    <span className="text-base">Create your first group</span>
-                  </motion.button>
-                </motion.div>
+                  <Plus size={22} />
+                  <span className="text-base">Create your first group</span>
+                </motion.button>
               </div>
             </motion.div>
           )}

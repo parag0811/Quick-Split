@@ -3,7 +3,15 @@ import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Copy, Check, Link2, Clock, ExternalLink } from "lucide-react";
+import {
+  X,
+  Copy,
+  Check,
+  Link2,
+  Clock,
+  ExternalLink,
+  Loader2,
+} from "lucide-react";
 import { toastSuccess, toastError } from "@/lib/toast";
 
 export default function GroupForm() {
@@ -15,11 +23,16 @@ export default function GroupForm() {
   const [inviteData, setInviteData] = useState(null);
   const [errors, setErrors] = useState({});
   const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleCopy = async () => {
@@ -28,8 +41,8 @@ export default function GroupForm() {
       setCopied(true);
       toastSuccess("Invite link copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error("Failed to copy:", error);
+    } catch {
+      toastError("Failed to copy link. Please copy it manually.");
     }
   };
 
@@ -37,11 +50,10 @@ export default function GroupForm() {
     const date = new Date(expiryDate);
     const now = new Date();
     const hoursLeft = Math.floor((date - now) / (1000 * 60 * 60));
-    const minutesLeft = Math.floor(((date - now) % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (hoursLeft > 0) {
-      return `Expires in ${hoursLeft}h ${minutesLeft}m`;
-    }
+    const minutesLeft = Math.floor(
+      ((date - now) % (1000 * 60 * 60)) / (1000 * 60),
+    );
+    if (hoursLeft > 0) return `Expires in ${hoursLeft}h ${minutesLeft}m`;
     return `Expires in ${minutesLeft}m`;
   };
 
@@ -50,20 +62,19 @@ export default function GroupForm() {
     setErrors({});
 
     if (!formData.name.trim()) {
-      const fieldErrors = { name: "Group name is required" };
-      setErrors(fieldErrors);
-      toastError("Please fill in all required fields");
+      setErrors({ name: "Group name is required" });
       return;
     }
 
     try {
+      setSubmitting(true);
       const data = await apiFetch("/create-group", {
         method: "POST",
         body: formData,
       });
-      if (data?.message) {
-        toastSuccess(data.message);
-      }
+
+      toastSuccess(data?.message || "Group created successfully!");
+
       setInviteData({
         groupId: data.groupId,
         inviteLink: data.inviteLink,
@@ -76,11 +87,13 @@ export default function GroupForm() {
           fieldErrors[e.path] = e.msg;
         });
         setErrors(fieldErrors);
-        toastError("Please check the form for errors");
       } else {
-        const errorMessage = error?.message || "Failed to create group";
-        toastError(errorMessage);
+        toastError(
+          error?.message || "Failed to create group. Please try again.",
+        );
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -99,6 +112,7 @@ export default function GroupForm() {
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className="bg-[#1a1a1a] border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
       >
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -123,7 +137,12 @@ export default function GroupForm() {
           </motion.button>
         </motion.div>
 
-        <form onSubmit={handleSubmit} noValidate className="flex-1 overflow-y-auto">
+        {/* Form */}
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+          className="flex-1 overflow-y-auto"
+        >
           <div className="p-6 space-y-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -145,15 +164,16 @@ export default function GroupForm() {
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 text-white rounded-lg focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600 transition-all placeholder-gray-500"
+                disabled={submitting}
+                className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 text-white rounded-lg focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600 transition-all placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Enter group name"
               />
               <AnimatePresence>
                 {errors.name && (
                   <motion.p
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                    exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.2 }}
                     className="text-red-400 text-sm mt-1"
                   >
@@ -182,15 +202,16 @@ export default function GroupForm() {
                 rows="4"
                 value={formData.description}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 text-white rounded-lg focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600 transition-all resize-none placeholder-gray-500"
+                disabled={submitting}
+                className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 text-white rounded-lg focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600 transition-all resize-none placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Describe your group"
-              ></motion.textarea>
+              />
               <AnimatePresence>
                 {errors.description && (
                   <motion.p
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                    exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.2 }}
                     className="text-red-400 text-sm mt-1"
                   >
@@ -198,7 +219,6 @@ export default function GroupForm() {
                   </motion.p>
                 )}
               </AnimatePresence>
-
               <p className="mt-1 text-xs text-gray-500">
                 Help others understand what this group is about
               </p>
@@ -217,23 +237,31 @@ export default function GroupForm() {
                 whileTap={{ scale: 0.98 }}
                 onClick={() => router.push("/dashboard/groups")}
                 type="button"
-                className="flex-1 px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 hover:bg-[#252525] text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all cursor-pointer"
+                disabled={submitting}
+                className="flex-1 px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 hover:bg-[#252525] text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </motion.button>
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: submitting ? 1 : 1.02 }}
+                whileTap={{ scale: submitting ? 1 : 0.98 }}
                 type="submit"
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-cyan-900/30 hover:shadow-cyan-900/50 cursor-pointer"
+                disabled={submitting}
+                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-cyan-900/30 hover:shadow-cyan-900/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Create Group
+                {submitting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Creating...</span>
+                  </>
+                ) : (
+                  "Create Group"
+                )}
               </motion.button>
             </div>
           </motion.div>
         </form>
 
-        {/* Invite Link Modal */}
         <AnimatePresence>
           {inviteData && (
             <motion.div
@@ -245,7 +273,7 @@ export default function GroupForm() {
               onClick={(e) => {
                 if (e.target === e.currentTarget) {
                   setInviteData(null);
-                  router.push(`/dashboard/groups`);
+                  router.push("/dashboard/groups");
                 }
               }}
             >
@@ -257,7 +285,7 @@ export default function GroupForm() {
                 className="bg-[#1a1a1a] border border-gray-800 rounded-2xl w-full max-w-lg overflow-hidden"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Header */}
+                {/* Modal Header */}
                 <div className="p-6 border-b border-gray-800">
                   <div className="flex items-center gap-3 mb-2">
                     <motion.div
@@ -289,9 +317,9 @@ export default function GroupForm() {
                   </div>
                 </div>
 
-                {/* Body */}
+                {/* Modal Body */}
                 <div className="p-6 space-y-4">
-                  {/* Invite Link Section */}
+                  {/* Invite Link */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -326,7 +354,7 @@ export default function GroupForm() {
                     </div>
                   </motion.div>
 
-                  {/* Expiry Time */}
+                  {/* Expiry */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -340,12 +368,14 @@ export default function GroupForm() {
                       </p>
                       <p className="text-xs text-amber-300/70 mt-0.5">
                         Link will expire on{" "}
-                        {new Date(inviteData.inviteTokenExpiresAt).toLocaleString()}
+                        {new Date(
+                          inviteData.inviteTokenExpiresAt,
+                        ).toLocaleString()}
                       </p>
                     </div>
                   </motion.div>
 
-                  {/* Info Box */}
+                  {/* Tip */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -353,13 +383,14 @@ export default function GroupForm() {
                     className="p-4 bg-blue-600/10 border border-blue-600/30 rounded-lg"
                   >
                     <p className="text-sm text-blue-300">
-                      <strong>💡 Tip:</strong> Anyone with this link can join your group.
-                      You can regenerate a new invite link from the group settings if needed.
+                      <strong>💡 Tip:</strong> Anyone with this link can join
+                      your group. You can regenerate a new invite link from the
+                      group settings if needed.
                     </p>
                   </motion.div>
                 </div>
 
-                {/* Footer */}
+                {/* Modal Footer */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -380,7 +411,7 @@ export default function GroupForm() {
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       setInviteData(null);
-                      router.push(`/dashboard/groups`);
+                      router.push("/dashboard/groups");
                     }}
                     className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-purple-900/30 hover:shadow-purple-900/50 cursor-pointer"
                   >
