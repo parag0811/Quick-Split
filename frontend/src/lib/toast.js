@@ -30,7 +30,7 @@ export function showToast(type, message, options = {}) {
   }
 }
 
-// # shortcut direct use 
+// # shortcut use 
 export function toastSuccess(message, options = {}) {
   showToast("success", message, options);
 }
@@ -47,7 +47,6 @@ export function toastLoading(message, options = {}) {
   showToast("loading", message, options);
 }
 
-// def durations
 function getDefaultDuration(type) {
   switch (type) {
     case "success":

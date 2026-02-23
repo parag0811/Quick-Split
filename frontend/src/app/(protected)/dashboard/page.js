@@ -1,78 +1,45 @@
 "use client";
-import { motion } from "framer-motion";
-import { Plus, TrendingUp, ArrowRight, Users, Receipt } from "lucide-react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Plus,
+  TrendingUp,
+  ArrowRight,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
+import { apiFetch } from "@/lib/api";
 
 export default function HomePage() {
-  const summary = {
-    youOwe: 1200,
-    youAreOwed: 3500,
-    netBalance: 2300,
-  };
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [recentSettlements, setRecentSettlements] = useState([]);
 
-  const recentActivity = [
-    {
-      id: 1,
-      text: "You paid ₹500 in Goa Trip",
-      time: "2 hours ago",
-      type: "payment",
-    },
-    {
-      id: 2,
-      text: "Rahul added Dinner expense",
-      time: "5 hours ago",
-      type: "expense",
-    },
-    {
-      id: 3,
-      text: "Settlement completed in Flatmates",
-      time: "1 day ago",
-      type: "settlement",
-    },
-    {
-      id: 4,
-      text: "You added Groceries in Flatmates",
-      time: "2 days ago",
-      type: "expense",
-    },
-    {
-      id: 5,
-      text: "New member joined Office Lunch",
-      time: "3 days ago",
-      type: "member",
-    },
-  ];
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        setLoading(true);
+        const data = await apiFetch("/dashboard/user/summary");
+        setUserData(data.user);
+        setStats(data.stats);
+        setRecentSettlements(data.recentSettlements || []);
+      } catch (err) {
+        setError(err.message || "Failed to load dashboard data.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const yourGroups = [
-    {
-      id: 1,
-      name: "Goa Trip",
-      balance: -800,
-      color: "from-purple-500 to-pink-500",
-    },
-    {
-      id: 2,
-      name: "Flatmates",
-      balance: 1200,
-      color: "from-blue-500 to-cyan-500",
-    },
-    {
-      id: 3,
-      name: "Office Lunch",
-      balance: 0,
-      color: "from-green-500 to-emerald-500",
-    },
-  ];
-
-  const hasGroups = yourGroups.length > 0;
+    fetchSummary();
+  }, []);
 
   const container = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
+      transition: { staggerChildren: 0.1 },
     },
   };
 
@@ -80,6 +47,56 @@ export default function HomePage() {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 },
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 w-56 bg-gray-800 rounded-lg" />
+          <div className="h-4 w-40 bg-gray-800 rounded" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 h-28"
+              />
+            ))}
+          </div>
+          <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 h-64" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto flex flex-col items-center justify-center py-24">
+        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+          <span className="text-red-400 text-3xl">!</span>
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-2">
+          Something went wrong
+        </h2>
+        <p className="text-gray-400 mb-6 text-center max-w-md">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600 transition-all"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const hasGroups = stats?.totalGroups > 0;
+  const userName = userData?.name?.split(" ")[0] || "there";
+
+  const youOwe = stats?.totalOwed ?? 0;
+  const youAreOwed = Math.max(
+    0,
+    (stats?.totalPaid ?? 0) - (stats?.totalOwed ?? 0),
+  );
+  const netBalance = stats?.netBalance ?? 0;
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -89,13 +106,12 @@ export default function HomePage() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl font-bold text-white mb-2">
-          Welcome back, Janice
+          Welcome back, {userName}
         </h1>
         <p className="text-gray-400 mb-8">Here's your expense overview</p>
       </motion.div>
 
       {!hasGroups ? (
-        // Empty State
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -124,164 +140,147 @@ export default function HomePage() {
           animate="show"
           className="space-y-6"
         >
-          {/* Summary Cards */}
           <motion.div
             variants={item}
             className="grid grid-cols-1 md:grid-cols-3 gap-4"
           >
-            {/* You Owe */}
             <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-gray-400 text-sm font-medium">You owe</p>
-                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                <div className="w-2 h-2 rounded-full bg-red-500" />
               </div>
               <p className="text-3xl font-bold text-red-400">
-                ₹{summary.youOwe.toLocaleString()}
+                ₹{youOwe.toLocaleString()}
               </p>
             </div>
 
-            {/* You Are Owed */}
             <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-gray-400 text-sm font-medium">
                   You are owed
                 </p>
-                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                <div className="w-2 h-2 rounded-full bg-green-500" />
               </div>
               <p className="text-3xl font-bold text-green-400">
-                ₹{summary.youAreOwed.toLocaleString()}
+                ₹{youAreOwed.toLocaleString()}
               </p>
             </div>
 
-            {/* Net Balance */}
             <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-500/30 transition-colors">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-gray-400 text-sm font-medium">Net balance</p>
                 <TrendingUp className="w-4 h-4 text-cyan-400" />
               </div>
               <p className="text-3xl font-bold text-cyan-400">
-                {summary.netBalance >= 0 ? "+" : ""}₹
-                {summary.netBalance.toLocaleString()}
+                {netBalance >= 0 ? "+" : ""}₹
+                {Math.abs(netBalance).toLocaleString()}
               </p>
             </div>
           </motion.div>
 
-          {/* Recent Activity */}
+          {/* Recent Settlements */}
           <motion.div variants={item}>
             <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-white">
-                  Recent Activity
+                  Recent Settlements
                 </h2>
-                <Link
-                  href="/dashboard/activity"
-                  className="text-cyan-400 text-sm hover:text-cyan-300 transition-colors"
-                >
-                  View all
-                </Link>
               </div>
-              <div className="space-y-3">
-                {recentActivity.map((activity, index) => (
-                  <motion.div
-                    key={activity.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800/50 transition-colors cursor-pointer group"
-                  >
-                    <div
-                      className={`w-2 h-2 rounded-full ${
-                        activity.type === "payment"
-                          ? "bg-blue-500"
-                          : activity.type === "settlement"
-                            ? "bg-green-500"
-                            : activity.type === "expense"
-                              ? "bg-yellow-500"
-                              : "bg-purple-500"
-                      }`}
-                    ></div>
-                    <div className="flex-1">
-                      <p className="text-gray-200 text-sm group-hover:text-white transition-colors">
-                        {activity.text}
-                      </p>
-                      <p className="text-gray-500 text-xs">{activity.time}</p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-cyan-400 transition-colors" />
-                  </motion.div>
-                ))}
-              </div>
+
+              {recentSettlements.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-6">
+                  No recent settlements to show.
+                </p>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    <AnimatePresence initial={false}>
+                      {recentSettlements.map((settlement, index) => (
+                        <motion.div
+                          key={settlement.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{ delay: index * 0.04 }}
+                          className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800/50 transition-colors cursor-pointer group"
+                        >
+                          <div
+                            className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                              settlement.isSettled
+                                ? "bg-green-500"
+                                : settlement.direction === "you_paid"
+                                  ? "bg-blue-500"
+                                  : "bg-yellow-500"
+                            }`}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gray-200 text-sm group-hover:text-white transition-colors truncate">
+                              {settlement.direction === "you_paid"
+                                ? `You paid ${settlement.to}`
+                                : `${settlement.from} paid you`}{" "}
+                              — ₹{settlement.amount.toLocaleString()}
+                              {settlement.isSettled && (
+                                <span className="ml-2 text-xs text-green-400 font-medium">
+                                  Settled
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-gray-500 text-xs">
+                              {new Date(
+                                settlement.createdAt,
+                              ).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </p>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-cyan-400 transition-colors flex-shrink-0" />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
 
-          {/* Your Groups */}
+          {/* Stats Overview */}
           <motion.div variants={item}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">Your Groups</h2>
-              <Link
-                href="/dashboard/groups"
-                className="text-cyan-400 text-sm hover:text-cyan-300 transition-colors flex items-center space-x-1"
-              >
-                <span>View all</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {yourGroups.map((group, index) => (
-                <motion.div
-                  key={group.id}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Link
-                    href={`/dashboard/groups/${group.id}`}
-                    className="block bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all duration-200 group"
+            <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6">
+              <h2 className="text-xl font-bold text-white mb-4">Overview</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-white">
+                    {stats?.totalGroups ?? 0}
+                  </p>
+                  <p className="text-gray-400 text-sm mt-1">Total Groups</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-cyan-400">
+                    ₹{(stats?.totalPaid ?? 0).toLocaleString()}
+                  </p>
+                  <p className="text-gray-400 text-sm mt-1">Total Paid</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-red-400">
+                    ₹{(stats?.totalOwed ?? 0).toLocaleString()}
+                  </p>
+                  <p className="text-gray-400 text-sm mt-1">Total Owed</p>
+                </div>
+                <div className="text-center">
+                  <p
+                    className={`text-2xl font-bold ${netBalance >= 0 ? "text-green-400" : "text-red-400"}`}
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div
-                        className={`w-12 h-12 rounded-lg bg-gradient-to-br ${group.color} flex items-center justify-center`}
-                      >
-                        <Users className="w-6 h-6 text-white" />
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-gray-600 group-hover:text-cyan-400 transition-colors" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-cyan-400 transition-colors">
-                      {group.name}
-                    </h3>
-                    <div className="flex items-center space-x-2">
-                      {group.balance === 0 ? (
-                        <span className="text-gray-400 text-sm font-medium">
-                          Settled
-                        </span>
-                      ) : group.balance > 0 ? (
-                        <>
-                          <span className="text-green-400 text-sm font-medium">
-                            You get
-                          </span>
-                          <span className="text-green-400 font-bold">
-                            ₹{Math.abs(group.balance).toLocaleString()}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-red-400 text-sm font-medium">
-                            You owe
-                          </span>
-                          <span className="text-red-400 font-bold">
-                            ₹{Math.abs(group.balance).toLocaleString()}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
+                    {netBalance >= 0 ? "+" : ""}₹
+                    {Math.abs(netBalance).toLocaleString()}
+                  </p>
+                  <p className="text-gray-400 text-sm mt-1">Net Balance</p>
+                </div>
+              </div>
             </div>
           </motion.div>
 
-          {/* Primary Actions */}
           <motion.div variants={item} className="flex flex-wrap gap-4">
             <Link
               href="/dashboard/groups/create"
@@ -289,13 +288,6 @@ export default function HomePage() {
             >
               <Plus className="w-5 h-5" />
               <span>Create Group</span>
-            </Link>
-            <Link
-              href="/dashboard/expenses/add"
-              className="flex items-center space-x-2 bg-[#1a1b1b] border border-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 hover:border-gray-600 transition-all duration-200"
-            >
-              <Receipt className="w-5 h-5" />
-              <span>Add Expense</span>
             </Link>
           </motion.div>
         </motion.div>

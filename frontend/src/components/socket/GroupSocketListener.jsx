@@ -23,7 +23,9 @@ export default function GroupSocketListener({ groupId }) {
     // Expense Added
     socket.on("expense-added", (data) => {
       try {
-        toastSuccess("New expense added");
+        if (data.userId !== currentUserId) {
+          toastSuccess("New expense added");
+        }
         dispatch(triggerRefresh());
       } catch (error) {
         console.error("Error handling expense-added event:", error);
@@ -33,7 +35,9 @@ export default function GroupSocketListener({ groupId }) {
     // Expense Deleted
     socket.on("expense-deleted", (data) => {
       try {
-        toastInfo("Expense removed");
+        if (data.userId !== currentUserId) {
+          toastInfo("Expense removed");
+        }
         dispatch(triggerRefresh());
       } catch (error) {
         console.error("Error handling expense-deleted event:", error);
@@ -43,7 +47,9 @@ export default function GroupSocketListener({ groupId }) {
     // Settlement Generated
     socket.on("settlement-generated", (data) => {
       try {
-        toastSuccess("Settlement generated");
+        if (data.userId !== currentUserId) {
+          toastSuccess("Settlement generated");
+        }
         dispatch(triggerRefresh());
       } catch (error) {
         console.error("Error handling settlement-generated event:", error);
@@ -53,7 +59,9 @@ export default function GroupSocketListener({ groupId }) {
     // Settlement Paid
     socket.on("settlement-paid", (data) => {
       try {
-        toastSuccess("Settlement marked as paid");
+        if (data.userId !== currentUserId) {
+          toastSuccess("Settlement marked as paid");
+        }
         dispatch(triggerRefresh());
       } catch (error) {
         console.error("Error handling settlement-paid event:", error);
@@ -74,7 +82,9 @@ export default function GroupSocketListener({ groupId }) {
     // Member Removed
     socket.on("member-removed", (data) => {
       try {
-        toastInfo("A member was removed");
+        if (data.userId !== currentUserId) {
+          toastInfo("A member was removed");
+        }
         dispatch(triggerRefresh());
       } catch (error) {
         console.error("Error handling member-removed event:", error);
