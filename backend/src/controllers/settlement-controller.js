@@ -9,6 +9,7 @@ const getAllSettlement = async (req, res, next) => {
   try {
     const user_id = req.user.id;
     const group_id = req.params.groupId;
+    const { status, page = 1, limit = 20 } = req.query;
 
     const group = await Group.findById(group_id);
     if (!group) {
@@ -25,27 +26,34 @@ const getAllSettlement = async (req, res, next) => {
       throw error;
     }
 
-    const settlements = await Settlement.find({ group: group_id })
-      .populate("from", "name email")
-      .populate("to", "name email")
-      .sort({ createdAt: -1 });
+    let filter = { group: group_id };
 
-    let pendingSettlements = [];
-    let completedSettlements = [];
+    if (status === "pending") {
+      filter.isSettled = false;
+    }
 
-    settlements.forEach((s) => {
-      if (s.isSettled === true) {
-        completedSettlements.push(s);
-      } else {
-        pendingSettlements.push(s);
-      }
-    });
+    if (status === "completed") {
+      filter.isSettled = true;
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const settlements = await Settlement.find(filter)
+      .populate("from", "name email image")
+      .populate("to", "name email image")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit))
+      .lean();
+
+    const totalCount = await Settlement.countDocuments(filter);
 
     return res.status(200).json({
       message: "Fetched Settlements successfully.",
       settlements,
-      pendingSettlements,
-      completedSettlements,
+      totalCount,
+      currentPage: Number(page),
+      totalPages: Math.ceil(totalCount / limit),
     });
   } catch (error) {
     console.log(error);
@@ -152,10 +160,8 @@ const createSettlement = async (req, res, next) => {
       if (creditor.amount === 0) j++;
     }
 
-    if(settlements.length === 0){
-      const error = new Error(
-        "No new expenses to settle.",
-      );
+    if (settlements.length === 0) {
+      const error = new Error("No new expenses to settle.");
       error.statusCode = 400;
       throw error;
     }
@@ -163,10 +169,10 @@ const createSettlement = async (req, res, next) => {
     const savedSettlements =
       settlements.length > 0 ? await Settlement.insertMany(settlements) : [];
 
-    const io = req.app.get("io")
+    const io = req.app.get("io");
     io.to(group_id.toString()).emit("settlements-generated", {
-      settlements : savedSettlements
-    })
+      settlements: savedSettlements,
+    });
 
     return res.status(201).json({
       message: "Settlements Created.",
@@ -208,16 +214,16 @@ const settlementPaid = async (req, res, next) => {
     settlement.isSettled = true;
     await settlement.save();
 
-    const io = req.app.get("io")
+    const io = req.app.get("io");
     io.to(group_id.toString()).emit("settlements-paid", {
-      settlementId : settlement._id.toString()
-    })
+      settlementId: settlement._id.toString(),
+    });
 
     return res
       .status(200)
       .json({ message: "Settlement marked as paid successfully.", settlement });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     next(error);
   }
 };
