@@ -16,6 +16,8 @@ import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toastSuccess, toastError } from "@/lib/toast";
+import GroupSocketListener from "@/components/socket/GroupSocketListener";
+import {  useSelector } from "react-redux";
 
 const STATUS_TABS = [
   { key: "pending", label: "Pending", icon: Clock },
@@ -36,7 +38,9 @@ export default function SettlementPage() {
   const [markingPaidId, setMarkingPaidId] = useState(null);
 
   const { groupId } = useParams();
-
+  
+  const refreshKey = useSelector((state) => state.group.refreshKey)
+  
   const fetchSettlements = useCallback(async (status, page = 1) => {
     try {
       setLoading(true);
@@ -57,24 +61,25 @@ export default function SettlementPage() {
       setLoading(false);
     }
   }, [groupId]);
-
+  
   useEffect(() => {
-    fetchSettlements(activeTab, 1);
-  }, [activeTab, fetchSettlements]);
-
+    fetchSettlements(activeTab, currentPage);
+  }, [activeTab, fetchSettlements, refreshKey, currentPage]);
+  
   const handleTabChange = (tab) => {
     if (tab === activeTab) return;
     setActiveTab(tab);
     setCurrentPage(1);
     setSettlements([]);
   };
-
+  
   const handlePageChange = (page) => {
     if (page === currentPage || page < 1 || page > totalPages) return;
     setCurrentPage(page);
     fetchSettlements(activeTab, page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  
 
   const handleGenerateSettlement = async () => {
     setIsGenerating(true);
@@ -83,7 +88,6 @@ export default function SettlementPage() {
         method: "POST",
       });
       toastSuccess(response?.message || "Settlement generated successfully!");
-      fetchSettlements(activeTab, 1);
       setCurrentPage(1);
     } catch (error) {
       toastError(error?.message || "Failed to generate settlement.");
@@ -100,7 +104,6 @@ export default function SettlementPage() {
         { method: "POST" }
       );
       toastSuccess(response?.message || "Settlement marked as paid!");
-      fetchSettlements(activeTab, currentPage);
     } catch (error) {
       toastError(error?.message || "Failed to mark as paid.");
     } finally {
@@ -138,6 +141,8 @@ export default function SettlementPage() {
   };
 
   return (
+    <>
+    <GroupSocketListener groupId={groupId} />
     <div className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8">
       <div className="max-w-3xl mx-auto">
 
@@ -534,5 +539,6 @@ export default function SettlementPage() {
         </AnimatePresence>
       </div>
     </div>
+    </>
   );
 }

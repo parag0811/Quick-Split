@@ -170,7 +170,7 @@ const createSettlement = async (req, res, next) => {
       settlements.length > 0 ? await Settlement.insertMany(settlements) : [];
 
     const io = req.app.get("io");
-    io.to(group_id.toString()).emit("settlements-generated", {
+    io.to(group_id.toString()).emit("settlement-generated", {
       settlements: savedSettlements,
     });
 
@@ -215,7 +215,7 @@ const settlementPaid = async (req, res, next) => {
     await settlement.save();
 
     const io = req.app.get("io");
-    io.to(group_id.toString()).emit("settlements-paid", {
+    io.to(settlement.group.toString()).emit("settlement-paid", {
       settlementId: settlement._id.toString(),
     });
 
