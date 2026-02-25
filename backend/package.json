@@ -13,7 +13,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "cloudinary": "^2.9.0",
+    "@aws-sdk/client-s3": "^3.997.0",
+    "@aws-sdk/s3-request-presigner": "^3.997.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
@@ -22,6 +23,7 @@
     "express-validator": "^7.3.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.2",
+    "multer": "^2.0.2",
     "next-auth": "^4.24.13",
     "socket.io": "^4.8.3"
   },

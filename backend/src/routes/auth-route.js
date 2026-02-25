@@ -5,6 +5,7 @@ import auth_controller from "../controllers/auth-controller.js";
 import expressValidation from "../middleware/validator.js";
 import isAuth from "../middleware/is-auth.js"
 import authController from "../controllers/auth-controller.js";
+import upload from "../middleware/multer.js"
 
 const authValidate = [
   body("name").notEmpty().withMessage("Name is required.").trim(),
@@ -29,7 +30,7 @@ router.post(
 
 router.get("/auth/user/profile", isAuth, auth_controller.getMyProfile)
 
-router.put("/auth/user/update-profile", isAuth, auth_controller.updateMyProfile)
+router.put("/auth/user/update-profile", isAuth, upload.single("image") ,auth_controller.updateMyProfile)
 
 router.get("/dashboard/user/summary", isAuth, authController.getUserSummary)
 

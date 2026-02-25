@@ -2,11 +2,18 @@ import dotenv from "dotenv";
 dotenv.config();
 import jwt from "jsonwebtoken";
 
-import cloudinary from "../../config/cloudinary.js";
 import User from "../models/user.js";
 import Group from "../models/group.js";
 import Expense from "../models/expense.js";
 import Settlement from "../models/settlement.js";
+
+import { s3 } from "../config/s3.js";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import {
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 
 const authUser = async (req, res, next) => {
   try {
@@ -23,14 +30,6 @@ const authUser = async (req, res, next) => {
 
     let user = await User.findOne({ email });
     if (!user) {
-      // let uploadedImageUrl = image;
-
-      // if (image) {
-      //   const upload = await cloudinary.uploader.upload(image, {
-      //     folder: "quicksplit/profile",
-      //   });
-      //   uploadedImageUrl = upload.secure_url;
-      // }
       user = await User.create({
         name,
         email,
@@ -57,7 +56,7 @@ const authUser = async (req, res, next) => {
       token,
     });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     next(error);
   }
 };
@@ -66,13 +65,27 @@ const getMyProfile = async (req, res, next) => {
   try {
     const user_id = req.user.id;
 
-    const user = await User.findById(user_id).select("name email image");
+    const user = await User.findById(user_id).select(
+      "name email image imageKey",
+    );
     if (!user) {
       const error = new Error("User not found.");
       error.statusCode = 404;
       throw error;
     }
 
+    let profileImage = user.image;
+
+    if (user.imageKey) {
+      const command = new GetObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: user.imageKey,
+      });
+
+      profileImage = await getSignedUrl(s3, command, {
+        expiresIn: 3600, // 1 hour
+      });
+    }
     const groups = await Group.find({ "members.user": user_id }).select("_id");
 
     const expenses = await Expense.find({
@@ -98,7 +111,12 @@ const getMyProfile = async (req, res, next) => {
 
     return res.status(200).json({
       message: "User profile fetched successfully.",
-      user,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        image: profileImage,
+      },
       stats: {
         totalGroups: groups.length,
         totalPaid: Number(totalPaid.toFixed(2)),
@@ -114,7 +132,7 @@ const getMyProfile = async (req, res, next) => {
 const updateMyProfile = async (req, res, next) => {
   try {
     const user_id = req.user.id;
-    const { name, image } = req.body;
+    const { name } = req.body;
 
     const user = await User.findById(user_id);
     if (!user) {
@@ -127,12 +145,27 @@ const updateMyProfile = async (req, res, next) => {
       user.name = name.trim();
     }
 
-    if (image) {
-      const uploaded = await cloudinary.uploader.upload(image, {
-        folder: "quicksplit/profile",
-      });
+    if (req.file) {
+      const newKey = `quick-split/profile-images/${user_id}_${Date.now()}`;
 
-      user.image = uploaded.secure_url;
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: newKey,
+          Body: req.file.buffer,
+          ContentType: req.file.mimetype,
+        }),
+      );
+
+      if (user.imageKey) {
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: user.imageKey,
+          }),
+        );
+      }
+      user.imageKey = newKey;
     }
 
     await user.save();

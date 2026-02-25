@@ -1,17 +1,7 @@
-import Expense from "../models/expense";
+import Expense from "../../models/expense.js"
 
 // ML microcservice call for anomaly detection
-FEATURE_ORDER = [
-  "amount",
-  "past_transaction_count",
-  "user_avg_amount",
-  "amount_minus_user_avg",
-  "time_gap_minutes",
-  "hour",
-  "day_of_week",
-];
-
-export const detectAnomaly = async (userId, currentAmount) => {
+const detectAnomaly = async (userId, currentAmount) => {
   const now = new Date();
 
   const stats = await Expense.aggregate([
@@ -91,3 +81,7 @@ export const detectAnomaly = async (userId, currentAmount) => {
     };
   }
 };
+
+export default {
+  detectAnomaly
+}

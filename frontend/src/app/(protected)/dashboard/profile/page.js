@@ -34,14 +34,10 @@ export default function Profile() {
     try {
       setLoading(true);
       const response = await apiFetch("/auth/user/profile");
-
-      if (!response.ok) throw new Error("Failed to fetch profile");
-
-      const data = await response.json();
-      setProfile(data);
+      setProfile(response);
       setFormData({
-        name: data.user.name,
-        image: data.user.image || "",
+        name: response.user.name,
+        image: response.user.image || "",
       });
     } catch (err) {
       setError(err.message);
@@ -87,14 +83,14 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="flex items-center justify-center h-full min-h-[400px]">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center gap-4"
         >
-          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin" />
-          <p className="text-slate-600 font-medium">Loading your profile...</p>
+          <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
+          <p className="text-zinc-400 font-medium text-sm">Loading your profile...</p>
         </motion.div>
       </div>
     );
@@ -102,13 +98,13 @@ export default function Profile() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+      <div className="flex items-center justify-center h-full min-h-[400px] p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-red-50 border border-red-200 rounded-2xl p-6 max-w-md"
+          className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 max-w-md"
         >
-          <p className="text-red-600 font-medium">Error: {error}</p>
+          <p className="text-red-400 font-medium">Error: {error}</p>
         </motion.div>
       </div>
     );
@@ -118,7 +114,7 @@ export default function Profile() {
   const user = profile?.user;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="w-full">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div
@@ -126,8 +122,8 @@ export default function Profile() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-4xl font-bold text-slate-800 mb-2">My Profile</h1>
-          <p className="text-slate-600">
+          <h1 className="text-3xl font-bold text-white mb-1">My Profile</h1>
+          <p className="text-zinc-500 text-sm">
             Manage your account and view your expense statistics
           </p>
         </motion.div>
@@ -140,30 +136,30 @@ export default function Profile() {
             transition={{ delay: 0.1 }}
             className="lg:col-span-1"
           >
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-              <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-32"></div>
+            <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
+              <div className="bg-gradient-to-r from-indigo-600/80 to-purple-700/80 h-28" />
 
               <div className="relative px-6 pb-6">
-                <div className="relative -mt-16 mb-4">
-                  <motion.div whileHover={{ scale: 1.05 }} className="relative">
+                <div className="relative -mt-14 mb-4">
+                  <motion.div whileHover={{ scale: 1.03 }} className="relative w-fit mx-auto">
                     {user?.image ? (
                       <img
                         src={user.image}
                         alt={user.name}
-                        className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover mx-auto"
+                        className="w-28 h-28 rounded-full border-4 border-[#1a1a1a] shadow-lg object-cover"
                       />
                     ) : (
-                      <div className="w-32 h-32 rounded-full border-4 border-white shadow-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center mx-auto">
-                        <User className="w-16 h-16 text-white" />
+                      <div className="w-28 h-28 rounded-full border-4 border-[#1a1a1a] shadow-lg bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center">
+                        <User className="w-14 h-14 text-white/80" />
                       </div>
                     )}
                     {isEditing && (
                       <motion.button
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="absolute bottom-0 right-1/2 translate-x-16 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
+                        className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-500 transition-colors"
                       >
-                        <Camera className="w-4 h-4" />
+                        <Camera className="w-3.5 h-3.5" />
                       </motion.button>
                     )}
                   </motion.div>
@@ -177,7 +173,7 @@ export default function Profile() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="space-y-3"
+                        className="space-y-2.5"
                       >
                         <input
                           type="text"
@@ -185,7 +181,7 @@ export default function Profile() {
                           onChange={(e) =>
                             setFormData({ ...formData, name: e.target.value })
                           }
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                          className="w-full px-4 py-2.5 bg-[#252525] border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm placeholder:text-zinc-600"
                           placeholder="Your name"
                         />
                         <input
@@ -194,7 +190,7 @@ export default function Profile() {
                           onChange={(e) =>
                             setFormData({ ...formData, image: e.target.value })
                           }
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                          className="w-full px-4 py-2.5 bg-[#252525] border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm placeholder:text-zinc-600"
                           placeholder="Image URL"
                         />
                       </motion.div>
@@ -205,28 +201,29 @@ export default function Profile() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                       >
-                        <h2 className="text-2xl font-bold text-slate-800">
+                        <h2 className="text-xl font-bold text-white">
                           {user?.name}
                         </h2>
-                        <div className="flex items-center justify-center gap-2 text-slate-600 mt-2">
-                          <Mail className="w-4 h-4" />
-                          <p className="text-sm">{user?.email}</p>
+                        <div className="flex items-center justify-center gap-2 text-zinc-500 mt-1.5">
+                          <Mail className="w-3.5 h-3.5" />
+                          <p className="text-xs">{user?.email}</p>
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
 
-                  <div className="flex gap-2 justify-center pt-4">
+                  <div className="flex gap-2 justify-center pt-2">
                     <AnimatePresence mode="wait">
                       {isEditing ? (
                         <>
                           <motion.button
+                            key="save"
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             onClick={handleUpdateProfile}
                             disabled={saving}
-                            className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
+                            className="flex-1 bg-indigo-600 text-white px-4 py-2.5 rounded-xl hover:bg-indigo-500 transition-colors flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
                           >
                             {saving ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -236,12 +233,13 @@ export default function Profile() {
                             Save
                           </motion.button>
                           <motion.button
+                            key="cancel"
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             onClick={handleCancel}
                             disabled={saving}
-                            className="flex-1 bg-slate-200 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-300 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
+                            className="flex-1 bg-white/5 text-zinc-300 px-4 py-2.5 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
                           >
                             <X className="w-4 h-4" />
                             Cancel
@@ -249,11 +247,12 @@ export default function Profile() {
                         </>
                       ) : (
                         <motion.button
+                          key="edit"
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           exit={{ opacity: 0, scale: 0.9 }}
                           onClick={() => setIsEditing(true)}
-                          className="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                          className="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-xl hover:bg-indigo-500 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
                         >
                           <Edit2 className="w-4 h-4" />
                           Edit Profile
@@ -273,34 +272,30 @@ export default function Profile() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className={`rounded-2xl shadow-xl border p-6 ${
+              className={`rounded-2xl border p-6 ${
                 stats?.netBalance >= 0
-                  ? "bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200"
-                  : "bg-gradient-to-br from-rose-50 to-red-50 border-rose-200"
+                  ? "bg-emerald-500/10 border-emerald-500/20"
+                  : "bg-rose-500/10 border-rose-500/20"
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-600 font-medium mb-1">Net Balance</p>
+                  <p className="text-zinc-400 text-sm font-medium mb-1">Net Balance</p>
                   <div className="flex items-baseline gap-2">
                     <h3
                       className={`text-4xl font-bold ${
-                        stats?.netBalance >= 0
-                          ? "text-emerald-600"
-                          : "text-rose-600"
+                        stats?.netBalance >= 0 ? "text-emerald-400" : "text-rose-400"
                       }`}
                     >
                       ${Math.abs(stats?.netBalance || 0).toFixed(2)}
                     </h3>
-                    {stats?.netBalance >= 0 ? (
-                      <span className="text-emerald-600 text-sm font-medium">
-                        You are owed
-                      </span>
-                    ) : (
-                      <span className="text-rose-600 text-sm font-medium">
-                        You owe
-                      </span>
-                    )}
+                    <span
+                      className={`text-sm font-medium ${
+                        stats?.netBalance >= 0 ? "text-emerald-500" : "text-rose-500"
+                      }`}
+                    >
+                      {stats?.netBalance >= 0 ? "You are owed" : "You owe"}
+                    </span>
                   </div>
                 </div>
                 <motion.div
@@ -308,11 +303,11 @@ export default function Profile() {
                   transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
                   className={`p-4 rounded-full ${
                     stats?.netBalance >= 0
-                      ? "bg-emerald-100 text-emerald-600"
-                      : "bg-rose-100 text-rose-600"
+                      ? "bg-emerald-500/15 text-emerald-400"
+                      : "bg-rose-500/15 text-rose-400"
                   }`}
                 >
-                  <Wallet className="w-8 h-8" />
+                  <Wallet className="w-7 h-7" />
                 </motion.div>
               </div>
             </motion.div>
@@ -323,74 +318,62 @@ export default function Profile() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                whileHover={{ y: -5 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6"
+                whileHover={{ y: -4 }}
+                className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-6"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-blue-100 rounded-xl">
-                    <TrendingUp className="w-6 h-6 text-blue-600" />
+                  <div className="p-2.5 bg-blue-500/15 rounded-xl">
+                    <TrendingUp className="w-5 h-5 text-blue-400" />
                   </div>
-                  <DollarSign className="w-5 h-5 text-slate-400" />
+                  <DollarSign className="w-4 h-4 text-zinc-600" />
                 </div>
-                <p className="text-slate-600 text-sm font-medium mb-1">
-                  Total Paid
-                </p>
-                <h4 className="text-3xl font-bold text-slate-800">
+                <p className="text-zinc-500 text-xs font-medium mb-1">Total Paid</p>
+                <h4 className="text-3xl font-bold text-white">
                   ${stats?.totalPaid?.toFixed(2) || "0.00"}
                 </h4>
-                <p className="text-xs text-slate-500 mt-2">
-                  Amount you've paid for groups
-                </p>
+                <p className="text-xs text-zinc-600 mt-2">Amount you've paid for groups</p>
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                whileHover={{ y: -5 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6"
+                whileHover={{ y: -4 }}
+                className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-6"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-3 bg-orange-100 rounded-xl">
-                    <TrendingDown className="w-6 h-6 text-orange-600" />
+                  <div className="p-2.5 bg-orange-500/15 rounded-xl">
+                    <TrendingDown className="w-5 h-5 text-orange-400" />
                   </div>
-                  <DollarSign className="w-5 h-5 text-slate-400" />
+                  <DollarSign className="w-4 h-4 text-zinc-600" />
                 </div>
-                <p className="text-slate-600 text-sm font-medium mb-1">
-                  Total Owed
-                </p>
-                <h4 className="text-3xl font-bold text-slate-800">
+                <p className="text-zinc-500 text-xs font-medium mb-1">Total Owed</p>
+                <h4 className="text-3xl font-bold text-white">
                   ${stats?.totalOwed?.toFixed(2) || "0.00"}
                 </h4>
-                <p className="text-xs text-slate-500 mt-2">
-                  Your share of group expenses
-                </p>
+                <p className="text-xs text-zinc-600 mt-2">Your share of group expenses</p>
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                whileHover={{ y: -5 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 sm:col-span-2"
+                whileHover={{ y: -4 }}
+                className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-6 sm:col-span-2"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-purple-100 rounded-xl">
-                      <Users className="w-6 h-6 text-purple-600" />
+                    <div className="p-2.5 bg-purple-500/15 rounded-xl">
+                      <Users className="w-5 h-5 text-purple-400" />
                     </div>
                     <div>
-                      <p className="text-slate-600 text-sm font-medium mb-1">
-                        Active Groups
-                      </p>
-                      <h4 className="text-3xl font-bold text-slate-800">
+                      <p className="text-zinc-500 text-xs font-medium mb-1">Active Groups</p>
+                      <h4 className="text-3xl font-bold text-white">
                         {stats?.totalGroups || 0}
                       </h4>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-500">
-                    Groups you're a member of
-                  </p>
+                  <p className="text-xs text-zinc-600">Groups you're a member of</p>
                 </div>
               </motion.div>
             </div>
@@ -400,33 +383,37 @@ export default function Profile() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-xl p-6 text-white"
+              className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-6"
             >
-              <h3 className="text-xl font-bold mb-4">Quick Summary</h3>
+              <h3 className="text-base font-semibold text-white mb-4">Quick Summary</h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-indigo-100">Groups</span>
-                  <span className="font-semibold">
+                  <span className="text-zinc-500 text-sm">Groups</span>
+                  <span className="font-semibold text-zinc-200 text-sm">
                     {stats?.totalGroups || 0}
                   </span>
                 </div>
-                <div className="h-px bg-indigo-400 opacity-30"></div>
+                <div className="h-px bg-white/5" />
                 <div className="flex justify-between items-center">
-                  <span className="text-indigo-100">You've contributed</span>
-                  <span className="font-semibold">
+                  <span className="text-zinc-500 text-sm">You've contributed</span>
+                  <span className="font-semibold text-zinc-200 text-sm">
                     ${stats?.totalPaid?.toFixed(2) || "0.00"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-indigo-100">Your expenses</span>
-                  <span className="font-semibold">
+                  <span className="text-zinc-500 text-sm">Your expenses</span>
+                  <span className="font-semibold text-zinc-200 text-sm">
                     ${stats?.totalOwed?.toFixed(2) || "0.00"}
                   </span>
                 </div>
-                <div className="h-px bg-indigo-400 opacity-30"></div>
-                <div className="flex justify-between items-center text-lg">
-                  <span className="font-semibold">Net Position</span>
-                  <span className="font-bold">
+                <div className="h-px bg-white/5" />
+                <div className="flex justify-between items-center">
+                  <span className="text-white font-semibold text-sm">Net Position</span>
+                  <span
+                    className={`font-bold text-base ${
+                      stats?.netBalance >= 0 ? "text-emerald-400" : "text-rose-400"
+                    }`}
+                  >
                     {stats?.netBalance >= 0 ? "+" : "-"}$
                     {Math.abs(stats?.netBalance || 0).toFixed(2)}
                   </span>

@@ -16,6 +16,9 @@ const userSchema = new mongoose.Schema({
   image: {
     type: String, // optional for now
   },
+  imageKey: {
+    type: String,
+  },
   provider: {
     type: String,
     default: "credentials",
