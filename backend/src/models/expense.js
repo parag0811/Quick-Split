@@ -76,6 +76,18 @@ const expenseSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
+    anomalyScore : {
+      type : Number,
+    },
+
+    isAnomalous : {
+      type : Boolean
+    },
+
+    anomalyReason :{
+      type : String
+    }
   },
   { timestamps: true }
 );
