@@ -4,6 +4,7 @@ dotenv.config();
 import Group from "../models/group.js";
 import Expense from "../models/expense.js";
 import Settlement from "../models/settlement.js";
+import detectAnomaly from "../services/ml/anomalyService.js";
 
 const getAllExpense = async (req, res, next) => {
   try {
@@ -31,13 +32,11 @@ const getAllExpense = async (req, res, next) => {
       .populate("splits.user", "name email")
       .sort({ createdAt: -1 });
 
-    return res
-      .status(200)
-      .json({
-        message: "All Expenses fetched.",
-        count: expenses.length,
-        expenses,
-      });
+    return res.status(200).json({
+      message: "All Expenses fetched.",
+      count: expenses.length,
+      expenses,
+    });
   } catch (error) {
     next(error);
   }
@@ -63,15 +62,30 @@ const addExpense = async (req, res, next) => {
       throw error;
     }
 
-    const {
-      title,
-      totalAmount,
-      paidBy,
-      category,
-      notes,
-      splitType,
-      participants,
-    } = req.body;
+    const { title, totalAmount, category, notes, splitType, participants } =
+      req.body;
+
+    const amountNumber = Number(totalAmount);
+
+    if (isNaN(amountNumber) || amountNumber <= 0) {
+      const error = new Error("Invalid total amount.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const requestedPayer = req.body.paidBy;
+
+    const isValidPayer = group.members.some(
+      (m) => m.user.toString() === requestedPayer,
+    );
+
+    if (!isValidPayer) {
+      const error = new Error("Payer must be a valid group member.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const paidBy = requestedPayer;
 
     let finalSplits = [];
 
@@ -87,6 +101,18 @@ const addExpense = async (req, res, next) => {
       error.statusCode = 400;
       throw error;
     }
+
+    involvedUsers.forEach((p) => {
+      const isValidParticipant = group.members.some(
+        (m) => m.user.toString() === p.userId,
+      );
+
+      if (!isValidParticipant) {
+        const error = new Error("Invalid participant in split.");
+        error.statusCode = 400;
+        throw error;
+      }
+    });
 
     //   Equal Type
     if (splitType === "equal") {
@@ -156,6 +182,11 @@ const addExpense = async (req, res, next) => {
       throw error;
     }
 
+    const { isAnomalous, anomalyScore } = await detectAnomaly(
+      paidBy,
+      totalAmount,
+    );
+
     const expense = await Expense.create({
       group: group_id,
       title,
@@ -166,19 +197,21 @@ const addExpense = async (req, res, next) => {
       splitType,
       splits: finalSplits,
       createdBy: user_id,
+      isAnomalous,
+      anomalyScore,
     });
 
-    const io = req.app.get("io")
+    const io = req.app.get("io");
     io.to(group_id.toString()).emit("expense-added", {
-      message : "New expense added",
-      expense
-    })
+      message: "New expense added",
+      expense,
+    });
 
     return res
       .status(201)
       .json({ message: "Expense added to the group.", expense });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     next(error);
   }
 };
@@ -288,10 +321,10 @@ const deleteExpense = async (req, res, next) => {
 
     await Expense.findByIdAndDelete(expense_id);
 
-    const io = req.app.get("io")
+    const io = req.app.get("io");
     io.to(group_id.toString()).emit("expense-deleted", {
-      expenseId : expense._id.toString()
-    })
+      expenseId: expense._id.toString(),
+    });
 
     return res.status(200).json({ message: "Deleted expense Successfully." });
   } catch (error) {
