@@ -8,6 +8,7 @@ import {
   Users,
   UserCheck,
   Split,
+  AlertTriangle,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -28,7 +29,8 @@ export default function ExpensePage() {
     count: 0,
   });
 
-  const refreshKey = useSelector((state) => state.group.refreshKey)
+  const refreshKey = useSelector((state) => state.group.refreshKey);
+  // const currentUserId = useSelector((state) => state.auth.user?._id);
 
   const fetchExpenses = async () => {
     try {
@@ -77,6 +79,13 @@ export default function ExpensePage() {
     return expense.splitType === "equal"
       ? `Split equally among ${count} member${count !== 1 ? "s" : ""}`
       : `${expense.splitType} Split among ${count} member${count !== 1 ? "s" : ""}`;
+  };
+
+  // Only show anomaly badge if current user is the payer AND expense is anomalous
+  const shouldShowAnomaly = (expense) => {
+    return (
+      expense.isAnomalous === true && expense.paidBy?._id === currentUserId
+    );
   };
 
   if (loading) {
@@ -148,6 +157,7 @@ export default function ExpensePage() {
               >
                 {expenses.map((expense, index) => {
                   const isExpanded = expandedExpense === expense._id;
+                  const isAnomalous = shouldShowAnomaly(expense);
 
                   return (
                     <motion.div
@@ -160,7 +170,11 @@ export default function ExpensePage() {
                         type: "spring",
                         stiffness: 200,
                       }}
-                      className="bg-[#1a1a1a] border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 transition-all"
+                      className={`bg-[#1a1a1a] border rounded-xl overflow-hidden transition-all ${
+                        isAnomalous
+                          ? "border-orange-500/40 hover:border-orange-500/60 border-l-4 border-l-orange-500"
+                          : "border-gray-800 hover:border-gray-700"
+                      }`}
                     >
                       <motion.div
                         onClick={() => toggleExpand(expense._id)}
@@ -170,9 +184,37 @@ export default function ExpensePage() {
                         className="p-5 cursor-pointer"
                       >
                         <div className="flex justify-between mb-3">
-                          <h3 className="text-lg font-semibold text-white">
-                            {expense.title ?? "Untitled"}
-                          </h3>
+                          {/* Title + anomaly badge */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-lg font-semibold text-white">
+                              {expense.title ?? "Untitled"}
+                            </h3>
+                            {isAnomalous && (
+                              <div className="group relative flex items-center">
+                                <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/15 border border-orange-500/30 text-orange-400 rounded-full text-xs font-medium">
+                                  <AlertTriangle size={11} />
+                                  Unusual
+                                </span>
+                                {/* Tooltip */}
+                                <div className="absolute bottom-full left-0 mb-2 w-64 hidden group-hover:block z-10">
+                                  <div className="bg-[#2a2a2a] border border-orange-500/20 rounded-lg p-3 shadow-xl">
+                                    <p className="text-xs text-orange-300 font-medium mb-1">
+                                      Spending Pattern Alert
+                                    </p>
+                                    <p className="text-xs text-gray-400 leading-relaxed">
+                                      Our ML model flagged this expense as
+                                      higher than your typical spending for this
+                                      category. This is just a heads-up — not a
+                                      fraud alert.
+                                    </p>
+                                  </div>
+                                  {/* Arrow */}
+                                  <div className="w-2 h-2 bg-[#2a2a2a] border-r border-b border-orange-500/20 rotate-45 ml-3 -mt-1" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
@@ -186,6 +228,26 @@ export default function ExpensePage() {
                             €{expense.amount ?? expense.totalAmount ?? 0}
                           </motion.div>
                         </div>
+
+                        {/* Anomaly contextual message — below title row */}
+                        {isAnomalous && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="flex items-start gap-2 mb-3 px-3 py-2 bg-orange-500/8 border border-orange-500/15 rounded-lg"
+                          >
+                            <AlertTriangle
+                              size={13}
+                              className="text-orange-400 mt-0.5 flex-shrink-0"
+                            />
+                            <p className="text-xs text-orange-300/80 leading-relaxed">
+                              This payment is higher than your usual spending
+                              pattern. Our model flagged it based on your
+                              history — review if this looks right to you.
+                            </p>
+                          </motion.div>
+                        )}
 
                         <div className="flex flex-wrap items-center gap-3 text-sm mb-3">
                           <span className="text-gray-500">

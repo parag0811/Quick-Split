@@ -4,7 +4,7 @@ dotenv.config();
 import Group from "../models/group.js";
 import Expense from "../models/expense.js";
 import Settlement from "../models/settlement.js";
-import detectAnomaly from "../services/ml/anomalyService.js";
+import { detectAnomaly } from "../services/ml/anomalyService.js";
 
 const getAllExpense = async (req, res, next) => {
   try {

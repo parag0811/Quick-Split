@@ -1,7 +1,7 @@
-import Expense from "../../models/expense.js"
+import Expense from "../../models/expense.js";
 
 // ML microcservice call for anomaly detection
-const detectAnomaly = async (userId, currentAmount) => {
+export const detectAnomaly = async (userId, currentAmount) => {
   const now = new Date();
 
   const stats = await Expense.aggregate([
@@ -41,7 +41,7 @@ const detectAnomaly = async (userId, currentAmount) => {
 
   const past_transaction_count = count;
   const user_avg_amount = avgAmount || currentAmount;
-  const amount_minus_user_avg = currentAmount - user_avg_amount;
+  // const amount_minus_user_avg = currentAmount - user_avg_amount;
 
   let time_gap_minutes = 0;
   if (lastExpenseDate) {
@@ -56,16 +56,19 @@ const detectAnomaly = async (userId, currentAmount) => {
     amount: currentAmount,
     past_transaction_count,
     user_avg_amount,
-    amount_minus_user_avg,
+    // amount_minus_user_avg,
     time_gap_minutes,
     hour,
     day_of_week,
   };
 
   // Calling fastAPi microservice
+  const baseUrl = process.env.ML_SERVICE_URL;
   try {
-    const response = await fetch.post(process.env.ML_SERVICE_URL, {
-      payload,
+    const response = await fetch(`${baseUrl}/predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
 
     return {
@@ -81,7 +84,3 @@ const detectAnomaly = async (userId, currentAmount) => {
     };
   }
 };
-
-export default {
-  detectAnomaly
-}
