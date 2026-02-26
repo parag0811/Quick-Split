@@ -146,11 +146,27 @@ const createSettlement = async (req, res, next) => {
 
       const payAmount = Math.min(debtor.owed, creditor.amount);
 
+      const risk = await predictSettlementRisk(debtor.user, payAmount);
+
+      const onTimeProbability = 1 - risk.delay_probability;
+      let riskMessage = "";
+
+      if (risk.risk_level === "High") {
+        riskMessage = `High delay risk. Only ${(onTimeProbability * 100).toFixed(1)}% chance of paying within 3 days.`;
+      } else if (risk.risk_level === "Medium") {
+        riskMessage = `Moderate delay risk. ${(onTimeProbability * 100).toFixed(1)}% chance of paying within 3 days.`;
+      } else {
+        riskMessage = `Low delay risk. ${(onTimeProbability * 100).toFixed(1)}% chance of paying within 3 days.`;
+      }
+
       settlements.push({
         group: group_id,
         from: debtor.user,
         to: creditor.user,
         amount: payAmount,
+        delay_probability: risk.delay_probability,
+        risk_level: risk.risk_level,
+        risk_message: riskMessage,
       });
 
       debtor.owed -= payAmount;
