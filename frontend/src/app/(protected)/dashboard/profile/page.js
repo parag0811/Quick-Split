@@ -17,9 +17,11 @@ import {
   DollarSign,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCurrentUser } from "../../../../../store/authSlice";
 
 export default function Profile() {
-  const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -27,44 +29,53 @@ export default function Profile() {
 
   const [formData, setFormData] = useState({
     name: "",
-    image: "",
+    imageFile: null,
   });
 
-  const fetchProfile = async () => {
+  const { user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name,
+        imageFile: null,
+      });
+    }
+  }, [user]);
+
+  const fetchStats = async () => {
     try {
       setLoading(true);
       const response = await apiFetch("/auth/user/profile");
-      setProfile(response);
-      setFormData({
-        name: response.user.name,
-        image: response.user.image || "",
-      });
-    } catch (err) {
-      setError(err.message);
+      setStats(response.stats);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProfile();
+    fetchStats();
   }, []);
 
   const handleUpdateProfile = async () => {
     try {
       setSaving(true);
-      const response = await apiFetch("/auth/user/update-profile", {
+
+      const data = new FormData();
+      data.append("name", formData.name);
+
+      if (formData.imageFile) {
+        data.append("image", formData.imageFile);
+      }
+
+      await apiFetch("/auth/user/update-profile", {
         method: "PUT",
-        body: formData,
+        body: data,
       });
 
-      if (!response.ok) throw new Error("Failed to update profile");
+      dispatch(fetchCurrentUser());
 
-      const data = await response.json();
-      setProfile((prev) => ({
-        ...prev,
-        user: data.user,
-      }));
       setIsEditing(false);
     } catch (err) {
       setError(err.message);
@@ -75,8 +86,8 @@ export default function Profile() {
 
   const handleCancel = () => {
     setFormData({
-      name: profile.user.name,
-      image: profile.user.image || "",
+      name: user.name,
+      imageFile: user.image || "",
     });
     setIsEditing(false);
   };
@@ -90,7 +101,9 @@ export default function Profile() {
           className="flex flex-col items-center gap-4"
         >
           <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
-          <p className="text-zinc-400 font-medium text-sm">Loading your profile...</p>
+          <p className="text-zinc-400 font-medium text-sm">
+            Loading your profile...
+          </p>
         </motion.div>
       </div>
     );
@@ -109,9 +122,6 @@ export default function Profile() {
       </div>
     );
   }
-
-  const stats = profile?.stats;
-  const user = profile?.user;
 
   return (
     <div className="w-full">
@@ -141,7 +151,10 @@ export default function Profile() {
 
               <div className="relative px-6 pb-6">
                 <div className="relative -mt-14 mb-4">
-                  <motion.div whileHover={{ scale: 1.03 }} className="relative w-fit mx-auto">
+                  <motion.div
+                    whileHover={{ scale: 1.03 }}
+                    className="relative w-fit mx-auto"
+                  >
                     {user?.image ? (
                       <img
                         src={user.image}
@@ -185,10 +198,13 @@ export default function Profile() {
                           placeholder="Your name"
                         />
                         <input
-                          type="url"
-                          value={formData.image}
+                          type="file"
+                          accept="image/*"
                           onChange={(e) =>
-                            setFormData({ ...formData, image: e.target.value })
+                            setFormData({
+                              ...formData,
+                              imageFile: e.target.files[0],
+                            })
                           }
                           className="w-full px-4 py-2.5 bg-[#252525] border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm placeholder:text-zinc-600"
                           placeholder="Image URL"
@@ -280,18 +296,24 @@ export default function Profile() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-zinc-400 text-sm font-medium mb-1">Net Balance</p>
+                  <p className="text-zinc-400 text-sm font-medium mb-1">
+                    Net Balance
+                  </p>
                   <div className="flex items-baseline gap-2">
                     <h3
                       className={`text-4xl font-bold ${
-                        stats?.netBalance >= 0 ? "text-emerald-400" : "text-rose-400"
+                        stats?.netBalance >= 0
+                          ? "text-emerald-400"
+                          : "text-rose-400"
                       }`}
                     >
                       ${Math.abs(stats?.netBalance || 0).toFixed(2)}
                     </h3>
                     <span
                       className={`text-sm font-medium ${
-                        stats?.netBalance >= 0 ? "text-emerald-500" : "text-rose-500"
+                        stats?.netBalance >= 0
+                          ? "text-emerald-500"
+                          : "text-rose-500"
                       }`}
                     >
                       {stats?.netBalance >= 0 ? "You are owed" : "You owe"}
@@ -327,11 +349,15 @@ export default function Profile() {
                   </div>
                   <DollarSign className="w-4 h-4 text-zinc-600" />
                 </div>
-                <p className="text-zinc-500 text-xs font-medium mb-1">Total Paid</p>
+                <p className="text-zinc-500 text-xs font-medium mb-1">
+                  Total Paid
+                </p>
                 <h4 className="text-3xl font-bold text-white">
                   ${stats?.totalPaid?.toFixed(2) || "0.00"}
                 </h4>
-                <p className="text-xs text-zinc-600 mt-2">Amount you've paid for groups</p>
+                <p className="text-xs text-zinc-600 mt-2">
+                  Amount you've paid for groups
+                </p>
               </motion.div>
 
               <motion.div
@@ -347,11 +373,15 @@ export default function Profile() {
                   </div>
                   <DollarSign className="w-4 h-4 text-zinc-600" />
                 </div>
-                <p className="text-zinc-500 text-xs font-medium mb-1">Total Owed</p>
+                <p className="text-zinc-500 text-xs font-medium mb-1">
+                  Total Owed
+                </p>
                 <h4 className="text-3xl font-bold text-white">
                   ${stats?.totalOwed?.toFixed(2) || "0.00"}
                 </h4>
-                <p className="text-xs text-zinc-600 mt-2">Your share of group expenses</p>
+                <p className="text-xs text-zinc-600 mt-2">
+                  Your share of group expenses
+                </p>
               </motion.div>
 
               <motion.div
@@ -367,13 +397,17 @@ export default function Profile() {
                       <Users className="w-5 h-5 text-purple-400" />
                     </div>
                     <div>
-                      <p className="text-zinc-500 text-xs font-medium mb-1">Active Groups</p>
+                      <p className="text-zinc-500 text-xs font-medium mb-1">
+                        Active Groups
+                      </p>
                       <h4 className="text-3xl font-bold text-white">
                         {stats?.totalGroups || 0}
                       </h4>
                     </div>
                   </div>
-                  <p className="text-xs text-zinc-600">Groups you're a member of</p>
+                  <p className="text-xs text-zinc-600">
+                    Groups you're a member of
+                  </p>
                 </div>
               </motion.div>
             </div>
@@ -385,7 +419,9 @@ export default function Profile() {
               transition={{ delay: 0.6 }}
               className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-6"
             >
-              <h3 className="text-base font-semibold text-white mb-4">Quick Summary</h3>
+              <h3 className="text-base font-semibold text-white mb-4">
+                Quick Summary
+              </h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-zinc-500 text-sm">Groups</span>
@@ -395,7 +431,9 @@ export default function Profile() {
                 </div>
                 <div className="h-px bg-white/5" />
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-500 text-sm">You've contributed</span>
+                  <span className="text-zinc-500 text-sm">
+                    You've contributed
+                  </span>
                   <span className="font-semibold text-zinc-200 text-sm">
                     ${stats?.totalPaid?.toFixed(2) || "0.00"}
                   </span>
@@ -408,10 +446,14 @@ export default function Profile() {
                 </div>
                 <div className="h-px bg-white/5" />
                 <div className="flex justify-between items-center">
-                  <span className="text-white font-semibold text-sm">Net Position</span>
+                  <span className="text-white font-semibold text-sm">
+                    Net Position
+                  </span>
                   <span
                     className={`font-bold text-base ${
-                      stats?.netBalance >= 0 ? "text-emerald-400" : "text-rose-400"
+                      stats?.netBalance >= 0
+                        ? "text-emerald-400"
+                        : "text-rose-400"
                     }`}
                   >
                     {stats?.netBalance >= 0 ? "+" : "-"}$
