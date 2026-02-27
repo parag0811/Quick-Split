@@ -4,7 +4,6 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function apiFetch(endpoint, options = {}) {
   try {
-    // Session
     const session = await getSession();
     if (!session?.backendToken) {
       const error = new Error("No backend token found.");
@@ -12,8 +11,10 @@ export async function apiFetch(endpoint, options = {}) {
       throw error;
     }
 
+    const isFormData = options.body instanceof FormData;
+
     const headers = {
-      "Content-Type": "application/json",
+      ...(!isFormData && { "Content-Type": "application/json" }),
       ...(options.headers || {}),
       Authorization: `Bearer ${session.backendToken}`,
     };
@@ -21,7 +22,11 @@ export async function apiFetch(endpoint, options = {}) {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
       headers,
-      body: options.body ? JSON.stringify(options.body) : undefined,
+      body: options.body
+        ? isFormData
+          ? options.body
+          : JSON.stringify(options.body)
+        : undefined,
     });
 
     if (res.status === 401) {
@@ -34,7 +39,6 @@ export async function apiFetch(endpoint, options = {}) {
       try {
         errorData = await res.json();
       } catch (parseError) {
-        // Response is not JSON, create generic error
         errorData = {
           message: `HTTP ${res.status}: ${res.statusText || "Request failed"}`,
         };
@@ -42,13 +46,12 @@ export async function apiFetch(endpoint, options = {}) {
 
       const error = new Error(errorData.message || "API request failed.");
       error.statusCode = res.status;
-      error.validation = errorData.data; // Field errors for UI display
+      error.validation = errorData.data; 
       throw error;
     }
 
     return res.json();
   } catch (error) {
-    // Ensure error has a message property
     if (!error.message) {
       error.message = "An unexpected error occurred";
     }

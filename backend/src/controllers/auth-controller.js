@@ -146,26 +146,37 @@ const updateMyProfile = async (req, res, next) => {
     }
 
     if (req.file) {
-      const newKey = `quick-split/profile-images/${user_id}_${Date.now()}`;
+      console.log("File received:", req.file.originalname, req.file.size, "bytes");
+      const newKey = `profile-images/${user_id}_${Date.now()}`;
 
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: process.env.AWS_BUCKET_NAME,
-          Key: newKey,
-          Body: req.file.buffer,
-          ContentType: req.file.mimetype,
-        }),
-      );
-
-      if (user.imageKey) {
+      try {
         await s3.send(
-          new DeleteObjectCommand({
+          new PutObjectCommand({
             Bucket: process.env.AWS_BUCKET_NAME,
-            Key: user.imageKey,
+            Key: newKey,
+            Body: req.file.buffer,
+            ContentType: req.file.mimetype,
           }),
         );
+      } catch (s3Error) {
+        throw new Error(`S3 upload failed: ${s3Error.message}`);
+      }
+
+      if (user.imageKey) {
+        try {
+          await s3.send(
+            new DeleteObjectCommand({
+              Bucket: process.env.AWS_BUCKET_NAME,
+              Key: user.imageKey,
+            }),
+          );
+        } catch (deleteError) {
+          console.warn("Failed to delete old image:", deleteError);
+        }
       }
       user.imageKey = newKey;
+    } else {
+      console.log("No file received in request");
     }
 
     await user.save();
