@@ -2,8 +2,7 @@
 import { Home, Group } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
-import { useEffect } from "react";
+import { useSelector } from "react-redux";
 
 export default function Sidebar({ isOpen }) {
   const pathname = usePathname();
@@ -13,7 +12,7 @@ export default function Sidebar({ isOpen }) {
     { icon: Group, label: "Groups", href: "/dashboard/groups" },
   ];
 
-  const { data: session} = useSession()
+  const { user } = useSelector((state) => state.auth);
   return (
     <aside
       className={`fixed top-16 left-0 z-40 w-64
@@ -26,15 +25,21 @@ export default function Sidebar({ isOpen }) {
       <div className="p-6">
         <div className="flex flex-col items-center justify-center space-y-4 mt-4">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-300 overflow-hidden flex items-center justify-center">
-            <img
-              src={session?.user?.image || ""}
-              alt={session?.user?.name}
-              className="w-full h-full object-cover"
-            />
+            {user?.image ? (
+              <img
+                src={user.image}
+                alt={user.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-white font-bold">
+                {user?.name?.charAt(0).toUpperCase()}
+              </span>
+            )}
           </div>
           <div className="flex-1">
             <h2 className="text-gray-300 font-semibold text-2xl">
-              {session?.user?.name || "Name"}
+              {user?.name || "Name"}
             </h2>
           </div>
         </div>

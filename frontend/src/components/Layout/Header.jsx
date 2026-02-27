@@ -1,15 +1,16 @@
 "use client";
 import { PanelLeft, LogOut, ChevronDown, User } from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 
 const Header = ({ toggleSidebar, title }) => {
-  const { data: session } = useSession();
+  const { user } = useSelector((state) => state.auth);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -45,7 +46,7 @@ const Header = ({ toggleSidebar, title }) => {
         )}
       </div>
 
-      {session?.user && (
+      {user && (
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -53,19 +54,19 @@ const Header = ({ toggleSidebar, title }) => {
           >
             <div className="hidden md:block text-right">
               <p className="text-sm font-medium text-white">
-                {session.user.name || "User"}
+                {user.name || "User"}
               </p>
             </div>
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
-              {session.user.image ? (
+              {user.image ? (
                 <img
-                  src={session.user.image}
-                  alt={session.user.name}
+                  src={user.image}
+                  alt={user.name}
                   className="w-full h-full rounded-full object-cover"
                 />
               ) : (
                 <span className="text-white font-semibold text-sm">
-                  {session.user.name?.charAt(0).toUpperCase() || "U"}
+                  {user.name?.charAt(0).toUpperCase() || "U"}
                 </span>
               )}
             </div>
@@ -87,16 +88,16 @@ const Header = ({ toggleSidebar, title }) => {
               >
                 <div className="px-4 py-3 border-b border-gray-800">
                   <p className="text-sm font-semibold text-white">
-                    {session.user.name || "User"}
+                    {user.name || "User"}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    {session.user.email}
+                    {user.email}
                   </p>
                 </div>
                 <button
                   onClick={() => {
                     setIsDropdownOpen(false);
-                    router.push("/dashboard/profile")
+                    router.push("/dashboard/profile");
                   }}
                   className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-red-500/10 transition-colors"
                 >
