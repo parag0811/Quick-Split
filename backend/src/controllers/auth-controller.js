@@ -74,18 +74,15 @@ const getMyProfile = async (req, res, next) => {
       throw error;
     }
 
-    let profileImage = user.image;
-
+    let profileImage = user.image || null;
     if (user.imageKey) {
       const command = new GetObjectCommand({
         Bucket: process.env.AWS_BUCKET_NAME,
         Key: user.imageKey,
       });
-
-      profileImage = await getSignedUrl(s3, command, {
-        expiresIn: 3600, // 1 hour
-      });
+      profileImage = await getSignedUrl(s3, command, { expiresIn: 3600 });
     }
+
     const groups = await Group.find({ "members.user": user_id }).select("_id");
 
     const expenses = await Expense.find({
@@ -199,11 +196,20 @@ const getUserSummary = async (req, res, next) => {
   try {
     const user_id = req.user.id;
 
-    const user = await User.findById(user_id).select("name email image");
+    const user = await User.findById(user_id).select("name email image imageKey");
     if (!user) {
       const error = new Error("User not found.");
       error.statusCode = 404;
       throw error;
+    }
+
+    let profileImage = user.image || null;
+    if (user.imageKey) {
+      const command = new GetObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: user.imageKey,
+      });
+      profileImage = await getSignedUrl(s3, command, { expiresIn: 3600 });
     }
 
     const totalGroups = await Group.countDocuments({
@@ -251,7 +257,12 @@ const getUserSummary = async (req, res, next) => {
 
     return res.status(200).json({
       message: "User summary fetched successfully.",
-      user,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        image: profileImage,
+      },
       stats: {
         totalGroups,
         totalPaid: Number(totalPaid.toFixed(2)),

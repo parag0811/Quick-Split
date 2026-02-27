@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
@@ -31,6 +31,8 @@ export default function Profile() {
     name: "",
     imageFile: null,
   });
+  const [imagePreview, setImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
@@ -77,6 +79,7 @@ export default function Profile() {
       dispatch(fetchCurrentUser());
 
       setIsEditing(false);
+      setImagePreview(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -87,9 +90,18 @@ export default function Profile() {
   const handleCancel = () => {
     setFormData({
       name: user.name,
-      imageFile: user.image || "",
+      imageFile: null,
     });
+    setImagePreview(null);
     setIsEditing(false);
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData({ ...formData, imageFile: file });
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
   if (loading) {
@@ -155,10 +167,10 @@ export default function Profile() {
                     whileHover={{ scale: 1.03 }}
                     className="relative w-fit mx-auto"
                   >
-                    {user?.image ? (
+                    {imagePreview || user?.image ? (
                       <img
-                        src={user.image}
-                        alt={user.name}
+                        src={imagePreview || user.image}
+                        alt={user?.name}
                         className="w-28 h-28 rounded-full border-4 border-[#1a1a1a] shadow-lg object-cover"
                       />
                     ) : (
@@ -167,13 +179,23 @@ export default function Profile() {
                       </div>
                     )}
                     {isEditing && (
-                      <motion.button
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-500 transition-colors"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                      </motion.button>
+                      <>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageSelect}
+                          className="hidden"
+                        />
+                        <motion.button
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          onClick={() => fileInputRef.current?.click()}
+                          className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-500 transition-colors"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                        </motion.button>
+                      </>
                     )}
                   </motion.div>
                 </div>
@@ -196,18 +218,6 @@ export default function Profile() {
                           }
                           className="w-full px-4 py-2.5 bg-[#252525] border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm placeholder:text-zinc-600"
                           placeholder="Your name"
-                        />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              imageFile: e.target.files[0],
-                            })
-                          }
-                          className="w-full px-4 py-2.5 bg-[#252525] border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm placeholder:text-zinc-600"
-                          placeholder="Image URL"
                         />
                       </motion.div>
                     ) : (

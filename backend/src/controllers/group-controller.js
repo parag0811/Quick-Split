@@ -5,6 +5,9 @@ import crypto from "crypto";
 import Group from "../models/group.js";
 import Expense from "../models/expense.js";
 import Settlement from "../models/settlement.js";
+import { s3 } from "../config/s3.js";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 const createGroup = async (req, res, next) => {
   try {
@@ -195,7 +198,7 @@ const getGroupSummary = async (req, res, next) => {
 
     const group = await Group.findById(group_id).populate(
       "members.user",
-      "name email image",
+      "name email image imageKey",
     );
     if (!group) {
       const error = new Error("Group not found.");
@@ -213,12 +216,26 @@ const getGroupSummary = async (req, res, next) => {
       throw error;
     }
 
-    const members = group.members.filter((m) => m.user).map((m) => ({
-      _id: m.user._id,
-      name: m.user.name,
-      email: m.user.email,
-      image: m.user.image,
-    }));
+    const rawMembers = group.members.filter((m) => m.user);
+
+    const members = await Promise.all(
+      rawMembers.map(async (m) => {
+        let image = m.user.image || null;
+        if (m.user.imageKey) {
+          const command = new GetObjectCommand({
+            Bucket: process.env.AWS_BUCKET_NAME,
+            Key: m.user.imageKey,
+          });
+          image = await getSignedUrl(s3, command, { expiresIn: 3600 });
+        }
+        return {
+          _id: m.user._id,
+          name: m.user.name,
+          email: m.user.email,
+          image,
+        };
+      }),
+    );
 
     const expenses = await Expense.find({ group: group_id });
 

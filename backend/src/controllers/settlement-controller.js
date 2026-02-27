@@ -4,6 +4,9 @@ dotenv.config();
 import Group from "../models/group.js";
 import Expense from "../models/expense.js";
 import Settlement from "../models/settlement.js";
+import { s3 } from "../config/s3.js";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 const getAllSettlement = async (req, res, next) => {
   try {
@@ -39,12 +42,24 @@ const getAllSettlement = async (req, res, next) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const settlements = await Settlement.find(filter)
-      .populate("from", "name email image")
-      .populate("to", "name email image")
+      .populate("from", "name email image imageKey")
+      .populate("to", "name email image imageKey")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
       .lean();
+
+    // Resolve signed S3 URLs for profile images
+    for (const s of settlements) {
+      if (s.from?.imageKey) {
+        const cmd = new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: s.from.imageKey });
+        s.from.image = await getSignedUrl(s3, cmd, { expiresIn: 3600 });
+      }
+      if (s.to?.imageKey) {
+        const cmd = new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: s.to.imageKey });
+        s.to.image = await getSignedUrl(s3, cmd, { expiresIn: 3600 });
+      }
+    }
 
     const totalCount = await Settlement.countDocuments(filter);
 
