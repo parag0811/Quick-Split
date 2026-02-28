@@ -15,9 +15,9 @@ import {
 import { apiFetch } from "@/lib/api";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { toastSuccess, toastError } from "@/lib/toast";
+import { toastError } from "@/lib/toast";
 import GroupSocketListener from "@/components/socket/GroupSocketListener";
-import {  useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 
 const STATUS_TABS = [
   { key: "pending", label: "Pending", icon: Clock },
@@ -84,10 +84,10 @@ export default function SettlementPage() {
   const handleGenerateSettlement = async () => {
     setIsGenerating(true);
     try {
-      const response = await apiFetch(`/group/${groupId}/settlement`, {
+      await apiFetch(`/group/${groupId}/settlement`, {
         method: "POST",
       });
-      toastSuccess(response?.message || "Settlement generated successfully!");
+      // Socket listener handles the success toast for all group members
       setCurrentPage(1);
     } catch (error) {
       toastError(error?.message || "Failed to generate settlement.");
@@ -99,11 +99,11 @@ export default function SettlementPage() {
   const markAsPaid = async (settlementId) => {
     setMarkingPaidId(settlementId);
     try {
-      const response = await apiFetch(
+      await apiFetch(
         `/group/settlement/${settlementId}/mark-paid`,
         { method: "POST" }
       );
-      toastSuccess(response?.message || "Settlement marked as paid!");
+      // Socket listener handles the success toast for all group members
     } catch (error) {
       toastError(error?.message || "Failed to mark as paid.");
     } finally {

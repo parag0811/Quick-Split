@@ -7,6 +7,7 @@ import Settlement from "../models/settlement.js";
 import { s3 } from "../config/s3.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { predictSettlementRisk } from "../services/ml/settlementRiskService.js";
 
 const getAllSettlement = async (req, res, next) => {
   try {

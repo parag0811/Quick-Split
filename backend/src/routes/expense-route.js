@@ -64,6 +64,14 @@ router.post(
   expense_controller.addExpense,
 );
 
+router.put(
+  "/group/:groupId/expense/:expenseId/edit",
+  isAuth,
+  expenseValidation,
+  expressValidation,
+  expense_controller.editExpense,
+);
+
 router.post("/group/:groupId/balance", isAuth, expense_controller.balance);
 
 router.delete(

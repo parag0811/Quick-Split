@@ -63,7 +63,7 @@ export const detectAnomaly = async (userId, currentAmount) => {
   };
 
   // Calling fastAPi microservice
-  const baseUrl = process.env.ML_SERVICE_URL;
+  const baseUrl = process.env.ANOMALY_ML_SERVICE_URL;
   try {
     const response = await fetch(`${baseUrl}/predict`, {
       method: "POST",

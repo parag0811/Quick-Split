@@ -66,7 +66,7 @@ export const predictSettlementRisk = async (userId, currentAmount) => {
     avg_delay_last_5,
   };
 
-  const baseUrl = process.env.ML_SERVICE_URL;
+  const baseUrl = process.env.SETTLEMENT_RISK_ML_SERVICE_URL;
 
   try {
     const response = await fetch(`${baseUrl}/risk-predict`, {

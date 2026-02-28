@@ -9,6 +9,8 @@ import {
   UserCheck,
   Split,
   AlertTriangle,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -30,7 +32,10 @@ export default function ExpensePage() {
   });
 
   const refreshKey = useSelector((state) => state.group.refreshKey);
-  // const currentUserId = useSelector((state) => state.auth.user?._id);
+  const currentUserId = useSelector((state) => state.auth.user?._id);
+
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
 
   const fetchExpenses = async () => {
     try {
@@ -54,6 +59,30 @@ export default function ExpensePage() {
 
   const toggleExpand = (id) => {
     setExpandedExpense((prev) => (prev === id ? null : id));
+  };
+
+  const handleDelete = async (expenseId) => {
+    if (!confirm("Are you sure you want to delete this expense?")) return;
+    try {
+      setDeletingId(expenseId);
+      setDeleteError("");
+      await apiFetch(`/group/expenses/${expenseId}/deleteExpense`, {
+        method: "DELETE",
+      });
+      fetchExpenses();
+    } catch (error) {
+      if (error.statusCode === 409) {
+        setDeleteError("Cannot delete — expense belongs to a previous settlement window.");
+      } else if (error.statusCode === 403) {
+        setDeleteError("Only the expense creator or group creator can delete this.");
+      } else if (error.statusCode === 404) {
+        setDeleteError("Expense not found. It may already have been deleted.");
+      } else {
+        setDeleteError(error.message || "Failed to delete expense.");
+      }
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -81,7 +110,6 @@ export default function ExpensePage() {
       : `${expense.splitType} Split among ${count} member${count !== 1 ? "s" : ""}`;
   };
 
-  // Only show anomaly badge if current user is the payer AND expense is anomalous
   const shouldShowAnomaly = (expense) => {
     return (
       expense.isAnomalous === true && expense.paidBy?._id === currentUserId
@@ -229,7 +257,6 @@ export default function ExpensePage() {
                           </motion.div>
                         </div>
 
-                        {/* Anomaly contextual message — below title row */}
                         {isAnomalous && (
                           <motion.div
                             initial={{ opacity: 0, y: -4 }}
@@ -349,6 +376,45 @@ export default function ExpensePage() {
                                   </motion.div>
                                 ))}
                               </div>
+
+                              {deleteError && expandedExpense === expense._id && (
+                                <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                  <AlertTriangle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
+                                  <p className="text-xs text-red-300">{deleteError}</p>
+                                </div>
+                              )}
+
+                              {/* Edit & Delete actions */}
+                              <motion.div
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="mt-4 pt-4 border-t border-gray-800 flex items-center gap-3"
+                              >
+                                <button
+                                  onClick={() =>
+                                    router.push(
+                                      `/dashboard/groups/${groupId}/expense/${expense._id}/edit`
+                                    )
+                                  }
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-cyan-400 bg-cyan-600/10 border border-cyan-600/20 hover:bg-cyan-600/20 rounded-lg transition-all cursor-pointer"
+                                >
+                                  <Pencil size={13} />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(expense._id)}
+                                  disabled={deletingId === expense._id}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-400 bg-red-600/10 border border-red-600/20 hover:bg-red-600/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all cursor-pointer"
+                                >
+                                  {deletingId === expense._id ? (
+                                    <span className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
+                                  ) : (
+                                    <Trash2 size={13} />
+                                  )}
+                                  {deletingId === expense._id ? "Deleting..." : "Delete"}
+                                </button>
+                              </motion.div>
                             </div>
                           </motion.div>
                         )}

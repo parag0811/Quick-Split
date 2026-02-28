@@ -22,6 +22,7 @@ export default function CreateExpenseForm() {
   const [membersLoading, setMembersLoading] = useState(true);
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitError, setSubmitError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const { groupId } = useParams();
   const router = useRouter();
@@ -146,6 +147,7 @@ export default function CreateExpenseForm() {
     const payload = { ...formData, participants: participantsPayload };
 
     try {
+      setSubmitting(true);
       const data = await apiFetch(`/group/${groupId}/expense/add`, {
         method: "POST",
         body: payload,
@@ -165,16 +167,26 @@ export default function CreateExpenseForm() {
         return;
       }
 
+      if (error.statusCode === 403) {
+        setSubmitError("You are not authorized to add expenses in this group.");
+        return;
+      }
+      if (error.statusCode === 404) {
+        setSubmitError("Group not found. It may have been deleted.");
+        return;
+      }
       if (!navigator.onLine) {
         setSubmitError("You're offline. Check your connection and try again.");
         return;
       }
-      if (error.status === 503 || error.status === 429) {
+      if (error.statusCode === 503 || error.statusCode === 429) {
         setSubmitError("Service temporarily unavailable. Please try again in a moment.");
         return;
       }
 
-      throw error;
+      setSubmitError(error.message || "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -480,14 +492,19 @@ export default function CreateExpenseForm() {
               <button
                 type="submit"
                 disabled={
-                  formData.participants.length > 0 &&
+                  submitting ||
+                  (formData.participants.length > 0 &&
                   formData.splitType !== "equal" &&
-                  !isSumValid
+                  !isSumValid)
                 }
                 className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:from-cyan-900 disabled:to-blue-900 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-cyan-900/30 hover:shadow-cyan-900/50 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Plus size={18} />
-                Add Expense
+                {submitting ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Plus size={18} />
+                )}
+                {submitting ? "Adding..." : "Add Expense"}
               </button>
             </div>
           </div>
