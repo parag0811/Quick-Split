@@ -52,11 +52,17 @@ const getAllSettlement = async (req, res, next) => {
     // Resolve signed S3 URLs for profile images
     for (const s of settlements) {
       if (s.from?.imageKey) {
-        const cmd = new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: s.from.imageKey });
+        const cmd = new GetObjectCommand({
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: s.from.imageKey,
+        });
         s.from.image = await getSignedUrl(s3, cmd, { expiresIn: 3600 });
       }
       if (s.to?.imageKey) {
-        const cmd = new GetObjectCommand({ Bucket: process.env.AWS_BUCKET_NAME, Key: s.to.imageKey });
+        const cmd = new GetObjectCommand({
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: s.to.imageKey,
+        });
         s.to.image = await getSignedUrl(s3, cmd, { expiresIn: 3600 });
       }
     }
@@ -204,6 +210,9 @@ const createSettlement = async (req, res, next) => {
     io.to(group_id.toString()).emit("settlement-generated", {
       settlements: savedSettlements,
     });
+
+    group.lastSettlementAt = new Date();
+    await group.save();
 
     return res.status(201).json({
       message: "Settlements Created.",

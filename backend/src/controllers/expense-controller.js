@@ -216,6 +216,189 @@ const addExpense = async (req, res, next) => {
   }
 };
 
+const editExpense = async (req, res, next) => {
+  try {
+    const user_id = req.user.id;
+    const expense_id = req.params.expenseId;
+
+    const expense = await Expense.findById(expense_id);
+    if (!expense) {
+      const error = new Error("Expense not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const group = await Group.findById(expense.group);
+    if (!group) {
+      const error = new Error("Group not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const isMember = group.members.some((m) => m.user.toString() === user_id);
+
+    if (!isMember) {
+      const error = new Error("Not Authorized.");
+      error.statusCode = 403;
+      throw error;
+    }
+
+    // block edit if expense was part of previous settlement window
+    if (group.lastSettlementAt && expense.createdAt < group.lastSettlementAt) {
+      const error = new Error(
+        "Cannot edit expense from a previous settlement window.",
+      );
+      error.statusCode = 409;
+      throw error;
+    }
+
+    const {
+      title,
+      totalAmount,
+      category,
+      notes,
+      splitType,
+      participants,
+      paidBy,
+    } = req.body;
+
+    const amountNumber = Number(totalAmount);
+
+    if (isNaN(amountNumber) || amountNumber <= 0) {
+      const error = new Error("Invalid total amount.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const isValidPayer = group.members.some(
+      (m) => m.user.toString() === paidBy,
+    );
+
+    if (!isValidPayer) {
+      const error = new Error("Payer must be valid group member.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    let finalSplits = [];
+
+    const involvedUsers =
+      participants && participants.length > 0
+        ? participants
+        : group.members.map((m) => ({
+            userId: m.user.toString(),
+          }));
+
+    const numberOfUsers = involvedUsers.length;
+
+    if (numberOfUsers === 0) {
+      const error = new Error("No participants provided.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // Validate participants
+    involvedUsers.forEach((p) => {
+      const valid = group.members.some((m) => m.user.toString() === p.userId);
+      if (!valid) {
+        const error = new Error("Invalid participant.");
+        error.statusCode = 400;
+        throw error;
+      }
+    });
+
+    // Split logic
+    if (splitType === "equal") {
+      const eachShare = Number((amountNumber / numberOfUsers).toFixed(2));
+
+      finalSplits = involvedUsers.map((p) => ({
+        user: p.userId,
+        amount: eachShare,
+        isPaid: false,
+      }));
+    } else if (splitType === "manual") {
+      let sum = 0;
+
+      finalSplits = involvedUsers.map((p) => {
+        if (typeof p.value !== "number") {
+          throw new Error("Manual split requires amounts.");
+        }
+        sum += p.value;
+
+        return {
+          user: p.userId,
+          amount: p.value,
+          isPaid: false,
+        };
+      });
+
+      if (Number(sum.toFixed(2)) !== Number(amountNumber.toFixed(2))) {
+        const error = new Error(
+          "Manual split total does not match expense amount.",
+        );
+        error.statusCode = 400;
+        throw error;
+      }
+    } else if (splitType === "percentage") {
+      let percentSum = 0;
+
+      involvedUsers.forEach((p) => {
+        if (typeof p.value !== "number") {
+          throw new Error("Percentage split requires values.");
+        }
+        percentSum += p.value;
+      });
+
+      if (percentSum !== 100) {
+        const error = new Error("Total percentage must equal 100%.");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      finalSplits = involvedUsers.map((p) => ({
+        user: p.userId,
+        amount: Number(((p.value / 100) * amountNumber).toFixed(2)),
+        isPaid: false,
+      }));
+    } else {
+      const error = new Error("Invalid split type.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    // re-run anomaly detection
+    const { isAnomalous, anomalyScore } = await detectAnomaly(
+      paidBy,
+      amountNumber,
+    );
+
+    // update expense
+    expense.title = title;
+    expense.totalAmount = amountNumber;
+    expense.category = category;
+    expense.notes = notes;
+    expense.splitType = splitType;
+    expense.paidBy = paidBy;
+    expense.splits = finalSplits;
+    expense.isAnomalous = isAnomalous;
+    expense.anomalyScore = anomalyScore;
+
+    await expense.save();
+
+    const io = req.app.get("io");
+    io.to(group._id.toString()).emit("expense-updated", {
+      expense,
+    });
+
+    return res.status(200).json({
+      message: "Expense updated successfully.",
+      expense,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const balance = async (req, res, next) => {
   try {
     const group_id = req.params.id;
@@ -292,7 +475,7 @@ const deleteExpense = async (req, res, next) => {
       throw error;
     }
 
-    const group = await Group.find(expense.group);
+    const group = await Group.findById(expense.group);
     if (!group) {
       const error = new Error("Group not found");
       error.statusCode = 404;
@@ -319,10 +502,18 @@ const deleteExpense = async (req, res, next) => {
       throw error;
     }
 
+    if (group.lastSettlementAt && expense.createdAt < group.lastSettlementAt) {
+      const error = new Error(
+        "Cannot delete expense from a previous settlement window.",
+      );
+      error.statusCode = 409;
+      throw error;
+    }
+
     await Expense.findByIdAndDelete(expense_id);
 
     const io = req.app.get("io");
-    io.to(group_id.toString()).emit("expense-deleted", {
+    io.to(group._id.toString()).emit("expense-deleted", {
       expenseId: expense._id.toString(),
     });
 
@@ -335,6 +526,7 @@ const deleteExpense = async (req, res, next) => {
 export default {
   getAllExpense,
   addExpense,
+  editExpense,
   balance,
   deleteExpense,
 };

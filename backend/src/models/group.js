@@ -30,7 +30,10 @@ const groupSchema = new mongoose.Schema({
       },
     },
   ],
-
+  lastSettlementAt: {
+    type: Date,
+    default: null,
+  },
   inviteToken: {
     type: String,
     default: true,
