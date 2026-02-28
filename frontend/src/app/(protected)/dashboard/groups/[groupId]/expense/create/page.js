@@ -6,6 +6,7 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { toastInfo } from "@/lib/toast";
+import GroupSocketListener from "@/components/socket/GroupSocketListener";
 
 function FieldError({ msg }) {
   if (!msg) return null;
@@ -191,6 +192,8 @@ export default function CreateExpenseForm() {
   };
 
   return (
+    <>
+    <GroupSocketListener groupId={groupId} />
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-[#1a1a1a] border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
 
@@ -511,5 +514,6 @@ export default function CreateExpenseForm() {
         </form>
       </div>
     </div>
+    </>
   );
 }

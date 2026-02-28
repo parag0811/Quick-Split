@@ -30,6 +30,16 @@ export default function GroupSocketListener({ groupId }) {
       }
     });
 
+    // Expense Updated
+    socket.on("expense-updated", (data) => {
+      try {
+        toastSuccess("Expense updated");
+        dispatch(triggerRefresh());
+      } catch (error) {
+        console.error("Error handling expense-updated event:", error);
+      }
+    });
+
     // Expense Deleted
     socket.on("expense-deleted", (data) => {
       try {
@@ -89,6 +99,7 @@ export default function GroupSocketListener({ groupId }) {
       }
 
       socket.off("expense-added");
+      socket.off("expense-updated");
       socket.off("expense-deleted");
       socket.off("settlement-generated");
       socket.off("settlement-paid");
