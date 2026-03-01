@@ -184,7 +184,7 @@ const addExpense = async (req, res, next) => {
 
     const { isAnomalous, anomalyScore } = await detectAnomaly(
       paidBy,
-      totalAmount,
+      amountNumber,
     );
 
     const expense = await Expense.create({
@@ -365,13 +365,13 @@ const editExpense = async (req, res, next) => {
       error.statusCode = 400;
       throw error;
     }
-
+    console.log("Reached anomaly block");
     // re-run anomaly detection
     const { isAnomalous, anomalyScore } = await detectAnomaly(
       paidBy,
       amountNumber,
     );
-
+    console.log("Anomaly result:", isAnomalous, anomalyScore);
     // update expense
     expense.title = title;
     expense.totalAmount = amountNumber;

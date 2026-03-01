@@ -1,4 +1,5 @@
 import Expense from "../../models/expense.js";
+import mongoose from "mongoose";
 
 // ML microcservice call for anomaly detection
 export const detectAnomaly = async (userId, currentAmount) => {
@@ -7,7 +8,7 @@ export const detectAnomaly = async (userId, currentAmount) => {
   const stats = await Expense.aggregate([
     {
       $match: {
-        paidBy: userId,
+        paidBy: new mongoose.Types.ObjectId(userId),
       },
     },
     {
@@ -22,6 +23,7 @@ export const detectAnomaly = async (userId, currentAmount) => {
       },
     },
   ]);
+  console.log("Stats returned:", stats);
 
   if (!stats.length) {
     return {
@@ -41,7 +43,6 @@ export const detectAnomaly = async (userId, currentAmount) => {
 
   const past_transaction_count = count;
   const user_avg_amount = avgAmount || currentAmount;
-  // const amount_minus_user_avg = currentAmount - user_avg_amount;
 
   let time_gap_minutes = 0;
   if (lastExpenseDate) {
@@ -56,12 +57,12 @@ export const detectAnomaly = async (userId, currentAmount) => {
     amount: currentAmount,
     past_transaction_count,
     user_avg_amount,
-    // amount_minus_user_avg,
     time_gap_minutes,
     hour,
     day_of_week,
   };
 
+  console.log("Payload:", JSON.stringify(payload, null, 2));
   // Calling fastAPi microservice
   const baseUrl = process.env.ANOMALY_ML_SERVICE_URL;
   try {
@@ -70,10 +71,11 @@ export const detectAnomaly = async (userId, currentAmount) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-
+    const data = await response.json();
+    console.log("ML response:", data);
     return {
-      isAnomalous: response.data.isAnomalous,
-      anomalyScore: response.data.score,
+      isAnomalous: data.is_suspicious ?? false,
+      anomalyScore: data.anomaly_score ?? 0,
     };
   } catch (error) {
     console.error("ML Service Error:", error.message);
