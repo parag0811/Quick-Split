@@ -89,22 +89,43 @@ const getMyProfile = async (req, res, next) => {
       $or: [{ paidBy: user_id }, { "splits.user": user_id }],
     });
 
-    let totalPaid = 0;
-    let totalOwed = 0;
+    let youPaidFor = 0; 
+    let totalSpent = 0; 
 
     expenses.forEach((exp) => {
       if (exp.paidBy.toString() === user_id) {
-        totalPaid += exp.totalAmount;
+        youPaidFor += exp.totalAmount;
       }
 
       exp.splits.forEach((split) => {
         if (split.user.toString() === user_id) {
-          totalOwed += split.amount;
+          totalSpent += split.amount;
         }
       });
     });
 
-    const netBalance = Number((totalPaid - totalOwed).toFixed(2));
+    const settlements = await Settlement.find({
+      $or: [{ from: user_id }, { to: user_id }],
+      isSettled: true,
+    });
+
+    let settledReceived = 0; 
+    let settledPaid = 0;     
+
+    settlements.forEach((s) => {
+      if (s.to.toString() === user_id) {
+        settledReceived += s.amount;
+      }
+      if (s.from.toString() === user_id) {
+        settledPaid += s.amount;
+      }
+    });
+
+    const totalSettled = Number((settledPaid + settledReceived).toFixed(2));
+
+    const outstandingBalance = Number(
+      ((youPaidFor - totalSpent) - settledReceived + settledPaid).toFixed(2)
+    );
 
     return res.status(200).json({
       message: "User profile fetched successfully.",
@@ -116,9 +137,10 @@ const getMyProfile = async (req, res, next) => {
       },
       stats: {
         totalGroups: groups.length,
-        totalPaid: Number(totalPaid.toFixed(2)),
-        totalOwed: Number(totalOwed.toFixed(2)),
-        netBalance,
+        totalSpent: Number(totalSpent.toFixed(2)),
+        youPaidFor: Number(youPaidFor.toFixed(2)),
+        totalSettled,
+        outstandingBalance,
       },
     });
   } catch (error) {

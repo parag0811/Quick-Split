@@ -15,6 +15,8 @@ import {
   Camera,
   Loader2,
   DollarSign,
+  CheckCircle,
+  CreditCard,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useDispatch, useSelector } from "react-redux";
@@ -51,6 +53,8 @@ export default function Profile() {
       setLoading(true);
       const response = await apiFetch("/auth/user/profile");
       setStats(response.stats);
+    } catch (err) {
+      setError(err.message || "Failed to load profile stats.");
     } finally {
       setLoading(false);
     }
@@ -104,7 +108,7 @@ export default function Profile() {
     }
   };
 
-  if (loading) {
+  if (loading || !user) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <motion.div
@@ -293,13 +297,13 @@ export default function Profile() {
 
           {/* Stats Section */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Net Balance Card */}
+            {/* Outstanding Balance Card */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
               className={`rounded-2xl border p-6 ${
-                stats?.netBalance >= 0
+                stats?.outstandingBalance >= 0
                   ? "bg-emerald-500/10 border-emerald-500/20"
                   : "bg-rose-500/10 border-rose-500/20"
               }`}
@@ -307,26 +311,26 @@ export default function Profile() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-zinc-400 text-sm font-medium mb-1">
-                    Net Balance
+                    Outstanding Balance
                   </p>
                   <div className="flex items-baseline gap-2">
                     <h3
                       className={`text-4xl font-bold ${
-                        stats?.netBalance >= 0
+                        stats?.outstandingBalance >= 0
                           ? "text-emerald-400"
                           : "text-rose-400"
                       }`}
                     >
-                      ${Math.abs(stats?.netBalance || 0).toFixed(2)}
+                      ₹{Math.abs(stats?.outstandingBalance || 0).toFixed(2)}
                     </h3>
                     <span
                       className={`text-sm font-medium ${
-                        stats?.netBalance >= 0
+                        stats?.outstandingBalance >= 0
                           ? "text-emerald-500"
                           : "text-rose-500"
                       }`}
                     >
-                      {stats?.netBalance >= 0 ? "You are owed" : "You owe"}
+                      {stats?.outstandingBalance >= 0 ? "Others owe you" : "You owe"}
                     </span>
                   </div>
                 </div>
@@ -334,7 +338,7 @@ export default function Profile() {
                   animate={{ rotate: [0, 5, -5, 0] }}
                   transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
                   className={`p-4 rounded-full ${
-                    stats?.netBalance >= 0
+                    stats?.outstandingBalance >= 0
                       ? "bg-emerald-500/15 text-emerald-400"
                       : "bg-rose-500/15 text-rose-400"
                   }`}
@@ -355,18 +359,18 @@ export default function Profile() {
               >
                 <div className="flex items-center justify-between mb-4">
                   <div className="p-2.5 bg-blue-500/15 rounded-xl">
-                    <TrendingUp className="w-5 h-5 text-blue-400" />
+                    <DollarSign className="w-5 h-5 text-blue-400" />
                   </div>
-                  <DollarSign className="w-4 h-4 text-zinc-600" />
+                  <TrendingDown className="w-4 h-4 text-zinc-600" />
                 </div>
                 <p className="text-zinc-500 text-xs font-medium mb-1">
-                  Total Paid
+                  Total Spent
                 </p>
                 <h4 className="text-3xl font-bold text-white">
-                  ${stats?.totalPaid?.toFixed(2) || "0.00"}
+                  ₹{stats?.totalSpent?.toFixed(2) || "0.00"}
                 </h4>
                 <p className="text-xs text-zinc-600 mt-2">
-                  Amount you've paid for groups
+                  Your share across all expenses
                 </p>
               </motion.div>
 
@@ -378,19 +382,43 @@ export default function Profile() {
                 className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-6"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="p-2.5 bg-orange-500/15 rounded-xl">
-                    <TrendingDown className="w-5 h-5 text-orange-400" />
+                  <div className="p-2.5 bg-cyan-500/15 rounded-xl">
+                    <CreditCard className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <TrendingUp className="w-4 h-4 text-zinc-600" />
+                </div>
+                <p className="text-zinc-500 text-xs font-medium mb-1">
+                  You Paid For
+                </p>
+                <h4 className="text-3xl font-bold text-white">
+                  ₹{stats?.youPaidFor?.toFixed(2) || "0.00"}
+                </h4>
+                <p className="text-xs text-zinc-600 mt-2">
+                  Total you fronted for groups
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45 }}
+                whileHover={{ y: -4 }}
+                className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-2.5 bg-emerald-500/15 rounded-xl">
+                    <CheckCircle className="w-5 h-5 text-emerald-400" />
                   </div>
                   <DollarSign className="w-4 h-4 text-zinc-600" />
                 </div>
                 <p className="text-zinc-500 text-xs font-medium mb-1">
-                  Total Owed
+                  Total Settled
                 </p>
                 <h4 className="text-3xl font-bold text-white">
-                  ${stats?.totalOwed?.toFixed(2) || "0.00"}
+                  ₹{stats?.totalSettled?.toFixed(2) || "0.00"}
                 </h4>
                 <p className="text-xs text-zinc-600 mt-2">
-                  Your share of group expenses
+                  Amount cleared via settlements
                 </p>
               </motion.div>
 
@@ -399,7 +427,7 @@ export default function Profile() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
                 whileHover={{ y: -4 }}
-                className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-6 sm:col-span-2"
+                className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-6"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -442,32 +470,38 @@ export default function Profile() {
                 <div className="h-px bg-white/5" />
                 <div className="flex justify-between items-center">
                   <span className="text-zinc-500 text-sm">
-                    You've contributed
+                    Total Spent
                   </span>
                   <span className="font-semibold text-zinc-200 text-sm">
-                    ${stats?.totalPaid?.toFixed(2) || "0.00"}
+                    ₹{stats?.totalSpent?.toFixed(2) || "0.00"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-500 text-sm">Your expenses</span>
+                  <span className="text-zinc-500 text-sm">You Paid For</span>
                   <span className="font-semibold text-zinc-200 text-sm">
-                    ${stats?.totalOwed?.toFixed(2) || "0.00"}
+                    ₹{stats?.youPaidFor?.toFixed(2) || "0.00"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-zinc-500 text-sm">Settled</span>
+                  <span className="font-semibold text-zinc-200 text-sm">
+                    ₹{stats?.totalSettled?.toFixed(2) || "0.00"}
                   </span>
                 </div>
                 <div className="h-px bg-white/5" />
                 <div className="flex justify-between items-center">
                   <span className="text-white font-semibold text-sm">
-                    Net Position
+                    Outstanding
                   </span>
                   <span
                     className={`font-bold text-base ${
-                      stats?.netBalance >= 0
+                      stats?.outstandingBalance >= 0
                         ? "text-emerald-400"
                         : "text-rose-400"
                     }`}
                   >
-                    {stats?.netBalance >= 0 ? "+" : "-"}$
-                    {Math.abs(stats?.netBalance || 0).toFixed(2)}
+                    {stats?.outstandingBalance >= 0 ? "+" : "-"}₹
+                    {Math.abs(stats?.outstandingBalance || 0).toFixed(2)}
                   </span>
                 </div>
               </div>
