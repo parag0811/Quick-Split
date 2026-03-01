@@ -700,6 +700,7 @@ export default function GroupOverview() {
             <motion.button
               whileHover={{ scale: 1.05, y: -5 }}
               whileTap={{ scale: 0.98 }}
+              onClick={() => router.push(`/dashboard/groups/${data.group.id}/analytics`)}
               className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 hover:border-purple-700 hover:bg-[#1f1f1f] transition-all duration-200 text-left group cursor-pointer"
             >
               <div className="flex items-center justify-between mb-4">

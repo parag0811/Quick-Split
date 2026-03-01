@@ -8,6 +8,7 @@ import Settlement from "../models/settlement.js";
 import { s3 } from "../config/s3.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
+import mongoose from "mongoose";
 
 const createGroup = async (req, res, next) => {
   try {
@@ -101,10 +102,10 @@ const joinGroup = async (req, res, next) => {
 
     await group.save();
 
-    const io = req.app.get("io")
+    const io = req.app.get("io");
     io.to(group_id.toString()).emit("member-joined", {
-      userId : user_id.toString()
-    })
+      userId: user_id.toString(),
+    });
 
     return res
       .status(200)
@@ -296,15 +297,21 @@ const getGroupSummary = async (req, res, next) => {
     let youOwe = [];
     let youGet = [];
 
-    let i = 0, j = 0;
+    let i = 0,
+      j = 0;
     while (i < debtors.length && j < creditors.length) {
       const debtor = debtors[i];
       const creditor = creditors[j];
-      const payAmount = Number(Math.min(debtor.owed, creditor.amount).toFixed(2));
+      const payAmount = Number(
+        Math.min(debtor.owed, creditor.amount).toFixed(2),
+      );
 
       if (debtor.user === user_id && payAmount > 0) {
         youOwe.push({
-          to: memberMap[creditor.user] || { _id: creditor.user, name: "Unknown" },
+          to: memberMap[creditor.user] || {
+            _id: creditor.user,
+            name: "Unknown",
+          },
           amount: payAmount,
         });
       }
@@ -322,7 +329,8 @@ const getGroupSummary = async (req, res, next) => {
       if (creditor.amount === 0) j++;
     }
 
-    const isSettled = yourBalance === 0 && creditors.length === 0 && debtors.length === 0;
+    const isSettled =
+      yourBalance === 0 && creditors.length === 0 && debtors.length === 0;
 
     return res.status(200).json({
       message: "Group Summary fetched successfully.",
@@ -340,7 +348,7 @@ const getGroupSummary = async (req, res, next) => {
       youGet,
     });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     next(error);
   }
 };
@@ -471,10 +479,10 @@ const removeMember = async (req, res, next) => {
 
     await group.save();
 
-    const io = req.app.get("io")
+    const io = req.app.get("io");
     io.to(group_id.toString()).emit("member-removed", {
-      memberId : isTargetMember.toString()
-    })
+      memberId: isTargetMember.toString(),
+    });
 
     return res.status(200).json({
       message: "Member removed successfully.",
@@ -505,6 +513,8 @@ const groupAnalytics = async (req, res, next) => {
       error.statusCode = 403;
       throw error;
     }
+
+    const objectGroupId = new mongoose.Types.ObjectId(group_id);
 
     const overviewAgg = await Expense.aggregate([
       { $match: { group: objectGroupId } },
@@ -600,6 +610,7 @@ const groupAnalytics = async (req, res, next) => {
       dailyTrend,
     });
   } catch (error) {
+    console.log("Error of group anal : ", error);
     next(error);
   }
 };
