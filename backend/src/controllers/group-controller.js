@@ -244,11 +244,6 @@ const getGroupSummary = async (req, res, next) => {
       isSettled: true,
     });
 
-    const unsettledSettlements = await Settlement.find({
-      group: group_id,
-      isSettled: false,
-    }).populate("from to", "name email");
-
     let balance = {};
 
     members.forEach((m) => {
@@ -281,26 +276,53 @@ const getGroupSummary = async (req, res, next) => {
 
     const yourBalance = Number((balance[user_id] || 0).toFixed(2));
 
+    const memberMap = {};
+    members.forEach((m) => {
+      memberMap[m._id.toString()] = m;
+    });
+
+    let creditors = [];
+    let debtors = [];
+
+    for (const [userId, amount] of Object.entries(balance)) {
+      const rounded = Number(amount.toFixed(2));
+      if (rounded > 0) {
+        creditors.push({ user: userId, amount: rounded });
+      } else if (rounded < 0) {
+        debtors.push({ user: userId, owed: Math.abs(rounded) });
+      }
+    }
+
     let youOwe = [];
     let youGet = [];
 
-    unsettledSettlements.forEach((s) => {
-      if (s.from._id.toString() === user_id) {
+    let i = 0, j = 0;
+    while (i < debtors.length && j < creditors.length) {
+      const debtor = debtors[i];
+      const creditor = creditors[j];
+      const payAmount = Number(Math.min(debtor.owed, creditor.amount).toFixed(2));
+
+      if (debtor.user === user_id && payAmount > 0) {
         youOwe.push({
-          to: s.to,
-          amount: s.amount,
+          to: memberMap[creditor.user] || { _id: creditor.user, name: "Unknown" },
+          amount: payAmount,
         });
       }
-
-      if (s.to._id.toString() === user_id) {
+      if (creditor.user === user_id && payAmount > 0) {
         youGet.push({
-          from: s.from,
-          amount: s.amount,
+          from: memberMap[debtor.user] || { _id: debtor.user, name: "Unknown" },
+          amount: payAmount,
         });
       }
-    });
 
-    const isSettled = unsettledSettlements.length === 0;
+      debtor.owed = Number((debtor.owed - payAmount).toFixed(2));
+      creditor.amount = Number((creditor.amount - payAmount).toFixed(2));
+
+      if (debtor.owed === 0) i++;
+      if (creditor.amount === 0) j++;
+    }
+
+    const isSettled = yourBalance === 0 && creditors.length === 0 && debtors.length === 0;
 
     return res.status(200).json({
       message: "Group Summary fetched successfully.",

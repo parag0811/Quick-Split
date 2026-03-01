@@ -234,30 +234,56 @@ const getUserSummary = async (req, res, next) => {
       profileImage = await getSignedUrl(s3, command, { expiresIn: 3600 });
     }
 
-    const totalGroups = await Group.countDocuments({
-      "members.user": user_id,
-    });
+    // Get all groups user is in
+    const userGroups = await Group.find({ "members.user": user_id }).select("_id members");
 
-    const expenses = await Expense.find({
-      $or: [{ paidBy: user_id }, { "splits.user": user_id }],
-    });
+    let totalSpent = 0;
+    let youOwe = 0;
+    let youAreOwed = 0;
 
-    let totalPaid = 0;
-    let totalOwed = 0;
+    for (const group of userGroups) {
+      const groupId = group._id.toString();
+      const memberIds = group.members.map((m) => m.user.toString());
 
-    expenses.forEach((exp) => {
-      if (exp.paidBy.toString() === user_id) {
-        totalPaid += exp.totalAmount;
-      }
+      const balance = {};
+      memberIds.forEach((id) => { balance[id] = 0; });
 
-      exp.splits.forEach((split) => {
-        if (split.user.toString() === user_id) {
-          totalOwed += split.amount;
-        }
+      const groupExpenses = await Expense.find({ group: groupId });
+
+      groupExpenses.forEach((exp) => {
+        const payerId = exp.paidBy.toString();
+        if (balance[payerId] !== undefined) balance[payerId] += exp.totalAmount;
+
+        exp.splits.forEach((split) => {
+          const splitUserId = split.user.toString();
+          if (balance[splitUserId] !== undefined) balance[splitUserId] -= split.amount;
+
+          if (splitUserId === user_id) {
+            totalSpent += split.amount;
+          }
+        });
       });
-    });
 
-    const netBalance = Number((totalPaid - totalOwed).toFixed(2));
+      const settledInGroup = await Settlement.find({
+        group: groupId,
+        isSettled: true,
+      });
+
+      settledInGroup.forEach((s) => {
+        const from = s.from.toString();
+        const to = s.to.toString();
+        if (balance[from] !== undefined) balance[from] += s.amount;
+        if (balance[to] !== undefined) balance[to] -= s.amount;
+      });
+
+      // Current user's balance in this group
+      const myBalance = balance[user_id] || 0;
+      if (myBalance > 0) {
+        youAreOwed += myBalance; // others owe me
+      } else if (myBalance < 0) {
+        youOwe += Math.abs(myBalance); // I owe others
+      }
+    }
 
     const recentSettlements = await Settlement.find({
       $or: [{ from: user_id }, { to: user_id }],
@@ -286,10 +312,10 @@ const getUserSummary = async (req, res, next) => {
         image: profileImage,
       },
       stats: {
-        totalGroups,
-        totalPaid: Number(totalPaid.toFixed(2)),
-        totalOwed: Number(totalOwed.toFixed(2)),
-        netBalance,
+        totalGroups: userGroups.length,
+        totalSpent: Number(totalSpent.toFixed(2)),
+        youOwe: Number(youOwe.toFixed(2)),
+        youAreOwed: Number(youAreOwed.toFixed(2)),
       },
       recentSettlements: formattedSettlements,
     });

@@ -502,7 +502,7 @@ export default function GroupOverview() {
               className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all"
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="text-sm font-medium text-gray-400">Settlement Status</div>
+                <div className="text-sm font-medium text-gray-400">Pending Settlement Transaction</div>
                 <motion.div
                   whileHover={{ rotate: 360, scale: 1.2 }}
                   transition={{ duration: 0.5 }}

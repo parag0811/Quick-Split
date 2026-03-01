@@ -253,7 +253,7 @@ export default function ExpensePage() {
                             }}
                             className="text-2xl font-bold text-white"
                           >
-                            €{expense.amount ?? expense.totalAmount ?? 0}
+                            ₹{expense.amount ?? expense.totalAmount ?? 0}
                           </motion.div>
                         </div>
 

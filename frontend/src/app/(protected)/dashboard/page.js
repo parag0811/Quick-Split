@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
-  TrendingUp,
   ArrowRight,
   Users,
 } from "lucide-react";
@@ -91,12 +90,9 @@ export default function HomePage() {
   const hasGroups = stats?.totalGroups > 0;
   const userName = userData?.name?.split(" ")[0] || "there";
 
-  const youOwe = stats?.totalOwed ?? 0;
-  const youAreOwed = Math.max(
-    0,
-    (stats?.totalPaid ?? 0) - (stats?.totalOwed ?? 0),
-  );
-  const netBalance = stats?.netBalance ?? 0;
+  const totalSpent = stats?.totalSpent ?? 0;
+  const youOwe = stats?.youOwe ?? 0;
+  const youAreOwed = stats?.youAreOwed ?? 0;
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -146,7 +142,17 @@ export default function HomePage() {
           >
             <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm font-medium">You owe</p>
+                <p className="text-gray-400 text-sm font-medium">Total Spent</p>
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+              </div>
+              <p className="text-3xl font-bold text-blue-400">
+                ₹{totalSpent.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-gray-400 text-sm font-medium">You Owe</p>
                 <div className="w-2 h-2 rounded-full bg-red-500" />
               </div>
               <p className="text-3xl font-bold text-red-400">
@@ -156,24 +162,11 @@ export default function HomePage() {
 
             <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm font-medium">
-                  You are owed
-                </p>
+                <p className="text-gray-400 text-sm font-medium">You Are Owed</p>
                 <div className="w-2 h-2 rounded-full bg-green-500" />
               </div>
               <p className="text-3xl font-bold text-green-400">
                 ₹{youAreOwed.toLocaleString()}
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-500/30 transition-colors">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm font-medium">Net balance</p>
-                <TrendingUp className="w-4 h-4 text-cyan-400" />
-              </div>
-              <p className="text-3xl font-bold text-cyan-400">
-                {netBalance >= 0 ? "+" : ""}₹
-                {Math.abs(netBalance).toLocaleString()}
               </p>
             </div>
           </motion.div>
@@ -257,25 +250,22 @@ export default function HomePage() {
                   <p className="text-gray-400 text-sm mt-1">Total Groups</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-cyan-400">
-                    ₹{(stats?.totalPaid ?? 0).toLocaleString()}
+                  <p className="text-2xl font-bold text-blue-400">
+                    ₹{totalSpent.toLocaleString()}
                   </p>
-                  <p className="text-gray-400 text-sm mt-1">Total Paid</p>
+                  <p className="text-gray-400 text-sm mt-1">Total Spent</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-red-400">
-                    ₹{(stats?.totalOwed ?? 0).toLocaleString()}
+                    ₹{youOwe.toLocaleString()}
                   </p>
-                  <p className="text-gray-400 text-sm mt-1">Total Owed</p>
+                  <p className="text-gray-400 text-sm mt-1">You Owe</p>
                 </div>
                 <div className="text-center">
-                  <p
-                    className={`text-2xl font-bold ${netBalance >= 0 ? "text-green-400" : "text-red-400"}`}
-                  >
-                    {netBalance >= 0 ? "+" : ""}₹
-                    {Math.abs(netBalance).toLocaleString()}
+                  <p className="text-2xl font-bold text-green-400">
+                    ₹{youAreOwed.toLocaleString()}
                   </p>
-                  <p className="text-gray-400 text-sm mt-1">Net Balance</p>
+                  <p className="text-gray-400 text-sm mt-1">You Are Owed</p>
                 </div>
               </div>
             </div>
