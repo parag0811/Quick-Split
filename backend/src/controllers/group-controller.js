@@ -523,6 +523,8 @@ const groupAnalytics = async (req, res, next) => {
           _id: null,
           totalSpent: { $sum: "$totalAmount" },
           expenseCount: { $sum: 1 },
+          avgExpense: { $avg: "$totalAmount" },
+          maxExpense: { $max: "$totalAmount" },
         },
       },
     ]);
@@ -530,6 +532,8 @@ const groupAnalytics = async (req, res, next) => {
     const overview = overviewAgg[0] || {
       totalSpent: 0,
       expenseCount: 0,
+      avgExpense: 0,
+      maxExpense: 0,
     };
 
     const memberContribution = await Expense.aggregate([
@@ -538,6 +542,7 @@ const groupAnalytics = async (req, res, next) => {
         $group: {
           _id: "$paidBy",
           totalPaid: { $sum: "$totalAmount" },
+          count: { $sum: 1 },
         },
       },
       {
@@ -555,9 +560,30 @@ const groupAnalytics = async (req, res, next) => {
           userId: "$user._id",
           name: "$user.name",
           totalPaid: 1,
+          count: 1,
         },
       },
       { $sort: { totalPaid: -1 } },
+    ]);
+
+    const categoryBreakdown = await Expense.aggregate([
+      { $match: { group: objectGroupId } },
+      {
+        $group: {
+          _id: "$category",
+          total: { $sum: "$totalAmount" },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          category: { $ifNull: ["$_id", "other"] },
+          total: { $round: ["$total", 2] },
+          count: 1,
+        },
+      },
+      { $sort: { total: -1 } },
     ]);
 
     const dailyTrend = await Expense.aggregate([
@@ -570,6 +596,7 @@ const groupAnalytics = async (req, res, next) => {
             day: { $dayOfMonth: "$createdAt" },
           },
           total: { $sum: "$totalAmount" },
+          count: { $sum: 1 },
         },
       },
       {
@@ -583,15 +610,19 @@ const groupAnalytics = async (req, res, next) => {
         $project: {
           _id: 0,
           date: {
-            $concat: [
-              { $toString: "$_id.year" },
-              "-",
-              { $toString: "$_id.month" },
-              "-",
-              { $toString: "$_id.day" },
-            ],
+            $dateToString: {
+              format: "%b %d",
+              date: {
+                $dateFromParts: {
+                  year: "$_id.year",
+                  month: "$_id.month",
+                  day: "$_id.day",
+                },
+              },
+            },
           },
-          total: 1,
+          total: { $round: ["$total", 2] },
+          count: 1,
         },
       },
     ]);
@@ -605,12 +636,15 @@ const groupAnalytics = async (req, res, next) => {
       overview: {
         totalSpent: Number((overview.totalSpent || 0).toFixed(2)),
         expenseCount: overview.expenseCount || 0,
+        avgExpense: Number((overview.avgExpense || 0).toFixed(2)),
+        maxExpense: Number((overview.maxExpense || 0).toFixed(2)),
       },
       memberContribution,
+      categoryBreakdown,
       dailyTrend,
     });
   } catch (error) {
-    console.log("Error of group anal : ", error);
+    console.log("Error in group analytics: ", error);
     next(error);
   }
 };

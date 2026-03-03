@@ -41,6 +41,10 @@ export default function GroupOverview() {
   const [regeneratingInvite, setRegeneratingInvite] = useState(false);
   const [inviteData, setInviteData] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [removingMember, setRemovingMember] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState(null);
+  const [removeError, setRemoveError] = useState("");
 
   const router = useRouter();
 
@@ -117,9 +121,29 @@ export default function GroupOverview() {
     return `Expires in ${minutesLeft}m`;
   };
 
-  const handleRemoveMember = async (memberId, memberName) => {
-    // TODO: Implement member removal
-    console.log("Remove member:", memberId, memberName);
+  const handleRemoveMember = (memberId, memberName) => {
+    setRemoveTarget({ id: memberId, name: memberName });
+    setRemoveError("");
+    setShowRemoveModal(true);
+  };
+
+  const confirmRemoveMember = async () => {
+    if (!removeTarget) return;
+    setRemovingMember(true);
+    setRemoveError("");
+    try {
+      const response = await apiFetch(`/groups/${groupId}/members/${removeTarget.id}`, {
+        method: "POST",
+      });
+      toastSuccess(response?.message || "Member removed successfully.");
+      setShowRemoveModal(false);
+      setRemoveTarget(null);
+      fetchGroupDetails();
+    } catch (error) {
+      setRemoveError(error?.message || "Failed to remove member. Please try again.");
+    } finally {
+      setRemovingMember(false);
+    }
   };
 
   const renderMemberAvatar = (member, size = "default") => {
@@ -836,6 +860,107 @@ export default function GroupOverview() {
                       </>
                     ) : (
                       "Delete Group"
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {showRemoveModal && removeTarget && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+              onClick={() => {
+                setShowRemoveModal(false);
+                setRemoveTarget(null);
+                setRemoveError("");
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[#1a1a1a] border border-rose-800/30 rounded-xl p-6 w-full max-w-md shadow-2xl"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-rose-600/20 rounded-lg flex items-center justify-center border border-rose-600/50">
+                      <UserMinus size={24} className="text-rose-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-white">Remove Member</h2>
+                      <p className="text-sm text-gray-400">This action cannot be undone</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowRemoveModal(false);
+                      setRemoveTarget(null);
+                      setRemoveError("");
+                    }}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className="space-y-4 mb-6">
+                  <div className="p-4 bg-rose-600/10 border border-rose-600/30 rounded-lg">
+                    <p className="text-sm text-rose-300">
+                      <strong>Warning:</strong> You are about to remove{" "}
+                      <span className="font-bold text-white">{removeTarget.name}</span>{" "}
+                      from this group. If the member has any unsettled balance, the removal will be denied.
+                    </p>
+                  </div>
+                  <AnimatePresence>
+                    {removeError && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        className="p-4 bg-red-600/10 border border-red-600/30 rounded-lg flex items-start gap-2"
+                      >
+                        <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                        <p className="text-sm text-red-300">{removeError}</p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowRemoveModal(false);
+                      setRemoveTarget(null);
+                      setRemoveError("");
+                    }}
+                    className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg font-medium transition-all duration-200 border border-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmRemoveMember}
+                    disabled={removingMember}
+                    className="flex-1 px-4 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-600 flex items-center justify-center gap-2"
+                  >
+                    {removingMember ? (
+                      <>
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <RefreshCw size={16} />
+                        </motion.div>
+                        <span>Removing...</span>
+                      </>
+                    ) : (
+                      "Remove Member"
                     )}
                   </button>
                 </div>
