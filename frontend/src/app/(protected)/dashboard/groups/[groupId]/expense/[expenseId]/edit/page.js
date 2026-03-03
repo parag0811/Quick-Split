@@ -14,6 +14,7 @@ import { useParams, useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { toastInfo } from "@/lib/toast";
 import GroupSocketListener from "@/components/socket/GroupSocketListener";
+import { useSelector } from "react-redux";
 
 function FieldError({ msg }) {
   if (!msg) return null;
@@ -35,6 +36,7 @@ export default function EditExpenseForm() {
 
   const { groupId, expenseId } = useParams();
   const router = useRouter();
+  const refreshKey = useSelector((state) => state.group.refreshKey);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -102,7 +104,7 @@ export default function EditExpenseForm() {
   useEffect(() => {
     fetchMembers();
     fetchExpense();
-  }, [groupId, expenseId]);
+  }, [groupId, expenseId, refreshKey]);
 
   const clearFieldError = (name) => {
     if (fieldErrors[name]) setFieldErrors((prev) => ({ ...prev, [name]: "" }));

@@ -2,17 +2,19 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ArrowRight,
+  ArrowLeft,
   Plus,
   CheckCircle2,
   RefreshCw,
   RotateCcw,
   AlertCircle,
+  AlertTriangle,
   Clock,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toastError } from "@/lib/toast";
 import GroupSocketListener from "@/components/socket/GroupSocketListener";
@@ -37,6 +39,7 @@ export default function SettlementPage() {
   const [markingPaidId, setMarkingPaidId] = useState(null);
 
   const { groupId } = useParams();
+  const router = useRouter();
   
   const refreshKey = useSelector((state) => state.group.refreshKey)
   
@@ -142,6 +145,17 @@ export default function SettlementPage() {
     <GroupSocketListener groupId={groupId} />
     <div className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8">
       <div className="max-w-3xl mx-auto">
+
+        <motion.button
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+          onClick={() => router.push(`/dashboard/groups/${groupId}`)}
+          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-6 transition-colors cursor-pointer"
+        >
+          <ArrowLeft size={16} />
+          Back to Group
+        </motion.button>
 
         <motion.div
           className="mb-8"
@@ -335,7 +349,9 @@ export default function SettlementPage() {
                   className={`bg-[#1a1a1a] border rounded-xl p-6 transition-all duration-200 ${
                     activeTab === "completed"
                       ? "border-emerald-900/30 opacity-80"
-                      : "border-gray-800 hover:border-gray-700"
+                      : settlement.risk_level && settlement.risk_level !== "Low"
+                        ? "border-orange-500/40 hover:border-orange-500/60 border-l-4 border-l-orange-500"
+                        : "border-gray-800 hover:border-gray-700"
                   }`}
                 >
                   <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
@@ -423,6 +439,35 @@ export default function SettlementPage() {
                       </p>
                     )}
                   </div>
+
+                  {activeTab === "pending" && settlement.risk_level && settlement.risk_level !== "Low" && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="mt-3 flex items-start gap-2 px-3 py-2 bg-orange-500/8 border border-orange-500/15 rounded-lg"
+                    >
+                      <AlertTriangle
+                        size={13}
+                        className="text-orange-400 mt-0.5 flex-shrink-0"
+                      />
+                      <div className="text-xs text-orange-300/80 leading-relaxed">
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold mr-1.5 ${
+                          settlement.risk_level === "High"
+                            ? "bg-red-500/20 text-red-400"
+                            : "bg-amber-500/20 text-amber-400"
+                        }`}>
+                          {settlement.risk_level} Risk
+                        </span>
+                        <span className="font-medium text-orange-400">
+                          Delay Probability: {((settlement.delay_probability ?? 0) * 100).toFixed(1)}%
+                        </span>
+                        {settlement.risk_message && (
+                          <span className="ml-1">— {settlement.risk_message}</span>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
 
                   {activeTab === "pending" && (
                     <div className="mt-4">

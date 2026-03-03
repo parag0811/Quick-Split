@@ -30,6 +30,8 @@ import {
   PieChart as PieChartIcon,
   Activity,
 } from "lucide-react";
+import GroupSocketListener from "@/components/socket/GroupSocketListener";
+import { useSelector } from "react-redux";
 
 const CATEGORY_COLORS = {
   food: "#f97316",
@@ -84,6 +86,7 @@ export default function GroupAnalyticsPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
+  const refreshKey = useSelector((state) => state.group.refreshKey);
 
   const fetchAnalytics = useCallback(async () => {
     try {
@@ -101,7 +104,7 @@ export default function GroupAnalyticsPage() {
 
   useEffect(() => {
     if (groupId) fetchAnalytics();
-  }, [groupId, fetchAnalytics]);
+  }, [groupId, fetchAnalytics, refreshKey]);
 
   if (loading) {
     return (
@@ -174,6 +177,8 @@ export default function GroupAnalyticsPage() {
   }));
 
   return (
+    <>
+    <GroupSocketListener groupId={groupId} />
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -455,5 +460,6 @@ export default function GroupAnalyticsPage() {
         </motion.div>
       </div>
     </motion.div>
+    </>
   );
 }

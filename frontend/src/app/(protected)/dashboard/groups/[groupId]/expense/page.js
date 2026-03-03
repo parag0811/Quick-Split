@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Pencil,
   Trash2,
+  ArrowLeft,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -36,6 +37,7 @@ export default function ExpensePage() {
 
   const [deletingId, setDeletingId] = useState(null);
   const [deleteError, setDeleteError] = useState("");
+  const [deleteErrorId, setDeleteErrorId] = useState(null);
 
   const fetchExpenses = async () => {
     try {
@@ -66,20 +68,26 @@ export default function ExpensePage() {
     try {
       setDeletingId(expenseId);
       setDeleteError("");
+      setDeleteErrorId(null);
       await apiFetch(`/group/expenses/${expenseId}/deleteExpense`, {
         method: "DELETE",
       });
       fetchExpenses();
     } catch (error) {
       if (error.statusCode === 409) {
-        setDeleteError("Cannot delete — expense belongs to a previous settlement window.");
+        setDeleteError(
+          "Cannot delete — expense belongs to a previous settlement window.",
+        );
       } else if (error.statusCode === 403) {
-        setDeleteError("Only the expense creator or group creator can delete this.");
+        setDeleteError(
+          "Only the expense creator or group creator can delete this.",
+        );
       } else if (error.statusCode === 404) {
         setDeleteError("Expense not found. It may already have been deleted.");
       } else {
         setDeleteError(error.message || "Failed to delete expense.");
       }
+      setDeleteErrorId(expenseId);
     } finally {
       setDeletingId(null);
     }
@@ -131,7 +139,7 @@ export default function ExpensePage() {
 
   return (
     <>
-      <GroupSocketListener groupId={groupId} onDataChange={fetchExpenses} />
+      <GroupSocketListener groupId={groupId} />
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -139,6 +147,17 @@ export default function ExpensePage() {
         className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8"
       >
         <div className="max-w-4xl mx-auto">
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={() => router.push(`/dashboard/groups/${groupId}`)}
+            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-6 transition-colors cursor-pointer"
+          >
+            <ArrowLeft size={16} />
+            Back to Group
+          </motion.button>
+
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -249,9 +268,14 @@ export default function ExpensePage() {
                               className="text-orange-400 mt-0.5 flex-shrink-0"
                             />
                             <div className="text-xs text-orange-300/80 leading-relaxed">
-                              <span className="font-medium text-orange-400">Anomaly Score: {expense.anomalyScore?.toFixed(2) ?? "N/A"}</span>
+                              <span className="font-medium text-orange-400">
+                                Anomaly Score:{" "}
+                                {expense.anomalyScore?.toFixed(2) ?? "N/A"}
+                              </span>
                               {expense.anomalyReason && (
-                                <span className="ml-1">— {expense.anomalyReason}</span>
+                                <span className="ml-1">
+                                  — {expense.anomalyReason}
+                                </span>
                               )}
                             </div>
                           </motion.div>
@@ -358,12 +382,18 @@ export default function ExpensePage() {
                                 ))}
                               </div>
 
-                              {deleteError && expandedExpense === expense._id && (
-                                <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                  <AlertTriangle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
-                                  <p className="text-xs text-red-300">{deleteError}</p>
-                                </div>
-                              )}
+                              {deleteError &&
+                                deleteErrorId === expense._id && (
+                                  <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                    <AlertTriangle
+                                      size={14}
+                                      className="text-red-400 mt-0.5 flex-shrink-0"
+                                    />
+                                    <p className="text-xs text-red-300">
+                                      {deleteError}
+                                    </p>
+                                  </div>
+                                )}
 
                               {/* Edit & Delete actions */}
                               <motion.div
@@ -375,7 +405,7 @@ export default function ExpensePage() {
                                 <button
                                   onClick={() =>
                                     router.push(
-                                      `/dashboard/groups/${groupId}/expense/${expense._id}/edit`
+                                      `/dashboard/groups/${groupId}/expense/${expense._id}/edit`,
                                     )
                                   }
                                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-cyan-400 bg-cyan-600/10 border border-cyan-600/20 hover:bg-cyan-600/20 rounded-lg transition-all cursor-pointer"
@@ -393,7 +423,9 @@ export default function ExpensePage() {
                                   ) : (
                                     <Trash2 size={13} />
                                   )}
-                                  {deletingId === expense._id ? "Deleting..." : "Delete"}
+                                  {deletingId === expense._id
+                                    ? "Deleting..."
+                                    : "Delete"}
                                 </button>
                               </motion.div>
                             </div>

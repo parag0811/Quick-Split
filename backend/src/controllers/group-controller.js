@@ -338,6 +338,7 @@ const getGroupSummary = async (req, res, next) => {
         id: group_id,
         name: group.name,
         description: group.description,
+        createdBy: group.createdBy.toString(),
       },
       members,
       totalExpenses,

@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import GroupSocketListener from "@/components/socket/GroupSocketListener";
 import { toastSuccess, toastError } from "@/lib/toast";
+import { useSelector } from "react-redux";
 
 export default function GroupOverview() {
   const { groupId } = useParams();
@@ -47,6 +48,8 @@ export default function GroupOverview() {
   const [removeError, setRemoveError] = useState("");
 
   const router = useRouter();
+  const currentUserId = useSelector((state) => state.auth.user?._id);
+  const refreshKey = useSelector((state) => state.group.refreshKey);
 
   const fetchGroupDetails = useCallback(async () => {
     try {
@@ -64,7 +67,7 @@ export default function GroupOverview() {
 
   useEffect(() => {
     if (groupId) fetchGroupDetails();
-  }, [groupId, fetchGroupDetails]);
+  }, [groupId, fetchGroupDetails, refreshKey]);
 
   const handleDeleteGroup = async () => {
     if (deleteConfirmation !== data.group.name) return;
@@ -421,7 +424,7 @@ export default function GroupOverview() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
                         whileHover={{ scale: 1.02, x: 5 }}
-                        className="flex items-center justify-between gap-3 p-3 bg-[#151515] rounded-lg border border-gray-800 hover:border-gray-700 transition-colors group"
+                        className="flex items-center justify-between gap-3 p-3 bg-[#151515] rounded-lg border border-gray-800 hover:border-gray-700 transition-colors"
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className="shrink-0">
@@ -436,13 +439,15 @@ export default function GroupOverview() {
                             </p>
                           </div>
                         </div>
-                        <motion.button
-                          className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-600/50 hover:border-rose-600 text-rose-400 rounded-lg text-xs font-medium cursor-pointer"
-                          onClick={() => handleRemoveMember(member._id, member.name)}
-                        >
-                          <UserMinus size={14} />
-                          <span>Remove</span>
-                        </motion.button>
+                        {currentUserId === data.group.createdBy && (
+                          <motion.button
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-600/50 hover:border-rose-600 text-rose-400 rounded-lg text-xs font-medium cursor-pointer transition-colors"
+                            onClick={() => handleRemoveMember(member._id, member.name)}
+                          >
+                            <UserMinus size={14} />
+                            <span>Remove</span>
+                          </motion.button>
+                        )}
                       </motion.div>
                     ))}
                   </motion.div>
