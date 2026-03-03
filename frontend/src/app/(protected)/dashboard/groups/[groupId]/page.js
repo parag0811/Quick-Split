@@ -262,13 +262,13 @@ export default function GroupOverview() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="mb-8"
           >
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div className="flex items-start gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+              <div className="flex items-start gap-3 sm:gap-4 min-w-0">
                 <motion.div
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
                   transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
-                  className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-2xl shadow-lg"
+                  className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-xl sm:text-2xl shadow-lg flex-shrink-0"
                 >
                   🏔️
                 </motion.div>
@@ -276,18 +276,19 @@ export default function GroupOverview() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: 0.3 }}
+                  className="min-w-0"
                 >
-                  <h1 className="text-3xl font-bold text-white mb-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 truncate">
                     {data.group.name}
                   </h1>
                   {data.group.description && (
-                    <p className="text-gray-400">{data.group.description}</p>
+                    <p className="text-gray-400 text-sm sm:text-base truncate">{data.group.description}</p>
                   )}
                 </motion.div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <motion.button
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}

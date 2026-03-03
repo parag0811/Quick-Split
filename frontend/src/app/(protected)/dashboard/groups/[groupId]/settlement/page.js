@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ArrowRight,
-  Receipt,
   Plus,
   CheckCircle2,
   RefreshCw,
@@ -87,7 +86,6 @@ export default function SettlementPage() {
       await apiFetch(`/group/${groupId}/settlement`, {
         method: "POST",
       });
-      // Socket listener handles the success toast for all group members
       setCurrentPage(1);
     } catch (error) {
       toastError(error?.message || "Failed to generate settlement.");
@@ -103,7 +101,6 @@ export default function SettlementPage() {
         `/group/settlement/${settlementId}/mark-paid`,
         { method: "POST" }
       );
-      // Socket listener handles the success toast for all group members
     } catch (error) {
       toastError(error?.message || "Failed to mark as paid.");
     } finally {
@@ -152,8 +149,8 @@ export default function SettlementPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-3xl font-bold text-white">Settlement</h1>
+          <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Settlement</h1>
             <motion.button
               onClick={handleGenerateSettlement}
               disabled={isGenerating}
@@ -341,8 +338,8 @@ export default function SettlementPage() {
                       : "border-gray-800 hover:border-gray-700"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 flex-1">
+                  <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
+                    <div className="flex items-center gap-3 w-full sm:flex-1">
                       {renderAvatar(
                         settlement.from,
                         activeTab === "completed"
@@ -377,14 +374,20 @@ export default function SettlementPage() {
                       ) : (
                         <div className="flex items-center gap-2 text-gray-500">
                           <div className="h-px w-8 bg-gray-700" />
-                          <ArrowRight size={18} className="text-cyan-500" />
+                          <ArrowRight size={18} className="text-cyan-500 rotate-90 sm:rotate-0" />
                           <div className="h-px w-8 bg-gray-700" />
                         </div>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-3 flex-1 justify-end">
-                      <div className="text-right">
+                    <div className="flex items-center gap-3 w-full sm:flex-1 sm:justify-end">
+                      {renderAvatar(
+                        settlement.to,
+                        activeTab === "completed"
+                          ? "bg-gradient-to-br from-gray-600 to-gray-700"
+                          : "bg-gradient-to-br from-emerald-600 to-green-600"
+                      )}
+                      <div>
                         <div className="text-xs text-gray-500 mb-0.5">
                           {activeTab === "completed" ? "Received" : "Receives"}
                         </div>
@@ -392,12 +395,6 @@ export default function SettlementPage() {
                           {settlement.to?.name || "Unknown"}
                         </div>
                       </div>
-                      {renderAvatar(
-                        settlement.to,
-                        activeTab === "completed"
-                          ? "bg-gradient-to-br from-gray-600 to-gray-700"
-                          : "bg-gradient-to-br from-emerald-600 to-green-600"
-                      )}
                     </div>
                   </div>
 

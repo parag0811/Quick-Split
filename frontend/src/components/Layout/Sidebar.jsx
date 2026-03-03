@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useSelector } from "react-redux";
 
-export default function Sidebar({ isOpen }) {
+export default function Sidebar({ isOpen, onClose }) {
   const pathname = usePathname();
 
   const menuItems = [
@@ -14,14 +14,22 @@ export default function Sidebar({ isOpen }) {
 
   const { user } = useSelector((state) => state.auth);
   return (
-    <aside
-      className={`fixed top-16 left-0 z-40 w-64
+    <>
+      {/* Mobile backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={onClose}
+        />
+      )}
+      <aside
+        className={`fixed top-16 left-0 z-40 w-64
   h-[calc(100vh-4rem)]
   bg-[#1a1b1b]
   transition-transform duration-300 ease-in-out
   ${isOpen ? "translate-x-0" : "-translate-x-full"}
   flex flex-col`}
-    >
+      >
       <div className="p-6">
         <div className="flex flex-col items-center justify-center space-y-4 mt-4">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-300 overflow-hidden flex items-center justify-center">
@@ -54,6 +62,7 @@ export default function Sidebar({ isOpen }) {
               <li key={index}>
                 <Link
                   href={item.href}
+                  onClick={onClose}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg
                       transition-all duration-200 cursor-pointer
                       ${
@@ -85,6 +94,7 @@ export default function Sidebar({ isOpen }) {
           </div>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
