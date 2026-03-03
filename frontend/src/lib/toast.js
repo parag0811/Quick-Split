@@ -56,6 +56,6 @@ function getDefaultDuration(type) {
     case "loading":
       return 3000;
     default:
-      return 3000;
+      return 6000;
   }
 }

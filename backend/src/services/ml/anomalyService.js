@@ -73,9 +73,27 @@ export const detectAnomaly = async (userId, currentAmount) => {
     });
     const data = await response.json();
     console.log("ML response:", data);
+
+    const isAnomalous = data.is_suspicious ?? false;
+    const anomalyScore = data.anomaly_score ?? 0;
+
+    let anomalyReason = "";
+    if (isAnomalous) {
+      const ratio = user_avg_amount > 0 ? (currentAmount / user_avg_amount).toFixed(1) : 0;
+      const reasons = [];
+      if (currentAmount > user_avg_amount * 2) {
+        reasons.push(`This amount is ${ratio}x your average spend of ₹${Math.round(user_avg_amount)}`);
+      }
+      if (time_gap_minutes < 5) {
+        reasons.push("Made very shortly after your last expense");
+      }
+      anomalyReason = reasons.length > 0 ? reasons.join(". ") + "." : "Flagged by spending pattern analysis.";
+    }
+
     return {
-      isAnomalous: data.is_suspicious ?? false,
-      anomalyScore: data.anomaly_score ?? 0,
+      isAnomalous,
+      anomalyScore,
+      anomalyReason,
     };
   } catch (error) {
     console.error("ML Service Error:", error.message);
@@ -83,6 +101,7 @@ export const detectAnomaly = async (userId, currentAmount) => {
     return {
       isAnomalous: false,
       anomalyScore: 0,
+      anomalyReason: "",
     };
   }
 };

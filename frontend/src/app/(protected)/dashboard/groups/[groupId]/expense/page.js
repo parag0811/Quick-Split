@@ -111,9 +111,7 @@ export default function ExpensePage() {
   };
 
   const shouldShowAnomaly = (expense) => {
-    return (
-      expense.isAnomalous === true && expense.paidBy?._id === currentUserId
-    );
+    return expense.isAnomalous === true;
   };
 
   if (loading) {
@@ -218,28 +216,10 @@ export default function ExpensePage() {
                               {expense.title ?? "Untitled"}
                             </h3>
                             {isAnomalous && (
-                              <div className="group relative flex items-center">
-                                <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/15 border border-orange-500/30 text-orange-400 rounded-full text-xs font-medium">
-                                  <AlertTriangle size={11} />
-                                  Unusual
-                                </span>
-                                {/* Tooltip */}
-                                <div className="absolute bottom-full left-0 mb-2 w-64 hidden group-hover:block z-10">
-                                  <div className="bg-[#2a2a2a] border border-orange-500/20 rounded-lg p-3 shadow-xl">
-                                    <p className="text-xs text-orange-300 font-medium mb-1">
-                                      Spending Pattern Alert
-                                    </p>
-                                    <p className="text-xs text-gray-400 leading-relaxed">
-                                      Our ML model flagged this expense as
-                                      higher than your typical spending for this
-                                      category. This is just a heads-up — not a
-                                      fraud alert.
-                                    </p>
-                                  </div>
-                                  {/* Arrow */}
-                                  <div className="w-2 h-2 bg-[#2a2a2a] border-r border-b border-orange-500/20 rotate-45 ml-3 -mt-1" />
-                                </div>
-                              </div>
+                              <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/15 border border-orange-500/30 text-orange-400 rounded-full text-xs font-medium">
+                                <AlertTriangle size={11} />
+                                Unusual
+                              </span>
                             )}
                           </div>
 
@@ -268,11 +248,12 @@ export default function ExpensePage() {
                               size={13}
                               className="text-orange-400 mt-0.5 flex-shrink-0"
                             />
-                            <p className="text-xs text-orange-300/80 leading-relaxed">
-                              This payment is higher than your usual spending
-                              pattern. Our model flagged it based on your
-                              history — review if this looks right to you.
-                            </p>
+                            <div className="text-xs text-orange-300/80 leading-relaxed">
+                              <span className="font-medium text-orange-400">Anomaly Score: {expense.anomalyScore?.toFixed(2) ?? "N/A"}</span>
+                              {expense.anomalyReason && (
+                                <span className="ml-1">— {expense.anomalyReason}</span>
+                              )}
+                            </div>
                           </motion.div>
                         )}
 

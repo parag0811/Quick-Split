@@ -154,7 +154,9 @@ export default function CreateExpenseForm() {
         body: payload,
       });
       if (data.expense.isAnomalous) {
-        toastInfo("This expense looks unusual compared to the payer's previous spending pattern.");
+        const score = data.expense.anomalyScore?.toFixed(2) ?? "N/A";
+        const reason = data.expense.anomalyReason || "Flagged by spending pattern analysis.";
+        toastInfo(`Anomaly Score: ${score} — ${reason}`);
       }
       router.push(`/dashboard/groups/${groupId}/expense`);
     } catch (error) {

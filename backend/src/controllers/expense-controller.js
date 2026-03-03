@@ -182,7 +182,7 @@ const addExpense = async (req, res, next) => {
       throw error;
     }
 
-    const { isAnomalous, anomalyScore } = await detectAnomaly(
+    const { isAnomalous, anomalyScore, anomalyReason } = await detectAnomaly(
       paidBy,
       amountNumber,
     );
@@ -199,6 +199,7 @@ const addExpense = async (req, res, next) => {
       createdBy: user_id,
       isAnomalous,
       anomalyScore,
+      anomalyReason,
     });
 
     const io = req.app.get("io");
@@ -367,7 +368,7 @@ const editExpense = async (req, res, next) => {
     }
     console.log("Reached anomaly block");
     // re-run anomaly detection
-    const { isAnomalous, anomalyScore } = await detectAnomaly(
+    const { isAnomalous, anomalyScore, anomalyReason } = await detectAnomaly(
       paidBy,
       amountNumber,
     );
@@ -382,6 +383,7 @@ const editExpense = async (req, res, next) => {
     expense.splits = finalSplits;
     expense.isAnomalous = isAnomalous;
     expense.anomalyScore = anomalyScore;
+    expense.anomalyReason = anomalyReason;
 
     await expense.save();
 
