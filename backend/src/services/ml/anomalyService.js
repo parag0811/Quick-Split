@@ -79,7 +79,6 @@ export const detectAnomaly = async (userId, currentAmount) => {
     }
 
     const data = await response.json();
-    console.log("ML response:", data);
 
     const isAnomalous = data.is_suspicious ?? false;
     const anomalyScore = data.anomaly_score ?? 0;

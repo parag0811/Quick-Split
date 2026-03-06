@@ -77,14 +77,13 @@ export const predictSettlementRisk = async (userId, currentAmount) => {
 
     if (!response.ok) {
        const error = new Error(
-        "Response is not valid.",
+        "Settlement Risk Response is not valid.",
       );
       error.statusCode = 500;
       throw error;
     }
 
     const data = await response.json();
-    console.log("Settlement Risk ML parsed data:", data);
 
     return {
       delay_probability: data.delay_probability,
