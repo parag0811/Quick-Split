@@ -103,7 +103,7 @@ const joinGroup = async (req, res, next) => {
     await group.save();
 
     const io = req.app.get("io");
-    io.to(group_id.toString()).emit("member-joined", {
+    io.to(group._id.toString()).emit("member-joined", {
       userId: user_id.toString(),
     });
 
@@ -111,6 +111,7 @@ const joinGroup = async (req, res, next) => {
       .status(200)
       .json({ message: "User added Successfully.", groupId: group._id });
   } catch (error) {
+    console.log(error);
     next(error);
   }
 };

@@ -69,13 +69,22 @@ export const predictSettlementRisk = async (userId, currentAmount) => {
   const baseUrl = process.env.SETTLEMENT_RISK_ML_SERVICE_URL;
 
   try {
-    const response = await fetch(`${baseUrl}/risk-predict`, {
+    const response = await fetch(`${baseUrl}/predict`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
+    if (!response.ok) {
+       const error = new Error(
+        "Response is not valid.",
+      );
+      error.statusCode = 500;
+      throw error;
+    }
+
     const data = await response.json();
+    console.log("Settlement Risk ML parsed data:", data);
 
     return {
       delay_probability: data.delay_probability,
@@ -83,10 +92,5 @@ export const predictSettlementRisk = async (userId, currentAmount) => {
     };
   } catch (error) {
     console.error("Settlement ML Error:", error.message);
-
-    return {
-      delay_probability: 0,
-      risk_level: "Low",
-    };
   }
 };

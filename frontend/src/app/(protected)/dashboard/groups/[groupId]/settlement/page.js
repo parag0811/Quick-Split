@@ -349,9 +349,11 @@ export default function SettlementPage() {
                   className={`bg-[#1a1a1a] border rounded-xl p-6 transition-all duration-200 ${
                     activeTab === "completed"
                       ? "border-emerald-900/30 opacity-80"
-                      : settlement.risk_level && settlement.risk_level !== "Low"
-                        ? "border-orange-500/40 hover:border-orange-500/60 border-l-4 border-l-orange-500"
-                        : "border-gray-800 hover:border-gray-700"
+                      : settlement.risk_level === "High"
+                        ? "border-red-500/40 hover:border-red-500/60 border-l-4 border-l-red-500"
+                        : settlement.risk_level === "Medium"
+                          ? "border-orange-500/40 hover:border-orange-500/60 border-l-4 border-l-orange-500"
+                          : "border-gray-800 hover:border-gray-700"
                   }`}
                 >
                   <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
@@ -440,30 +442,56 @@ export default function SettlementPage() {
                     )}
                   </div>
 
-                  {activeTab === "pending" && settlement.risk_level && settlement.risk_level !== "Low" && (
+                  {activeTab === "pending" && settlement.risk_level && (
                     <motion.div
                       initial={{ opacity: 0, y: -4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="mt-3 flex items-start gap-2 px-3 py-2 bg-orange-500/8 border border-orange-500/15 rounded-lg"
+                      className={`mt-3 flex items-start gap-2 px-3 py-2 rounded-lg ${
+                        settlement.risk_level === "High"
+                          ? "bg-red-500/10 border border-red-500/20"
+                          : settlement.risk_level === "Medium"
+                            ? "bg-orange-500/8 border border-orange-500/15"
+                            : "bg-emerald-500/8 border border-emerald-500/15"
+                      }`}
                     >
                       <AlertTriangle
                         size={13}
-                        className="text-orange-400 mt-0.5 flex-shrink-0"
+                        className={`mt-0.5 flex-shrink-0 ${
+                          settlement.risk_level === "High"
+                            ? "text-red-400"
+                            : settlement.risk_level === "Medium"
+                              ? "text-orange-400"
+                              : "text-emerald-400"
+                        }`}
                       />
-                      <div className="text-xs text-orange-300/80 leading-relaxed">
+                      <div className="text-xs leading-relaxed">
                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold mr-1.5 ${
                           settlement.risk_level === "High"
                             ? "bg-red-500/20 text-red-400"
-                            : "bg-amber-500/20 text-amber-400"
+                            : settlement.risk_level === "Medium"
+                              ? "bg-amber-500/20 text-amber-400"
+                              : "bg-emerald-500/20 text-emerald-400"
                         }`}>
                           {settlement.risk_level} Risk
                         </span>
-                        <span className="font-medium text-orange-400">
+                        <span className={`font-medium ${
+                          settlement.risk_level === "High"
+                            ? "text-red-400"
+                            : settlement.risk_level === "Medium"
+                              ? "text-orange-400"
+                              : "text-emerald-400"
+                        }`}>
                           Delay Probability: {((settlement.delay_probability ?? 0) * 100).toFixed(1)}%
                         </span>
                         {settlement.risk_message && (
-                          <span className="ml-1">— {settlement.risk_message}</span>
+                          <span className={`ml-1 ${
+                            settlement.risk_level === "High"
+                              ? "text-red-300/80"
+                              : settlement.risk_level === "Medium"
+                                ? "text-orange-300/80"
+                                : "text-emerald-300/80"
+                          }`}>— {settlement.risk_message}</span>
                         )}
                       </div>
                     </motion.div>

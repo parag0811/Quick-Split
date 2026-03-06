@@ -37,5 +37,5 @@ export default function JoinPage() {
     joinGroup();
   }, [status, inviteToken]);
 
-  return <p>Joining group...</p>;
+  return <div className="flex items-center justify-center h-screen"><p>Joining group...</p></div>;
 }

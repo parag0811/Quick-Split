@@ -33,14 +33,17 @@ const settlementSchema = new mongoose.Schema(
 
     delay_probability: {
       type: Number,
+      default: 0,
     },
 
     risk_level: {
       type: String,
+      default: "Low",
     },
     
     risk_message: {
       type: String,
+      default: "",
     },
   },
   { timestamps: true },
