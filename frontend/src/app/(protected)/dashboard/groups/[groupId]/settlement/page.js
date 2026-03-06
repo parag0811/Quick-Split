@@ -54,6 +54,7 @@ export default function SettlementPage() {
       setTotalCount(response.totalCount || 0);
       setCurrentPage(response.currentPage || 1);
       setTotalPages(response.totalPages || 1);
+      console.log(response)
     } catch (error) {
       setFetchError(
         error?.message || "Failed to load settlements. Please try again."

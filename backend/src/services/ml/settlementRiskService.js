@@ -8,7 +8,7 @@ export const predictSettlementRisk = async (userId, currentAmount) => {
     isSettled: true,
   }).sort({ createdAt: -1 });
 
-  if (settlements.length < 3) {
+  if (settlements.length <= 5) {
     return {
       delay_probability: 0,
       risk_level: "Low",
@@ -92,5 +92,9 @@ export const predictSettlementRisk = async (userId, currentAmount) => {
     };
   } catch (error) {
     console.error("Settlement ML Error:", error.message);
+    return {
+      delay_probability: 0.0,
+      risk_level: "Low",
+    };
   }
 };

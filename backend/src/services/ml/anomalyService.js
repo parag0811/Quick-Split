@@ -23,12 +23,12 @@ export const detectAnomaly = async (userId, currentAmount) => {
       },
     },
   ]);
-  console.log("Stats returned:", stats);
 
   if (!stats.length) {
     return {
       isAnomalous: false,
       anomalyScore: 0,
+      anomalyReason: "",
     };
   }
 
@@ -38,6 +38,7 @@ export const detectAnomaly = async (userId, currentAmount) => {
     return {
       isAnomalous: false,
       anomalyScore: 0,
+      anomalyReason: "",
     };
   }
 
@@ -62,7 +63,6 @@ export const detectAnomaly = async (userId, currentAmount) => {
     day_of_week,
   };
 
-  console.log("Payload:", JSON.stringify(payload, null, 2));
   // Calling fastAPi microservice
   const baseUrl = process.env.ANOMALY_ML_SERVICE_URL;
   try {
@@ -71,6 +71,13 @@ export const detectAnomaly = async (userId, currentAmount) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+
+    if (!response.ok) {
+      const error = new Error("Anomaly ML response is not valid.");
+      error.statusCode = 500;
+      throw error;
+    }
+
     const data = await response.json();
     console.log("ML response:", data);
 
@@ -84,20 +91,22 @@ export const detectAnomaly = async (userId, currentAmount) => {
       if (currentAmount > user_avg_amount * 2) {
         reasons.push(`This amount is ${ratio}x your average spend of ₹${Math.round(user_avg_amount)}`);
       }
+      if (currentAmount < user_avg_amount * 0.5) {
+        reasons.push(`This amount is ${ratio}x your average spend of ₹${Math.round(user_avg_amount)}`);
+      }
       if (time_gap_minutes < 5) {
         reasons.push("Made very shortly after your last expense");
       }
-      anomalyReason = reasons.length > 0 ? reasons.join(". ") + "." : "Flagged by spending pattern analysis.";
+      anomalyReason = reasons.length > 0 ? reasons.join(". ") + "." : "";
     }
 
     return {
-      isAnomalous,
-      anomalyScore,
+      isAnomalous: anomalyReason.length > 0,
+      anomalyScore: anomalyReason.length > 0 ? anomalyScore : 0,
       anomalyReason,
     };
   } catch (error) {
     console.error("ML Service Error:", error.message);
-
     return {
       isAnomalous: false,
       anomalyScore: 0,
