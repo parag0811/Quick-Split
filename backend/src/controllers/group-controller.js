@@ -137,6 +137,17 @@ const generateNewToken = async (req, res, next) => {
       throw error;
     }
 
+    if (
+      group.inviteTokenExpiresAt &&
+      Date.now() < group.inviteTokenExpiresAt
+    ) {
+      const error = new Error(
+        "Current invite link is still active. You can regenerate after it expires.",
+      );
+      error.statusCode = 429;
+      throw error;
+    }
+
     const generateInviteToken = (groupName) => {
       const slug = groupName
         .toLowerCase()
@@ -483,7 +494,7 @@ const removeMember = async (req, res, next) => {
 
     const io = req.app.get("io");
     io.to(group_id.toString()).emit("member-removed", {
-      memberId: isTargetMember.toString(),
+      memberId: member_id.toString(),
     });
 
     return res.status(200).json({

@@ -366,13 +366,12 @@ const editExpense = async (req, res, next) => {
       error.statusCode = 400;
       throw error;
     }
-    console.log("Reached anomaly block");
-    // re-run anomaly detection
+    // re-run anomaly detection, exclude current expense from stats
     const { isAnomalous, anomalyScore, anomalyReason } = await detectAnomaly(
       paidBy,
       amountNumber,
+      expense._id,
     );
-    console.log("Anomaly result:", isAnomalous, anomalyScore);
     // update expense
     expense.title = title;
     expense.totalAmount = amountNumber;

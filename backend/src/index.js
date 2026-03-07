@@ -24,6 +24,10 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+app.get("/", (req, res) => {
+  res.send("Quick Split API is running...");
+});
+
 app.use(auth_route);
 app.use(group_route);
 app.use(expense_route);
@@ -45,10 +49,6 @@ app.use((error, req, res, next) => {
   }
 
   res.status(status).json({ message, data });
-});
-
-app.get("/", (req, res) => {
-  res.send("Quick Split API is running...");
 });
 
 mongoose
@@ -113,7 +113,7 @@ io.on("connection", async (socket) => {
       groups.map((g) => g._id.toString()),
     );
   } catch (error) {
-    console.error("Error joining rooms:", err);
+    console.error("Error joining rooms:", error);
   }
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.user.id);

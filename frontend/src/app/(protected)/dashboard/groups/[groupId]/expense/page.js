@@ -134,7 +134,6 @@ export default function ExpensePage() {
     );
   }
 
-  console.log(data);
   const { expenses, message, count } = data;
 
   return (
@@ -189,6 +188,20 @@ export default function ExpensePage() {
               <Plus size={20} />
               <span>Add Expense</span>
             </motion.button>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.35 }}
+            className="mb-6 flex items-start gap-3 rounded-xl border border-cyan-900/30 bg-cyan-950/15 px-4 py-3"
+          >
+            <AlertTriangle size={16} className="text-cyan-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-cyan-200/70 leading-relaxed">
+              Some expenses may be flagged as unusual based on spending
+              patterns. This is only an informational insight and does not
+              affect the expense you add.
+            </p>
           </motion.div>
 
           <AnimatePresence mode="wait">
@@ -382,18 +395,17 @@ export default function ExpensePage() {
                                 ))}
                               </div>
 
-                              {deleteError &&
-                                deleteErrorId === expense._id && (
-                                  <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                    <AlertTriangle
-                                      size={14}
-                                      className="text-red-400 mt-0.5 flex-shrink-0"
-                                    />
-                                    <p className="text-xs text-red-300">
-                                      {deleteError}
-                                    </p>
-                                  </div>
-                                )}
+                              {deleteError && deleteErrorId === expense._id && (
+                                <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                  <AlertTriangle
+                                    size={14}
+                                    className="text-red-400 mt-0.5 flex-shrink-0"
+                                  />
+                                  <p className="text-xs text-red-300">
+                                    {deleteError}
+                                  </p>
+                                </div>
+                              )}
 
                               {/* Edit & Delete actions */}
                               <motion.div

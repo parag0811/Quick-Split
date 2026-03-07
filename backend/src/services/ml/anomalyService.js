@@ -1,15 +1,21 @@
 import Expense from "../../models/expense.js";
 import mongoose from "mongoose";
 
-// ML microcservice call for anomaly detection
-export const detectAnomaly = async (userId, currentAmount) => {
+// ML microservice call for anomaly detection
+export const detectAnomaly = async (userId, currentAmount, excludeExpenseId = null) => {
   const now = new Date();
+
+  const matchFilter = {
+    paidBy: new mongoose.Types.ObjectId(userId),
+  };
+
+  if (excludeExpenseId) {
+    matchFilter._id = { $ne: new mongoose.Types.ObjectId(excludeExpenseId) };
+  }
 
   const stats = await Expense.aggregate([
     {
-      $match: {
-        paidBy: new mongoose.Types.ObjectId(userId),
-      },
+      $match: matchFilter,
     },
     {
       $sort: { createdAt: -1 },
@@ -85,18 +91,26 @@ export const detectAnomaly = async (userId, currentAmount) => {
 
     let anomalyReason = "";
     if (isAnomalous) {
-      const ratio = user_avg_amount > 0 ? (currentAmount / user_avg_amount).toFixed(1) : 0;
-      const reasons = [];
-      if (currentAmount > user_avg_amount * 2) {
-        reasons.push(`This amount is ${ratio}x your average spend of ₹${Math.round(user_avg_amount)}`);
+      const ratio = user_avg_amount > 0 ? Number((currentAmount / user_avg_amount).toFixed(1)) : 0;
+      const avgFormatted = Math.round(user_avg_amount);
+
+      if (currentAmount > user_avg_amount * 5) {
+        anomalyReason = `This amount is ${ratio}x higher than your average spend of ₹${avgFormatted} — unusually large.`;
+      } else if (currentAmount > user_avg_amount * 2) {
+        anomalyReason = `This amount is ${ratio}x your average spend of ₹${avgFormatted}.`;
+      } else if (currentAmount < user_avg_amount * 0.2) {
+        anomalyReason = `This amount is unusually low — only ${ratio}x of your average spend of ₹${avgFormatted}.`;
+      } else if (currentAmount < user_avg_amount * 0.5) {
+        anomalyReason = `This amount is lower than usual — ${ratio}x of your average spend of ₹${avgFormatted}.`;
+      } else if (time_gap_minutes < 2) {
+        anomalyReason = "Added within seconds of your last expense — possible duplicate.";
+      } else if (time_gap_minutes < 5) {
+        anomalyReason = "Added very shortly after your last expense.";
+      } else if (hour >= 0 && hour < 5) {
+        anomalyReason = "Expense logged at an unusual hour (late night).";
+      } else {
+        anomalyReason = `Spending pattern flagged as unusual (score: ${anomalyScore.toFixed(2)}).`;
       }
-      if (currentAmount < user_avg_amount * 0.5) {
-        reasons.push(`This amount is ${ratio}x your average spend of ₹${Math.round(user_avg_amount)}`);
-      }
-      if (time_gap_minutes < 5) {
-        reasons.push("Made very shortly after your last expense");
-      }
-      anomalyReason = reasons.length > 0 ? reasons.join(". ") + "." : "";
     }
 
     return {

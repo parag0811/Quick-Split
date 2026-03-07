@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
-  ArrowRight,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -228,7 +227,6 @@ export default function HomePage() {
                               })}
                             </p>
                           </div>
-                          <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-cyan-400 transition-colors flex-shrink-0" />
                         </motion.div>
                       ))}
                     </AnimatePresence>
