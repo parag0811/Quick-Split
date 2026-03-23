@@ -14,12 +14,11 @@ const splitSchema = new mongoose.Schema(
       min: 0,
     },
 
-    isPaid: {
-      type: Boolean,
-      default: false,
+    percentage: {
+      type: Number,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const expenseSchema = new mongoose.Schema(
@@ -40,7 +39,11 @@ const expenseSchema = new mongoose.Schema(
     totalAmount: {
       type: Number,
       required: true,
-      trim: true,
+    },
+
+    currency: {
+      type: String,
+      default: "INR",
     },
 
     paidBy: {
@@ -55,6 +58,13 @@ const expenseSchema = new mongoose.Schema(
       enum: ["equal", "manual", "percentage"],
       default: "equal",
     },
+
+    participants: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
 
     splits: {
       type: [splitSchema], // custom % (default is 50-50)
@@ -77,19 +87,29 @@ const expenseSchema = new mongoose.Schema(
       required: true,
     },
 
-    anomalyScore : {
-      type : Number,
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
     },
 
-    isAnomalous : {
-      type : Boolean
+     isDeleted: {
+      type: Boolean,
+      default: false,
     },
 
-    anomalyReason :{
-      type : String
-    }
+    anomalyScore: {
+      type: Number,
+    },
+
+    isAnomalous: {
+      type: Boolean,
+    },
+
+    anomalyReason: {
+      type: String,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Expense", expenseSchema);

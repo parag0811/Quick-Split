@@ -6,6 +6,7 @@ const settlementSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Group",
       required: true,
+      index: true,
     },
 
     from: {
@@ -26,27 +27,44 @@ const settlementSchema = new mongoose.Schema(
       min: 0,
     },
 
-    isSettled: {
+    paidAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    currency: {
+      type: String,
+      default: "INR",
+    },
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    method: {
+      type: String,
+      enum: ["cash", "upi", "bank", "other"],
+      default: "other",
+    },
+
+    notes: {
+      type: String,
+    },
+
+    isDeleted: {
       type: Boolean,
       default: false,
-    },
-
-    delay_probability: {
-      type: Number,
-      default: 0,
-    },
-
-    risk_level: {
-      type: String,
-      default: "Low",
-    },
-    
-    risk_message: {
-      type: String,
-      default: "",
     },
   },
   { timestamps: true },
 );
+
+settlementSchema.index({ group: 1, from: 1, to: 1 });
+
+settlementSchema.path("from").validate(function (value) {
+  return value.toString() !== this.to.toString();
+}, "Sender and receiver cannot be the same");
 
 export default mongoose.model("Settlement", settlementSchema);

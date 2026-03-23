@@ -30,17 +30,29 @@ const groupSchema = new mongoose.Schema({
       },
     },
   ],
-  lastSettlementAt: {
-    type: Date,
-    default: null,
-  },
+
   inviteToken: {
     type: String,
     default: null,
   },
+
   inviteTokenExpiresAt: {
     type: Date,
   },
+
+  lastActivityAt: {
+    type: Date,
+    default: Date.now,
+  },
+
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
 });
+
+groupSchema.index({ "members.user": 1 });
+
+groupSchema.index({ inviteToken: 1 });
 
 export default mongoose.model("Group", groupSchema);
