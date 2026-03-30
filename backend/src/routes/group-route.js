@@ -4,6 +4,7 @@ import { body } from "express-validator";
 import expressValidation from "../middleware/validator.js";
 import group_controller from "../controllers/group-controller.js";
 import isAuth from "../middleware/is-auth.js";
+import isGroupMember from "../middleware/is-member.js";
 
 const groupValidation = [
   body("name")
@@ -40,19 +41,36 @@ router.get("/groups/my-groups", isAuth, group_controller.getGroups);
 router.get(
   "/groups/:groupId/summary",
   isAuth,
+  isGroupMember,
   group_controller.getGroupSummary,
 );
 
-router.post("/groups/:groupId/regenerate-invite", isAuth, group_controller.generateNewToken)
+router.post(
+  "/groups/:groupId/regenerate-invite",
+  isAuth,
+  isGroupMember,
+  group_controller.generateNewToken,
+);
 
-router.delete("/groups/:groupId/delete", isAuth, group_controller.deleteGroup);
+router.delete(
+  "/groups/:groupId/delete",
+  isAuth,
+  isGroupMember,
+  group_controller.deleteGroup,
+);
 
 router.post(
   "/groups/:groupId/members/:memberId",
   isAuth,
+  isGroupMember,
   group_controller.removeMember,
 );
 
-router.get("/groups/:groupId/analytics", isAuth, group_controller.groupAnalytics)
+router.get(
+  "/groups/:groupId/analytics",
+  isAuth,
+  isGroupMember,
+  group_controller.groupAnalytics,
+);
 
 export default router;

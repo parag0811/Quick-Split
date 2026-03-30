@@ -5,6 +5,7 @@ import crypto from "crypto";
 import Group from "../models/group.js";
 import Expense from "../models/expense.js";
 import Settlement from "../models/settlement.js";
+import updateGroupActivity from "../helper/group-activity.js";
 import { s3 } from "../config/s3.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -78,7 +79,7 @@ const joinGroup = async (req, res, next) => {
       Date.now() > group.inviteTokenExpiresAt
     ) {
       const error = new Error(
-        "Invite Token is expired. Ask admin to generate new token.",
+        "Invite link is expired. Ask admin to generate new link.",
       );
       error.statusCode = 403;
       throw error;
@@ -100,6 +101,8 @@ const joinGroup = async (req, res, next) => {
       joinedAt: Date.now(),
     });
 
+    await updateGroupActivity(group._id);
+
     await group.save();
 
     const io = req.app.get("io");
@@ -119,17 +122,12 @@ const joinGroup = async (req, res, next) => {
 const generateNewToken = async (req, res, next) => {
   try {
     const user_id = req.user.id;
-    const group_id = req.params.groupId;
+    const group = req.group;
+    const group_id = group._id;
 
-    const group = await Group.findById(group_id);
+    const fullGroup = await Group.findById(group_id);
 
-    if (!group) {
-      const error = new Error("Group does not exist.");
-      error.statusCode = 404;
-      throw error;
-    }
-
-    if (user_id.toString() !== group.createdBy.toString()) {
+    if (user_id.toString() !== fullGroup.createdBy.toString()) {
       const error = new Error(
         "Only group creator can re-generate invite token.",
       );
@@ -138,8 +136,8 @@ const generateNewToken = async (req, res, next) => {
     }
 
     if (
-      group.inviteTokenExpiresAt &&
-      Date.now() < group.inviteTokenExpiresAt
+      fullGroup.inviteTokenExpiresAt &&
+      Date.now() < fullGroup.inviteTokenExpiresAt
     ) {
       const error = new Error(
         "Current invite link is still active. You can regenerate after it expires.",
@@ -158,23 +156,25 @@ const generateNewToken = async (req, res, next) => {
       return `${slug}_${randomString}`;
     };
 
-    const inviteToken = generateInviteToken(group.name);
+    const inviteToken = generateInviteToken(fullGroup.name);
 
     const INVITE_EXPIRY_HOURS = 24;
     const duration = INVITE_EXPIRY_HOURS * 60 * 60 * 1000;
     const inviteTokenExpiresAt = new Date(Date.now() + duration);
 
-    group.inviteToken = inviteToken;
-    group.inviteTokenExpiresAt = inviteTokenExpiresAt;
+    fullGroup.inviteToken = inviteToken;
+    fullGroup.inviteTokenExpiresAt = inviteTokenExpiresAt;
 
-    await group.save();
+    await updateGroupActivity(fullGroup._id);
 
-    const inviteLink = `${process.env.CLIENT_URL}/join/${group.inviteToken}`;
+    await fullGroup.save();
+
+    const inviteLink = `${process.env.CLIENT_URL}/join/${fullGroup.inviteToken}`;
 
     return res.status(200).json({
       message: "Invite token regenerated successfully.",
       inviteLink,
-      inviteTokenExpiresAt: group.inviteTokenExpiresAt,
+      inviteTokenExpiresAt: fullGroup.inviteTokenExpiresAt,
     });
   } catch (error) {
     next(error);
@@ -206,30 +206,16 @@ const getGroups = async (req, res, next) => {
 
 const getGroupSummary = async (req, res, next) => {
   try {
-    const group_id = req.params.groupId;
+    const group = req.group;
+    const group_id = group._id;
     const user_id = req.user.id;
 
-    const group = await Group.findById(group_id).populate(
+    const fullGroup = await Group.findById(group_id).populate(
       "members.user",
       "name email image imageKey",
     );
-    if (!group) {
-      const error = new Error("Group not found.");
-      error.statusCode = 404;
-      throw error;
-    }
 
-    const isMember = group.members.some(
-      (m) => m.user && m.user._id.toString() === user_id,
-    );
-
-    if (!isMember) {
-      const error = new Error("Not Authorized");
-      error.statusCode = 403;
-      throw error;
-    }
-
-    const rawMembers = group.members.filter((m) => m.user);
+    const rawMembers = fullGroup.members.filter((m) => m.user);
 
     const members = await Promise.all(
       rawMembers.map(async (m) => {
@@ -250,11 +236,11 @@ const getGroupSummary = async (req, res, next) => {
       }),
     );
 
-    const expenses = await Expense.find({ group: group_id });
+    const expenses = await Expense.find({ group: group_id, isDeleted: false });
 
     const settledSettlements = await Settlement.find({
       group: group_id,
-      isSettled: true,
+      isDeleted: false,
     });
 
     let balance = {};
@@ -370,15 +356,7 @@ const deleteGroup = async (req, res, next) => {
   try {
     const user_id = req.user.id;
 
-    const group_id = req.params.groupId;
-
-    const group = await Group.findById(group_id);
-
-    if (!group) {
-      const error = new Error("Group does not exist or already deleted.");
-      error.statusCode = 404;
-      throw error;
-    }
+    const group = req.group;
 
     if (user_id !== group.createdBy.toString()) {
       const error = new Error("Only group admin can delete the group.");
@@ -386,10 +364,10 @@ const deleteGroup = async (req, res, next) => {
       throw error;
     }
 
-    await Expense.deleteMany({ group: group_id });
-    await Settlement.deleteMany({ group: group_id });
+    await Expense.deleteMany({ group: group._id });
+    await Settlement.deleteMany({ group: group._id });
 
-    await Group.findByIdAndDelete(group_id);
+    await Group.findByIdAndDelete(group._id);
 
     return res.status(200).json({ message: "Group deleted successfully." });
   } catch (error) {
@@ -400,15 +378,9 @@ const deleteGroup = async (req, res, next) => {
 const removeMember = async (req, res, next) => {
   try {
     const user_id = req.user.id;
-    const group_id = req.params.groupId;
     const member_id = req.params.memberId;
 
-    const group = await Group.findById(group_id);
-    if (!group) {
-      const error = new Error("Group not found.");
-      error.statusCode = 404;
-      throw error;
-    }
+    const group = req.group;
 
     if (group.members.length === 1) {
       const error = new Error("Can not remove the last member.");
@@ -435,8 +407,8 @@ const removeMember = async (req, res, next) => {
     }
 
     const hasPendingSettlement = await Settlement.findOne({
-      group: group_id,
-      isSettled: false,
+      group: group._id,
+      isDeleted: false,
       $or: [{ from: member_id }, { to: member_id }],
     });
 
@@ -448,7 +420,7 @@ const removeMember = async (req, res, next) => {
       throw error;
     }
 
-    const expenses = await Expense.find({ group: group_id });
+    const expenses = await Expense.find({ group: group._id, isDeleted: false });
 
     let balance = {};
 
@@ -467,8 +439,8 @@ const removeMember = async (req, res, next) => {
     });
 
     const completedSettlements = await Settlement.find({
-      group: group_id,
-      isSettled: true,
+      group: group._id,
+      isDeleted: false,
     });
 
     completedSettlements.forEach((s) => {
@@ -490,10 +462,12 @@ const removeMember = async (req, res, next) => {
       (m) => m.user.toString() !== member_id.toString(),
     );
 
+    await updateGroupActivity(group._id);
+
     await group.save();
 
     const io = req.app.get("io");
-    io.to(group_id.toString()).emit("member-removed", {
+    io.to(group._id.toString()).emit("member-removed", {
       memberId: member_id.toString(),
     });
 
@@ -507,30 +481,12 @@ const removeMember = async (req, res, next) => {
 
 const groupAnalytics = async (req, res, next) => {
   try {
-    const user_id = req.user.id;
-    const group_id = req.params.groupId;
+    const group = req.group;
 
-    const group = await Group.findById(group_id);
-    if (!group) {
-      const error = new Error("Group not found.");
-      error.statusCode = 404;
-      throw error;
-    }
-
-    const isMember = group.members.some(
-      (m) => m.user._id.toString() === user_id,
-    );
-
-    if (!isMember) {
-      const error = new Error("Not Authorized");
-      error.statusCode = 403;
-      throw error;
-    }
-
-    const objectGroupId = new mongoose.Types.ObjectId(group_id);
+    const objectGroupId = group._id;
 
     const overviewAgg = await Expense.aggregate([
-      { $match: { group: objectGroupId } },
+      { $match: { group: objectGroupId, isDeleted: false } },
       {
         $group: {
           _id: null,
@@ -550,7 +506,7 @@ const groupAnalytics = async (req, res, next) => {
     };
 
     const memberContribution = await Expense.aggregate([
-      { $match: { group: objectGroupId } },
+      { $match: { group: objectGroupId, isDeleted: false } },
       {
         $group: {
           _id: "$paidBy",
@@ -580,7 +536,7 @@ const groupAnalytics = async (req, res, next) => {
     ]);
 
     const categoryBreakdown = await Expense.aggregate([
-      { $match: { group: objectGroupId } },
+      { $match: { group: objectGroupId, isDeleted: false } },
       {
         $group: {
           _id: "$category",
@@ -600,7 +556,7 @@ const groupAnalytics = async (req, res, next) => {
     ]);
 
     const dailyTrend = await Expense.aggregate([
-      { $match: { group: objectGroupId } },
+      { $match: { group: objectGroupId, isDeleted : false } },
       {
         $group: {
           _id: {
