@@ -1,32 +1,17 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import Group from "../models/group.js";
 import Expense from "../models/expense.js";
 import Settlement from "../models/settlement.js";
 import { detectAnomaly } from "../services/ml/anomalyService.js";
+import updateGroupActivity from "../helper/group-activity.js";
 
 const getAllExpense = async (req, res, next) => {
   try {
-    const user_id = req.user.id;
-    const group_id = req.params.groupId;
+    const group = req.group;
+    const group_id = group._id;
 
-    const group = await Group.findById(group_id);
-
-    if (!group) {
-      const error = new Error("Group not found");
-      error.statusCode = 404;
-      throw error;
-    }
-    const isMember = group.members.some((m) => m.user.toString() === user_id);
-
-    if (!isMember) {
-      const error = new Error("You are not a member of this group.");
-      error.statusCode = 403;
-      throw error;
-    }
-
-    const expenses = await Expense.find({ group: group_id })
+    const expenses = await Expense.find({ group: group_id , isDeleted : false})
       .populate("paidBy", "name email")
       .populate("createdBy", "name email")
       .populate("splits.user", "name email")
@@ -45,25 +30,19 @@ const getAllExpense = async (req, res, next) => {
 const addExpense = async (req, res, next) => {
   try {
     const user_id = req.user.id;
-    const group_id = req.params.groupId;
+    const group = req.group;
+    const group_id = group._id;
 
-    const group = await Group.findById(group_id);
-
-    if (!group) {
-      const error = new Error("Group not found");
-      error.statusCode = 404;
-      throw error;
-    }
-    const isMember = group.members.some((m) => m.user.toString() === user_id);
-
-    if (!isMember) {
-      const error = new Error("You are not a member of this group.");
-      error.statusCode = 403;
-      throw error;
-    }
-
-    const { title, totalAmount, category, notes, splitType, participants } =
-      req.body;
+    const {
+      title,
+      totalAmount,
+      currency,
+      category,
+      paidBy,
+      notes,
+      splitType,
+      participants,
+    } = req.body;
 
     const amountNumber = Number(totalAmount);
 
@@ -73,10 +52,8 @@ const addExpense = async (req, res, next) => {
       throw error;
     }
 
-    const requestedPayer = req.body.paidBy;
-
     const isValidPayer = group.members.some(
-      (m) => m.user.toString() === requestedPayer,
+      (m) => m.user.toString() === paidBy,
     );
 
     if (!isValidPayer) {
@@ -85,14 +62,12 @@ const addExpense = async (req, res, next) => {
       throw error;
     }
 
-    const paidBy = requestedPayer;
-
     let finalSplits = [];
 
     const involvedUsers =
       participants && participants.length > 0
         ? participants
-        : group.members.map((m) => ({ userId: m.toString() }));
+        : group.members.map((m) => ({ userId: m.user.toString() }));
 
     const numberOfUsers = involvedUsers.length;
 
@@ -116,12 +91,11 @@ const addExpense = async (req, res, next) => {
 
     //   Equal Type
     if (splitType === "equal") {
-      const eachShare = Number((totalAmount / numberOfUsers).toFixed(2));
+      const eachShare = Number((amountNumber / numberOfUsers).toFixed(2));
 
       finalSplits = involvedUsers.map((p) => ({
         user: p.userId,
         amount: eachShare,
-        isPaid: false,
       }));
     }
     // Manual Split up by amount
@@ -141,7 +115,6 @@ const addExpense = async (req, res, next) => {
         return {
           user: p.userId,
           amount: p.value,
-          isPaid: false,
         };
       });
       const totalAmountNum = Number(totalAmount);
@@ -175,6 +148,7 @@ const addExpense = async (req, res, next) => {
       finalSplits = involvedUsers.map((p) => ({
         user: p.userId,
         amount: Number(((p.value / 100) * totalAmount).toFixed(2)),
+        percentage: p.value,
       }));
     } else {
       const error = new Error("Invalid Split Type.");
@@ -187,11 +161,14 @@ const addExpense = async (req, res, next) => {
       amountNumber,
     );
 
+    await updateGroupActivity(group_id);
+
     const expense = await Expense.create({
       group: group_id,
       title,
       totalAmount,
       paidBy,
+      currency,
       category,
       notes,
       splitType,
@@ -222,6 +199,9 @@ const editExpense = async (req, res, next) => {
     const user_id = req.user.id;
     const expense_id = req.params.expenseId;
 
+    const group = req.group;
+    const group_id = group._id;
+
     const expense = await Expense.findById(expense_id);
     if (!expense) {
       const error = new Error("Expense not found");
@@ -229,33 +209,10 @@ const editExpense = async (req, res, next) => {
       throw error;
     }
 
-    const group = await Group.findById(expense.group);
-    if (!group) {
-      const error = new Error("Group not found");
-      error.statusCode = 404;
-      throw error;
-    }
-
-    const isMember = group.members.some((m) => m.user.toString() === user_id);
-
-    if (!isMember) {
-      const error = new Error("Not Authorized.");
-      error.statusCode = 403;
-      throw error;
-    }
-
-    // block edit if expense was part of previous settlement window
-    if (group.lastSettlementAt && expense.createdAt < group.lastSettlementAt) {
-      const error = new Error(
-        "Cannot edit expense from a previous settlement window.",
-      );
-      error.statusCode = 409;
-      throw error;
-    }
-
     const {
       title,
       totalAmount,
+      currency,
       category,
       notes,
       splitType,
@@ -315,7 +272,6 @@ const editExpense = async (req, res, next) => {
       finalSplits = involvedUsers.map((p) => ({
         user: p.userId,
         amount: eachShare,
-        isPaid: false,
       }));
     } else if (splitType === "manual") {
       let sum = 0;
@@ -329,7 +285,6 @@ const editExpense = async (req, res, next) => {
         return {
           user: p.userId,
           amount: p.value,
-          isPaid: false,
         };
       });
 
@@ -359,7 +314,7 @@ const editExpense = async (req, res, next) => {
       finalSplits = involvedUsers.map((p) => ({
         user: p.userId,
         amount: Number(((p.value / 100) * amountNumber).toFixed(2)),
-        isPaid: false,
+        percentage: p.value,
       }));
     } else {
       const error = new Error("Invalid split type.");
@@ -375,6 +330,7 @@ const editExpense = async (req, res, next) => {
     // update expense
     expense.title = title;
     expense.totalAmount = amountNumber;
+    expense.currency = currency;
     expense.category = category;
     expense.notes = notes;
     expense.splitType = splitType;
@@ -383,6 +339,9 @@ const editExpense = async (req, res, next) => {
     expense.isAnomalous = isAnomalous;
     expense.anomalyScore = anomalyScore;
     expense.anomalyReason = anomalyReason;
+    expense.updatedBy = user_id;
+
+    await updateGroupActivity(group_id);
 
     await expense.save();
 
@@ -402,24 +361,10 @@ const editExpense = async (req, res, next) => {
 
 const balance = async (req, res, next) => {
   try {
-    const group_id = req.params.id;
-    const user_id = req.user.id;
+    const group = req.group;
+    const group_id = group._id;
 
-    const group = await Group.findById(group_id);
-    if (!group) {
-      const error = new Error("Group not found");
-      error.statusCode = 404;
-      throw error;
-    }
-    const isMember = group.members.some((m) => m.user.toString() === user_id);
-
-    if (!isMember) {
-      const error = new Error("Not Authorized.");
-      error.statusCode = 403;
-      throw error;
-    }
-
-    const expenses = await Expense.find({ group: group_id });
+    const expenses = await Expense.find({ group: group_id, isDeleted : false });
 
     let balance = {};
 
@@ -439,7 +384,7 @@ const balance = async (req, res, next) => {
 
     const settlements = await Settlement.find({
       group: group_id,
-      isSettled: true,
+      isDeleted : false
     });
 
     settlements.forEach((s) => {
@@ -467,27 +412,13 @@ const deleteExpense = async (req, res, next) => {
   try {
     const user_id = req.user.id;
     const expense_id = req.params.expenseId;
+    const group = req.group;
 
     const expense = await Expense.findById(expense_id);
 
     if (!expense) {
       const error = new Error("Expense not found");
       error.statusCode = 404;
-      throw error;
-    }
-
-    const group = await Group.findById(expense.group);
-    if (!group) {
-      const error = new Error("Group not found");
-      error.statusCode = 404;
-      throw error;
-    }
-
-    const isMember = group.members.some((m) => m.user.toString() === user_id);
-
-    if (!isMember) {
-      const error = new Error("Not Authorized.");
-      error.statusCode = 403;
       throw error;
     }
 
@@ -500,14 +431,6 @@ const deleteExpense = async (req, res, next) => {
         "Only expense creator or group creator can delete this expense",
       );
       error.statusCode = 403;
-      throw error;
-    }
-
-    if (group.lastSettlementAt && expense.createdAt < group.lastSettlementAt) {
-      const error = new Error(
-        "Cannot delete expense from a previous settlement window.",
-      );
-      error.statusCode = 409;
       throw error;
     }
 

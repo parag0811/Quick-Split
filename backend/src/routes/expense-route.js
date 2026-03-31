@@ -4,6 +4,7 @@ import { body } from "express-validator";
 import expressValidation from "../middleware/validator.js";
 import expense_controller from "../controllers/expense-controller.js";
 import isAuth from "../middleware/is-auth.js";
+import isGroupMember from "../middleware/is-member.js";
 
 const allowedCategories = ["food", "travel", "rent", "shopping", "other"];
 const allowedSplitTypes = ["equal", "manual", "percentage"];
@@ -54,11 +55,17 @@ const expenseValidation = [
     .withMessage("Participant value must be a number."),
 ];
 
-router.get("/group/:groupId/expense", isAuth, expense_controller.getAllExpense);
+router.get(
+  "/group/:groupId/expense",
+  isAuth,
+  isGroupMember,
+  expense_controller.getAllExpense,
+);
 
 router.post(
   "/group/:groupId/expense/add",
   isAuth,
+  isGroupMember,
   expenseValidation,
   expressValidation,
   expense_controller.addExpense,
@@ -67,16 +74,18 @@ router.post(
 router.put(
   "/group/:groupId/expense/:expenseId/edit",
   isAuth,
+  isGroupMember,
   expenseValidation,
   expressValidation,
   expense_controller.editExpense,
 );
 
-router.post("/group/:groupId/balance", isAuth, expense_controller.balance);
+router.post("/group/:groupId/balance", isAuth, isGroupMember, expense_controller.balance);
 
 router.delete(
-  "/group/expenses/:expenseId/deleteExpense",
+  "/group/:groupId/expenses/:expenseId/deleteExpense",
   isAuth,
+  isGroupMember,
   expense_controller.deleteExpense,
 );
 
