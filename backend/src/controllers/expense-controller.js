@@ -359,54 +359,6 @@ const editExpense = async (req, res, next) => {
   }
 };
 
-const balance = async (req, res, next) => {
-  try {
-    const group = req.group;
-    const group_id = group._id;
-
-    const expenses = await Expense.find({ group: group_id, isDeleted : false });
-
-    let balance = {};
-
-    group.members.forEach((m) => {
-      balance[m.user.toString()] = 0;
-    });
-
-    expenses.forEach((expense) => {
-      const payerId = expense.paidBy.toString();
-      balance[payerId] += expense.totalAmount;
-
-      expense.splits.forEach((split) => {
-        const splitUserId = split.user.toString();
-        balance[splitUserId] -= split.amount;
-      });
-    });
-
-    const settlements = await Settlement.find({
-      group: group_id,
-      isDeleted : false
-    });
-
-    settlements.forEach((s) => {
-      const from = s.from.toString();
-      const to = s.to.toString();
-      balance[from] += s.amount;
-      balance[to] -= s.amount;
-    });
-
-    const finalBalance = Object.entries(balance).map(([userId, amount]) => ({
-      user: userId,
-      netAmount: Number(amount.toFixed(2)),
-    }));
-
-    return res.status(200).json({
-      message: "Group balances calculated successfully",
-      finalBalance,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 const deleteExpense = async (req, res, next) => {
   try {
