@@ -43,7 +43,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     isActive
                       ? "bg-[#0c2758] text-[#00CDFF] shadow-[inset_3px_0_0_0_#00CDFF]"
                       : "text-[#8ea4cd] hover:bg-[#0a1d44] hover:text-white"
-                  }`}
+                  } cursor-pointer`}
                 >
                   <Icon size={18} className={isActive ? "text-[#00CDFF]" : "text-[#7891bc] group-hover:text-[#00CDFF]"} />
                   <span>{item.label}</span>
@@ -57,20 +57,20 @@ export default function Sidebar({ isOpen, onClose }) {
       <div className="mt-auto px-5 pb-6">
         <Link
           href="/dashboard/groups/create"
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00CDFF] px-4 py-3 text-sm font-bold text-[#03203f] transition hover:bg-[#36d9ff]"
+          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#00CDFF] px-4 py-3 text-sm font-bold text-[#03203f] transition hover:bg-[#36d9ff]"
         >
           <Plus size={18} />
           Add Expense
         </Link>
 
         <div className="mt-5 space-y-1.5">
-          <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[#7f97c3] hover:bg-[#0a1c42] hover:text-white">
+          <button className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[#7f97c3] hover:bg-[#0a1c42] hover:text-white">
             <CircleHelp size={16} />
             Help
           </button>
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[#7f97c3] hover:bg-[#0a1c42] hover:text-[#ff9db8]"
+            className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[#7f97c3] hover:bg-[#0a1c42] hover:text-[#ff9db8]"
           >
             <LogOut size={16} />
             Logout
@@ -91,13 +91,13 @@ export default function Sidebar({ isOpen, onClose }) {
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[2px] xl:hidden"
+          className="fixed inset-0 z-40 cursor-pointer bg-black/45 backdrop-blur-[2px] xl:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-50 flex h-screen w-70 flex-col border-r border-[#17335f] bg-[#041236] shadow-[16px_0_40px_rgba(0,0,0,0.35)] transition-transform duration-300 xl:hidden ${
+        className={`fixed left-0 top-16 z-50 flex h-[calc(100vh-4rem)] w-70 flex-col border-r border-[#17335f] bg-[#041236] shadow-[16px_0_40px_rgba(0,0,0,0.35)] transition-transform duration-300 xl:hidden ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -122,7 +122,7 @@ export default function Sidebar({ isOpen, onClose }) {
                     isActive
                       ? "bg-[#0d2a5f] text-[#00CDFF]"
                       : "text-[#7f98c4] hover:bg-[#0b224f] hover:text-white"
-                  }`}
+                  } cursor-pointer`}
                 >
                   <Icon size={16} />
                   <span>{item.label}</span>

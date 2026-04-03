@@ -75,7 +75,7 @@ export default function HomePage() {
         <p className="text-gray-400 mb-6 text-center max-w-md">{error}</p>
         <button
           onClick={() => window.location.reload()}
-          className="rounded-lg bg-linear-to-r from-cyan-500 to-blue-500 px-5 py-2.5 font-semibold text-white transition-all hover:from-cyan-600 hover:to-blue-600"
+          className="cursor-pointer rounded-lg bg-linear-to-r from-cyan-500 to-blue-500 px-5 py-2.5 font-semibold text-white transition-all hover:from-cyan-600 hover:to-blue-600"
         >
           Retry
         </button>
@@ -151,7 +151,7 @@ export default function HomePage() {
           </p>
           <Link
             href="/dashboard/groups/create"
-            className="flex items-center space-x-2 rounded-xl bg-[#00CDFF] px-6 py-3 font-semibold text-[#03203f] transition hover:bg-[#2dd7ff]"
+            className="flex cursor-pointer items-center space-x-2 rounded-xl bg-[#00CDFF] px-6 py-3 font-semibold text-[#03203f] transition hover:bg-[#2dd7ff]"
           >
             <Plus className="h-5 w-5" />
             <span>Create Your First Group</span>
@@ -226,7 +226,7 @@ export default function HomePage() {
                 <div className="rounded-2xl border border-[#163465] bg-[#06173f]/90 p-5">
                   <div className="mb-4 flex items-center justify-between">
                     <h2 className="text-xl font-bold text-[#dce8ff]">Recent Settlements</h2>
-                    <Link href="/dashboard/groups" className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7f97c3] hover:text-[#00CDFF]">
+                    <Link href="/dashboard/groups" className="cursor-pointer text-xs font-semibold uppercase tracking-[0.12em] text-[#7f97c3] hover:text-[#00CDFF]">
                       View all
                     </Link>
                   </div>
@@ -323,7 +323,7 @@ export default function HomePage() {
 
             <Link
               href="/dashboard/groups/create"
-              className="flex items-center justify-between rounded-2xl bg-[#00CDFF] px-5 py-4 text-[#03203f] shadow-[0_10px_24px_rgba(0,205,255,0.35)] transition hover:bg-[#2fd8ff]"
+              className="flex cursor-pointer items-center justify-between rounded-2xl bg-[#00CDFF] px-5 py-4 text-[#03203f] shadow-[0_10px_24px_rgba(0,205,255,0.35)] transition hover:bg-[#2fd8ff]"
             >
               <div>
                 <p className="text-base font-bold">Create Group</p>
@@ -334,7 +334,7 @@ export default function HomePage() {
 
             <Link
               href="/dashboard/groups/create"
-              className="flex items-center justify-center gap-2 rounded-xl border border-[#1b3e71] bg-[#081a43] px-5 py-3 text-sm font-semibold text-[#9eb2d7] transition hover:border-[#00CDFF]/45 hover:text-[#00CDFF]"
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-[#1b3e71] bg-[#081a43] px-5 py-3 text-sm font-semibold text-[#9eb2d7] transition hover:border-[#00CDFF]/45 hover:text-[#00CDFF]"
             >
               <Plus className="h-4 w-4" />
               Add another group

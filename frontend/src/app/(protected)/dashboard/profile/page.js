@@ -4,19 +4,20 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
-  Mail,
+  Shield,
   Users,
-  TrendingUp,
-  TrendingDown,
-  Wallet,
   Edit2,
   Save,
   X,
   Camera,
   Loader2,
-  DollarSign,
-  CheckCircle,
+  Fingerprint,
   CreditCard,
+  Sparkles,
+  ChevronRight,
+  UserRound,
+  WalletCards,
+  Bell,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useDispatch, useSelector } from "react-redux";
@@ -110,14 +111,14 @@ export default function Profile() {
 
   if (loading || !user) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[400px]">
+      <div className="flex min-h-[420px] items-center justify-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center gap-4"
+          className="flex flex-col items-center gap-3"
         >
-          <Loader2 className="w-10 h-10 text-indigo-400 animate-spin" />
-          <p className="text-zinc-400 font-medium text-sm">
+          <Loader2 className="h-10 w-10 animate-spin text-[#00CDFF]" />
+          <p className="text-sm font-medium text-[#9bb0d6]">
             Loading your profile...
           </p>
         </motion.div>
@@ -127,388 +128,194 @@ export default function Profile() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[400px] p-4">
+      <div className="flex min-h-[420px] items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 max-w-md"
+          className="max-w-md rounded-2xl border border-[#FF2D65]/35 bg-[#FF2D65]/10 p-6"
         >
-          <p className="text-red-400 font-medium">Error: {error}</p>
+          <p className="font-medium text-[#ff9bb7]">Error: {error}</p>
         </motion.div>
       </div>
     );
   }
 
+  const outstandingBalance = stats?.outstandingBalance || 0;
+  const totalSpent = stats?.totalSpent || 0;
+  const youPaidFor = stats?.youPaidFor || 0;
+  const totalSettled = stats?.totalSettled || 0;
+  const totalGroups = stats?.totalGroups || 0;
+
   return (
-    <div className="w-full">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-bold text-white mb-1">My Profile</h1>
-          <p className="text-zinc-500 text-sm">
-            Manage your account and view your expense statistics
-          </p>
-        </motion.div>
+    <div className="mx-auto w-full max-w-345 space-y-6">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageSelect}
+        className="hidden"
+      />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Profile Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="lg:col-span-1"
-          >
-            <div className="bg-[#1a1a1a] rounded-2xl border border-white/5 overflow-hidden">
-              <div className="bg-gradient-to-r from-indigo-600/80 to-purple-700/80 h-28" />
-
-              <div className="relative px-6 pb-6">
-                <div className="relative -mt-14 mb-4">
-                  <motion.div
-                    whileHover={{ scale: 1.03 }}
-                    className="relative w-fit mx-auto"
-                  >
-                    {imagePreview || user?.image ? (
-                      <img
-                        src={imagePreview || user.image}
-                        alt={user?.name}
-                        className="w-28 h-28 rounded-full border-4 border-[#1a1a1a] shadow-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-28 h-28 rounded-full border-4 border-[#1a1a1a] shadow-lg bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center">
-                        <User className="w-14 h-14 text-white/80" />
-                      </div>
-                    )}
-                    {isEditing && (
-                      <>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageSelect}
-                          className="hidden"
-                        />
-                        <motion.button
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          onClick={() => fileInputRef.current?.click()}
-                          className="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-500 transition-colors"
-                        >
-                          <Camera className="w-3.5 h-3.5" />
-                        </motion.button>
-                      </>
-                    )}
-                  </motion.div>
+      <motion.section
+        initial={{ opacity: 0, y: -14 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl border border-[#17345f] bg-[#06173f]/80 p-4 sm:p-6"
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="relative w-fit rounded-2xl border border-[#f5c9b9] bg-[#f6d6c7] p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.32)]">
+              {imagePreview || user?.image ? (
+                <img
+                  src={imagePreview || user.image}
+                  alt={user?.name}
+                  className="h-20 w-20 rounded-xl object-cover sm:h-24 sm:w-24"
+                />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-[#ecd9cf] sm:h-24 sm:w-24">
+                  <User className="h-10 w-10 text-[#a28b83]" />
                 </div>
+              )}
 
-                <div className="text-center space-y-4">
-                  <AnimatePresence mode="wait">
-                    {isEditing ? (
-                      <motion.div
-                        key="editing"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="space-y-2.5"
-                      >
-                        <input
-                          type="text"
-                          value={formData.name}
-                          onChange={(e) =>
-                            setFormData({ ...formData, name: e.target.value })
-                          }
-                          className="w-full px-4 py-2.5 bg-[#252525] border border-white/10 text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-sm placeholder:text-zinc-600"
-                          placeholder="Your name"
-                        />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="viewing"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                      >
-                        <h2 className="text-xl font-bold text-white">
-                          {user?.name}
-                        </h2>
-                        <div className="flex items-center justify-center gap-2 text-zinc-500 mt-1.5">
-                          <Mail className="w-3.5 h-3.5" />
-                          <p className="text-xs">{user?.email}</p>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  <div className="flex gap-2 justify-center pt-2">
-                    <AnimatePresence mode="wait">
-                      {isEditing ? (
-                        <>
-                          <motion.button
-                            key="save"
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            onClick={handleUpdateProfile}
-                            disabled={saving}
-                            className="flex-1 bg-indigo-600 text-white px-4 py-2.5 rounded-xl hover:bg-indigo-500 transition-colors flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
-                          >
-                            {saving ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Save className="w-4 h-4" />
-                            )}
-                            Save
-                          </motion.button>
-                          <motion.button
-                            key="cancel"
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            onClick={handleCancel}
-                            disabled={saving}
-                            className="flex-1 bg-white/5 text-zinc-300 px-4 py-2.5 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2 text-sm font-medium disabled:opacity-50"
-                          >
-                            <X className="w-4 h-4" />
-                            Cancel
-                          </motion.button>
-                        </>
-                      ) : (
-                        <motion.button
-                          key="edit"
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          onClick={() => setIsEditing(true)}
-                          className="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-xl hover:bg-indigo-500 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          Edit Profile
-                        </motion.button>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Stats Section */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Outstanding Balance Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className={`rounded-2xl border p-6 ${
-                stats?.outstandingBalance >= 0
-                  ? "bg-emerald-500/10 border-emerald-500/20"
-                  : "bg-rose-500/10 border-rose-500/20"
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-zinc-400 text-sm font-medium mb-1">
-                    Outstanding Balance
-                  </p>
-                  <div className="flex items-baseline gap-2">
-                    <h3
-                      className={`text-4xl font-bold ${
-                        stats?.outstandingBalance >= 0
-                          ? "text-emerald-400"
-                          : "text-rose-400"
-                      }`}
-                    >
-                      ₹{Math.abs(stats?.outstandingBalance || 0).toFixed(2)}
-                    </h3>
-                    <span
-                      className={`text-sm font-medium ${
-                        stats?.outstandingBalance >= 0
-                          ? "text-emerald-500"
-                          : "text-rose-500"
-                      }`}
-                    >
-                      {stats?.outstandingBalance >= 0 ? "Others owe you" : "You owe"}
-                    </span>
-                  </div>
-                </div>
-                <motion.div
-                  animate={{ rotate: [0, 5, -5, 0] }}
-                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                  className={`p-4 rounded-full ${
-                    stats?.outstandingBalance >= 0
-                      ? "bg-emerald-500/15 text-emerald-400"
-                      : "bg-rose-500/15 text-rose-400"
-                  }`}
-                >
-                  <Wallet className="w-7 h-7" />
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                whileHover={{ y: -4 }}
-                className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-6"
+              <button
+                onClick={() => {
+                  setIsEditing(true);
+                  fileInputRef.current?.click();
+                }}
+                className="absolute -bottom-2 -right-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[#1a4c86] bg-[#00CDFF] text-[#03203f] shadow-lg transition hover:bg-[#32d9ff]"
+                aria-label="Change photo"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2.5 bg-blue-500/15 rounded-xl">
-                    <DollarSign className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <TrendingDown className="w-4 h-4 text-zinc-600" />
-                </div>
-                <p className="text-zinc-500 text-xs font-medium mb-1">
-                  Total Spent
-                </p>
-                <h4 className="text-3xl font-bold text-white">
-                  ₹{stats?.totalSpent?.toFixed(2) || "0.00"}
-                </h4>
-                <p className="text-xs text-zinc-600 mt-2">
-                  Your share across all expenses
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                whileHover={{ y: -4 }}
-                className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-6"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2.5 bg-cyan-500/15 rounded-xl">
-                    <CreditCard className="w-5 h-5 text-cyan-400" />
-                  </div>
-                  <TrendingUp className="w-4 h-4 text-zinc-600" />
-                </div>
-                <p className="text-zinc-500 text-xs font-medium mb-1">
-                  You Paid For
-                </p>
-                <h4 className="text-3xl font-bold text-white">
-                  ₹{stats?.youPaidFor?.toFixed(2) || "0.00"}
-                </h4>
-                <p className="text-xs text-zinc-600 mt-2">
-                  Total you fronted for groups
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45 }}
-                whileHover={{ y: -4 }}
-                className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-6"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2.5 bg-emerald-500/15 rounded-xl">
-                    <CheckCircle className="w-5 h-5 text-emerald-400" />
-                  </div>
-                  <DollarSign className="w-4 h-4 text-zinc-600" />
-                </div>
-                <p className="text-zinc-500 text-xs font-medium mb-1">
-                  Total Settled
-                </p>
-                <h4 className="text-3xl font-bold text-white">
-                  ₹{stats?.totalSettled?.toFixed(2) || "0.00"}
-                </h4>
-                <p className="text-xs text-zinc-600 mt-2">
-                  Amount cleared via settlements
-                </p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                whileHover={{ y: -4 }}
-                className="bg-[#1a1a1a] rounded-2xl border border-white/5 p-6"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2.5 bg-purple-500/15 rounded-xl">
-                      <Users className="w-5 h-5 text-purple-400" />
-                    </div>
-                    <div>
-                      <p className="text-zinc-500 text-xs font-medium mb-1">
-                        Active Groups
-                      </p>
-                      <h4 className="text-3xl font-bold text-white">
-                        {stats?.totalGroups || 0}
-                      </h4>
-                    </div>
-                  </div>
-                  <p className="text-xs text-zinc-600">
-                    Groups you're a member of
-                  </p>
-                </div>
-              </motion.div>
+                <Camera size={14} />
+              </button>
             </div>
 
-            {/* Quick Summary */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="bg-[#1a1a1a] border border-white/5 rounded-2xl p-6"
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#7f97c3]">Quick Split Member</p>
+              <h1 className="text-3xl font-bold tracking-tight text-[#d8e6ff] sm:text-5xl">{user?.name}</h1>
+              <p className="mt-1 text-xs uppercase tracking-[0.14em] text-[#6f88b7]">Premium tier member</p>
+            </div>
+          </div>
+
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <button
+              onClick={() => {
+                setIsEditing(true);
+                fileInputRef.current?.click();
+              }}
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#00CDFF] px-4 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-[#022342] transition hover:bg-[#35dcff]"
             >
-              <h3 className="text-base font-semibold text-white mb-4">
-                Quick Summary
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-500 text-sm">Groups</span>
-                  <span className="font-semibold text-zinc-200 text-sm">
-                    {stats?.totalGroups || 0}
-                  </span>
-                </div>
-                <div className="h-px bg-white/5" />
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-500 text-sm">
-                    Total Spent
-                  </span>
-                  <span className="font-semibold text-zinc-200 text-sm">
-                    ₹{stats?.totalSpent?.toFixed(2) || "0.00"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-500 text-sm">You Paid For</span>
-                  <span className="font-semibold text-zinc-200 text-sm">
-                    ₹{stats?.youPaidFor?.toFixed(2) || "0.00"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-zinc-500 text-sm">Settled</span>
-                  <span className="font-semibold text-zinc-200 text-sm">
-                    ₹{stats?.totalSettled?.toFixed(2) || "0.00"}
-                  </span>
-                </div>
-                <div className="h-px bg-white/5" />
-                <div className="flex justify-between items-center">
-                  <span className="text-white font-semibold text-sm">
-                    Outstanding
-                  </span>
-                  <span
-                    className={`font-bold text-base ${
-                      stats?.outstandingBalance >= 0
-                        ? "text-emerald-400"
-                        : "text-rose-400"
-                    }`}
-                  >
-                    {stats?.outstandingBalance >= 0 ? "+" : "-"}₹
-                    {Math.abs(stats?.outstandingBalance || 0).toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
+              <Camera size={14} />
+              Change photo
+            </button>
+            <button
+              onClick={() => setIsEditing(true)}
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-[#25497e] bg-transparent px-4 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-[#c8d6f0] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF]"
+            >
+              <Edit2 size={14} />
+              Edit profile
+            </button>
           </div>
         </div>
-      </div>
+
+        <AnimatePresence>
+          {isEditing && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mt-4 grid gap-3 rounded-xl border border-[#1b3c6c] bg-[#071a42] p-4 sm:grid-cols-[1fr_auto_auto]"
+            >
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                className="w-full rounded-lg border border-[#244a82] bg-[#081f4d] px-3 py-2.5 text-sm text-[#d9e7ff] outline-none transition focus:border-[#00CDFF]"
+                placeholder="Your name"
+              />
+              <button
+                onClick={handleUpdateProfile}
+                disabled={saving}
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#00CDFF] px-4 py-2.5 text-sm font-semibold text-[#022342] transition hover:bg-[#31d9ff] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                Save
+              </button>
+              <button
+                onClick={handleCancel}
+                disabled={saving}
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-[#2a4677] bg-[#081a43] px-4 py-2.5 text-sm font-semibold text-[#c8d7f0] transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.section>
+
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+      >
+        <div className="rounded-xl border border-[#17345f] bg-[#06173f]/80 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <WalletCards size={16} className="text-[#FF2D65]" />
+            <span className="text-[10px] uppercase tracking-[0.16em] text-[#6f88b7]">Expenses</span>
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[#7d96c6]">Total spent</p>
+          <p className="mt-1 text-2xl font-bold text-[#dce8ff]">₹{totalSpent.toFixed(2)}</p>
+        </div>
+
+        <div className="rounded-xl border border-[#17345f] bg-[#06173f]/80 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <CreditCard size={16} className="text-[#00CDFF]" />
+            <span className="text-[10px] uppercase tracking-[0.16em] text-[#6f88b7]">Owed to you</span>
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[#7d96c6]">Total owed</p>
+          <p className="mt-1 text-2xl font-bold text-[#dce8ff]">₹{Math.max(outstandingBalance, 0).toFixed(2)}</p>
+        </div>
+
+        <div className="col-span-2 rounded-xl border border-[#17345f] bg-[#06173f]/80 p-4 sm:col-span-1">
+          <div className="mb-3 flex items-center justify-between">
+            <Sparkles size={16} className="text-[#A855F7]" />
+            <span className="text-[10px] uppercase tracking-[0.16em] text-[#6f88b7]">Networks</span>
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-[#7d96c6]">Active groups</p>
+          <p className="mt-1 text-2xl font-bold text-[#dce8ff]">{totalGroups}</p>
+        </div>
+      </motion.section>
+
+      <motion.section
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="rounded-xl border border-[#17345f] bg-[#06173f]/70 p-4"
+      >
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-[#8ba3cd]">Ledger Summary</h3>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="flex items-center justify-between rounded-lg bg-[#081a43] px-3 py-2.5">
+            <span className="text-sm text-[#8ba3cd]">You paid for</span>
+            <span className="text-sm font-bold text-[#dce8ff]">₹{youPaidFor.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-[#081a43] px-3 py-2.5">
+            <span className="text-sm text-[#8ba3cd]">Total settled</span>
+            <span className="text-sm font-bold text-[#dce8ff]">₹{totalSettled.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-[#081a43] px-3 py-2.5 sm:col-span-2">
+            <span className="text-sm text-[#8ba3cd]">Net outstanding</span>
+            <span className={`text-sm font-bold ${outstandingBalance >= 0 ? "text-[#00CDFF]" : "text-[#FF2D65]"}`}>
+              {outstandingBalance >= 0 ? "+" : "-"}₹{Math.abs(outstandingBalance).toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </motion.section>
     </div>
   );
 }

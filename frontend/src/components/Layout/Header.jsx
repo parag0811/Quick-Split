@@ -25,7 +25,7 @@ const Header = ({ toggleSidebar, title }) => {
           <span className="text-xl font-bold tracking-tight text-[#00CDFF] xl:hidden">Quick Split</span>
         <button
           onClick={toggleSidebar}
-            className="rounded-lg border border-[#203f73] p-2 text-[#94a3b8] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF] xl:hidden"
+            className="cursor-pointer rounded-lg border border-[#203f73] p-2 text-[#94a3b8] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF] xl:hidden"
           aria-label="Toggle sidebar"
         >
             <Menu size={18} strokeWidth={2.2} />
@@ -40,7 +40,7 @@ const Header = ({ toggleSidebar, title }) => {
                   isActive(item.href, item.label)
                     ? "bg-[#00CDFF]/10 text-[#00CDFF]"
                     : "text-[#8da4cf] hover:text-white"
-                }`}
+                } cursor-pointer`}
               >
                 {item.label}
               </Link>
@@ -50,13 +50,13 @@ const Header = ({ toggleSidebar, title }) => {
 
         <div className="flex items-center gap-2">
           <button
-            className="rounded-lg border border-[#203f73] p-2 text-[#9fb2d8] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF]"
+            className="cursor-pointer rounded-lg border border-[#203f73] p-2 text-[#9fb2d8] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF]"
             aria-label="Notifications"
           >
             <Bell size={17} />
           </button>
           <button
-            className="rounded-lg border border-[#203f73] p-2 text-[#9fb2d8] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF]"
+            className="cursor-pointer rounded-lg border border-[#203f73] p-2 text-[#9fb2d8] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF]"
             aria-label="Settings"
           >
             <Cog size={17} />
