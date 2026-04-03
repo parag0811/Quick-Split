@@ -1,4 +1,4 @@
-import Group from "../models/group";
+import Group from "../models/group.js";
 
 const updateGroupActivity = async (groupId) => {
   await Group.findByIdAndUpdate(groupId, {

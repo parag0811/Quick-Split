@@ -403,6 +403,6 @@ export default {
   getAllExpense,
   addExpense,
   editExpense,
-  balance,
+  // balance,
   deleteExpense,
 };

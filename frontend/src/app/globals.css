@@ -3,10 +3,14 @@
 
 :root {
   --font-inter: 'Inter', sans-serif;
+  --qs-primary: #00cdff;
+  --qs-secondary: #ff2d65;
+  --qs-tertiary: #a855f7;
+  --qs-neutral: #0f172a;
 }
 
 body {
-  background: #0a0b0b;
-  color: #edf3f0;
+  background: radial-gradient(circle at 15% 0%, #0f2a67 0%, #041133 42%, #020817 100%);
+  color: #dbeafe;
   font-family: var(--font-inter);
 }

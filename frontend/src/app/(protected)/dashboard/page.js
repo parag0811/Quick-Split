@@ -1,10 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Plus,
-  Users,
-} from "lucide-react";
+import { ArrowUpRight, Plus, Users, WalletCards, TrendingUp, Sparkles, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 
@@ -78,7 +75,7 @@ export default function HomePage() {
         <p className="text-gray-400 mb-6 text-center max-w-md">{error}</p>
         <button
           onClick={() => window.location.reload()}
-          className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600 transition-all"
+          className="rounded-lg bg-linear-to-r from-cyan-500 to-blue-500 px-5 py-2.5 font-semibold text-white transition-all hover:from-cyan-600 hover:to-blue-600"
         >
           Retry
         </button>
@@ -92,19 +89,51 @@ export default function HomePage() {
   const totalSpent = stats?.totalSpent ?? 0;
   const youOwe = stats?.youOwe ?? 0;
   const youAreOwed = stats?.youAreOwed ?? 0;
+  const netBalance = youAreOwed - youOwe;
+
+  const weeklyValues = [
+    Math.max(Math.round(totalSpent * 0.08), 150),
+    Math.max(Math.round(totalSpent * 0.13), 220),
+    Math.max(Math.round(totalSpent * 0.06), 120),
+    Math.max(Math.round(totalSpent * 0.17), 290),
+    Math.max(Math.round(totalSpent * 0.1), 180),
+    Math.max(Math.round(totalSpent * 0.12), 210),
+    Math.max(Math.round(totalSpent * 0.09), 160),
+  ];
+  const maxValue = Math.max(...weeklyValues, 1);
+
+  const topGroups = [
+    {
+      name: "Loft 402 Expenses",
+      subtitle: "Household bills & rent",
+      status: "6 active",
+      accent: "#00CDFF",
+    },
+    {
+      name: "Tokyo Trip 2024",
+      subtitle: "Flights & accommodation",
+      status: "Upcoming",
+      accent: "#A855F7",
+    },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <h1 className="text-3xl font-bold text-white mb-2">
-          Welcome back, {userName}
-        </h1>
-        <p className="text-gray-400 mb-8">Here's your expense overview</p>
-      </motion.div>
+    <div className="mx-auto w-full max-w-345">
+      <motion.section initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+        <p className="text-[11px] uppercase tracking-[0.24em] text-[#7e98c9]">Total managed balance</p>
+        <div className="mt-1 flex flex-wrap items-end gap-x-3 gap-y-2">
+          <h1 className="text-4xl font-bold tracking-tight text-[#d9e6ff] sm:text-5xl">₹{Math.abs(netBalance).toLocaleString()}.00</h1>
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              netBalance >= 0
+                ? "bg-[#00CDFF]/15 text-[#78e9ff]"
+                : "bg-[#FF2D65]/15 text-[#ff91ae]"
+            }`}
+          >
+            {netBalance >= 0 ? "You are in credit" : "You owe more"}
+          </span>
+        </div>
+      </motion.section>
 
       {!hasGroups ? (
         <motion.div
@@ -113,18 +142,18 @@ export default function HomePage() {
           transition={{ duration: 0.5 }}
           className="flex flex-col items-center justify-center py-20"
         >
-          <div className="w-24 h-24 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full flex items-center justify-center mb-6">
-            <Users className="w-12 h-12 text-cyan-400" />
+          <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-linear-to-br from-[#00CDFF]/30 to-[#A855F7]/25">
+            <Users className="h-12 w-12 text-[#00CDFF]" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">No groups yet</h2>
-          <p className="text-gray-400 mb-8 text-center max-w-md">
+          <h2 className="mb-2 text-2xl font-bold text-white">No groups yet</h2>
+          <p className="mb-8 max-w-md text-center text-[#9eb2d7]">
             Create your first group to start splitting expenses with friends
           </p>
           <Link
             href="/dashboard/groups/create"
-            className="flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600 transition-all duration-200"
+            className="flex items-center space-x-2 rounded-xl bg-[#00CDFF] px-6 py-3 font-semibold text-[#03203f] transition hover:bg-[#2dd7ff]"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="h-5 w-5" />
             <span>Create Your First Group</span>
           </Link>
         </motion.div>
@@ -133,151 +162,184 @@ export default function HomePage() {
           variants={container}
           initial="hidden"
           animate="show"
-          className="space-y-6"
+          className="mt-7 grid grid-cols-1 gap-6 xl:grid-cols-12"
         >
-          <motion.div
-            variants={item}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4"
-          >
-            <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm font-medium">Total Spent</p>
-                <div className="w-2 h-2 rounded-full bg-blue-500" />
+          <motion.div variants={item} className="space-y-6 xl:col-span-8">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-[#1b3b74] bg-[#071b46]/90 p-5">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-[#7c95c3]">Spent this month</p>
+                  <WalletCards size={16} className="text-[#00CDFF]" />
+                </div>
+                <p className="text-3xl font-bold text-[#d8e6ff]">₹{totalSpent.toLocaleString()}.00</p>
               </div>
-              <p className="text-3xl font-bold text-blue-400">
-                ₹{totalSpent.toLocaleString()}
-              </p>
+
+              <div className="rounded-2xl border border-[#1b3b74] bg-[#071b46]/90 p-5">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-[#7c95c3]">You are owed</p>
+                  <ArrowUpRight size={16} className="text-[#00CDFF]" />
+                </div>
+                <p className="text-3xl font-bold text-[#00CDFF]">₹{youAreOwed.toLocaleString()}.00</p>
+              </div>
+
+              <div className="rounded-2xl border border-[#1b3b74] bg-[#071b46]/90 p-5">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-[#7c95c3]">You owe</p>
+                  <ArrowUpRight size={16} className="rotate-180 text-[#FF2D65]" />
+                </div>
+                <p className="text-3xl font-bold text-[#FF2D65]">₹{youOwe.toLocaleString()}.00</p>
+              </div>
             </div>
 
-            <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm font-medium">You Owe</p>
-                <div className="w-2 h-2 rounded-full bg-red-500" />
-              </div>
-              <p className="text-3xl font-bold text-red-400">
-                ₹{youOwe.toLocaleString()}
-              </p>
-            </div>
+            <div className="grid gap-6 xl:grid-cols-5">
+              <div className="rounded-2xl border border-[#163465] bg-[#06173f]/90 p-5 xl:col-span-3">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-[#dce8ff]">Spending Velocity</h2>
+                  <TrendingUp className="text-[#A855F7]" size={20} />
+                </div>
 
-            <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-colors">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-gray-400 text-sm font-medium">You Are Owed</p>
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-              </div>
-              <p className="text-3xl font-bold text-green-400">
-                ₹{youAreOwed.toLocaleString()}
-              </p>
-            </div>
-          </motion.div>
+                <div className="mt-6 grid grid-cols-7 items-end gap-3 rounded-xl bg-[#051334] p-4">
+                  {weeklyValues.map((value, index) => {
+                    const isPeak = value === maxValue;
+                    const heightPercent = Math.max(Math.round((value / maxValue) * 100), 18);
 
-          {/* Recent Settlements */}
-          <motion.div variants={item}>
-            <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">
-                  Recent Settlements
-                </h2>
-              </div>
-
-              {recentSettlements.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-6">
-                  No recent settlements to show.
-                </p>
-              ) : (
-                <>
-                  <div className="space-y-3">
-                    <AnimatePresence initial={false}>
-                      {recentSettlements.map((settlement, index) => (
-                        <motion.div
-                          key={settlement.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -20 }}
-                          transition={{ delay: index * 0.04 }}
-                          className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800/50 transition-colors cursor-pointer group"
-                        >
+                    return (
+                      <div key={`${value}-${index}`} className="flex flex-col items-center gap-2">
+                        <div className="flex h-32 items-end">
                           <div
-                            className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                              settlement.isSettled
-                                ? "bg-green-500"
-                                : settlement.direction === "you_paid"
-                                  ? "bg-blue-500"
-                                  : "bg-yellow-500"
+                            className={`w-8 rounded-t-md ${
+                              isPeak ? "bg-[#A855F7]" : "bg-[#1f376d]"
                             }`}
+                            style={{ height: `${heightPercent}%` }}
                           />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-gray-200 text-sm group-hover:text-white transition-colors truncate">
-                              {settlement.direction === "you_paid"
-                                ? `You paid ${settlement.to}`
-                                : `${settlement.from} paid you`}{" "}
-                              — ₹{settlement.amount.toLocaleString()}
-                              {settlement.isSettled && (
-                                <span className="ml-2 text-xs text-green-400 font-medium">
-                                  Settled
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-gray-500 text-xs">
-                              {new Date(
-                                settlement.createdAt,
-                              ).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                </>
-              )}
-            </div>
-          </motion.div>
+                        </div>
+                        <span className="text-[10px] font-semibold uppercase text-[#617eaF]">
+                          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-          {/* Stats Overview */}
-          <motion.div variants={item}>
-            <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Overview</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-white">
-                    {stats?.totalGroups ?? 0}
-                  </p>
-                  <p className="text-gray-400 text-sm mt-1">Total Groups</p>
+              <div className="space-y-4 xl:col-span-2">
+                <div className="rounded-2xl border border-[#163465] bg-[#06173f]/90 p-5">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-[#dce8ff]">Recent Settlements</h2>
+                    <Link href="/dashboard/groups" className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7f97c3] hover:text-[#00CDFF]">
+                      View all
+                    </Link>
+                  </div>
+
+                  {recentSettlements.length === 0 ? (
+                    <p className="py-5 text-center text-sm text-[#6f86b2]">No recent settlements to show.</p>
+                  ) : (
+                    <div className="space-y-2.5">
+                      <AnimatePresence initial={false}>
+                        {recentSettlements.slice(0, 4).map((settlement, index) => {
+                          const isPositive = settlement.direction !== "you_paid";
+                          const amountColor = isPositive ? "text-[#00CDFF]" : "text-[#FF2D65]";
+
+                          return (
+                            <motion.div
+                              key={settlement.id}
+                              initial={{ opacity: 0, x: -14 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: -14 }}
+                              transition={{ delay: index * 0.05 }}
+                              className="rounded-xl border border-[#19386c] bg-[#081a43] p-3"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-semibold text-[#d9e6ff]">
+                                    {isPositive ? settlement.from : settlement.to}
+                                  </p>
+                                  <p className="text-[10px] uppercase tracking-[0.14em] text-[#6f88b7]">
+                                    {settlement.isSettled ? "Settled" : "Pending"}
+                                  </p>
+                                </div>
+                                <p className={`text-sm font-bold ${amountColor}`}>
+                                  {isPositive ? "+" : "-"}₹{settlement.amount.toLocaleString()}
+                                </p>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </AnimatePresence>
+                    </div>
+                  )}
                 </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-400">
-                    ₹{totalSpent.toLocaleString()}
+
+                <div className="rounded-2xl bg-linear-to-br from-[#A855F7] to-[#d26cff] p-5 text-[#1d0f33] shadow-[0_12px_30px_rgba(168,85,247,0.35)]">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-bold">
+                    <Sparkles size={16} />
+                    Smart Insight
+                  </div>
+                  <p className="text-sm font-medium leading-relaxed">
+                    You have settled a major share of dues this week, {userName}. Keep this pace to improve your trust score in group settlements.
                   </p>
-                  <p className="text-gray-400 text-sm mt-1">Total Spent</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-red-400">
-                    ₹{youOwe.toLocaleString()}
-                  </p>
-                  <p className="text-gray-400 text-sm mt-1">You Owe</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-green-400">
-                    ₹{youAreOwed.toLocaleString()}
-                  </p>
-                  <p className="text-gray-400 text-sm mt-1">You Are Owed</p>
                 </div>
               </div>
             </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {topGroups.map((group) => (
+                <div key={group.name} className="rounded-2xl border border-[#173462] bg-[#081a43]/80 p-5">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="rounded-md p-2" style={{ backgroundColor: `${group.accent}1f` }}>
+                      <Users size={17} style={{ color: group.accent }} />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7f97c3]">{group.status}</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-[#dce8ff]">{group.name}</h3>
+                  <p className="mt-1 text-sm text-[#87a0cb]">{group.subtitle}</p>
+                </div>
+              ))}
+            </div>
           </motion.div>
 
-          <motion.div variants={item} className="flex flex-wrap gap-4">
+          <motion.aside variants={item} className="space-y-4 xl:col-span-4">
+            <div className="rounded-2xl border border-[#163465] bg-[#06173f]/90 p-5">
+              <h2 className="text-lg font-bold text-[#dce8ff]">Overview</h2>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-[#081a43] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-[#7f97c3]">Groups</p>
+                  <p className="mt-1 text-2xl font-bold text-[#dce8ff]">{stats?.totalGroups ?? 0}</p>
+                </div>
+                <div className="rounded-xl bg-[#081a43] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-[#7f97c3]">Spent</p>
+                  <p className="mt-1 text-2xl font-bold text-[#00CDFF]">₹{totalSpent.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl bg-[#081a43] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-[#7f97c3]">Owed</p>
+                  <p className="mt-1 text-2xl font-bold text-[#00CDFF]">₹{youAreOwed.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl bg-[#081a43] p-3">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-[#7f97c3]">You Owe</p>
+                  <p className="mt-1 text-2xl font-bold text-[#FF2D65]">₹{youOwe.toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+
             <Link
               href="/dashboard/groups/create"
-              className="flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 shadow-lg shadow-cyan-500/20"
+              className="flex items-center justify-between rounded-2xl bg-[#00CDFF] px-5 py-4 text-[#03203f] shadow-[0_10px_24px_rgba(0,205,255,0.35)] transition hover:bg-[#2fd8ff]"
             >
-              <Plus className="w-5 h-5" />
-              <span>Create Group</span>
+              <div>
+                <p className="text-base font-bold">Create Group</p>
+                <p className="text-xs font-semibold text-[#08417a]">Split expenses with friends easily</p>
+              </div>
+              <ChevronRight size={20} />
             </Link>
-          </motion.div>
+
+            <Link
+              href="/dashboard/groups/create"
+              className="flex items-center justify-center gap-2 rounded-xl border border-[#1b3e71] bg-[#081a43] px-5 py-3 text-sm font-semibold text-[#9eb2d7] transition hover:border-[#00CDFF]/45 hover:text-[#00CDFF]"
+            >
+              <Plus className="h-4 w-4" />
+              Add another group
+            </Link>
+          </motion.aside>
         </motion.div>
       )}
     </div>

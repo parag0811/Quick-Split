@@ -80,7 +80,7 @@ router.put(
   expense_controller.editExpense,
 );
 
-router.post("/group/:groupId/balance", isAuth, isGroupMember, expense_controller.balance);
+// router.post("/group/:groupId/balance", isAuth, isGroupMember, expense_controller.balance);
 
 router.delete(
   "/group/:groupId/expenses/:expenseId/deleteExpense",

@@ -7,13 +7,11 @@ import { Toaster } from "react-hot-toast";
 
 export default function DashboardLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const pathName = usePathname();
 
   useEffect(() => {
-    setIsMounted(true);
-    const mql = window.matchMedia("(min-width: 1024px)");
-    setIsSidebarOpen(mql.matches);
+    const mql = window.matchMedia("(min-width: 1280px)");
+    setIsSidebarOpen(false);
     const handler = (e) => setIsSidebarOpen(e.matches);
     mql.addEventListener("change", handler);
     return () => mql.removeEventListener("change", handler);
@@ -34,13 +32,13 @@ export default function DashboardLayout({ children }) {
         gutter={10}
         toastOptions={{
           style: {
-            background: "#1a1a1a",
-            color: "#ffffff",
+            background: "#09112b",
+            color: "#dbeafe",
             borderRadius: "16px",
-            border: "1px solid #2a2a2a",
+            border: "1px solid rgba(0, 205, 255, 0.2)",
             padding: "12px 16px",
             fontSize: "14px",
-            boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+            boxShadow: "0 10px 25px rgba(0, 14, 35, 0.5)",
           },
           success: {
             duration: 2500,
@@ -50,19 +48,15 @@ export default function DashboardLayout({ children }) {
           },
         }}
       />
-      <div className="min-h-screen flex bg-[#0f0f0f]">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,#0d2b73_0%,#07163f_45%,#020817_100%)] text-slate-100">
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-        <div
-          className={`flex flex-col flex-1 transition-all duration-300 ${
-            isSidebarOpen ? "lg:ml-64" : "ml-0"
-          }`}
-        >
+        <div className="flex min-h-screen flex-col transition-all duration-300 xl:pl-[280px]">
           <Header
             toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
             title={getPageTitle()}
           />
-          <main className="flex-1 px-4 sm:px-6 py-24 overflow-y-auto">{children}</main>
+          <main className="flex-1 px-4 pb-28 pt-24 sm:px-6 xl:px-8">{children}</main>
         </div>
       </div>
     </>

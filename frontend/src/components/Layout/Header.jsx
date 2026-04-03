@@ -1,128 +1,70 @@
 "use client";
-import { PanelLeft, LogOut, ChevronDown, User } from "lucide-react";
-import { signOut } from "next-auth/react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+import { Bell, Cog, Menu } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const Header = ({ toggleSidebar, title }) => {
-  const { user } = useSelector((state) => state.auth);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-  const router = useRouter();
+  const pathname = usePathname();
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-    };
+  const navItems = [
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Groups", href: "/dashboard/groups" },
+    { label: "Activity", href: "/dashboard/groups" },
+  ];
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const isActive = (href, label) => {
+    if (label === "Activity") return pathname.includes("/settlement") || pathname.includes("/expense");
+    if (href === "/dashboard") return pathname === "/dashboard";
+    return pathname.startsWith(href);
+  };
 
   return (
-    <header className="fixed top-0 left-0 z-50 w-full bg-[#1a1b1b] border-b border-gray-800 h-16 flex justify-between items-center px-6">
-      <div className="flex items-center space-x-4">
+    <header className="fixed left-0 right-0 top-0 z-50 border-b border-[#16305f] bg-[#041236]/90 backdrop-blur-xl xl:left-70">
+      <div className="mx-auto flex h-16 w-full max-w-350 items-center justify-between px-4 sm:px-6 xl:px-8">
+        <div className="flex items-center gap-3">
+          <span className="text-xl font-bold tracking-tight text-[#00CDFF] xl:hidden">Quick Split</span>
         <button
           onClick={toggleSidebar}
-          className="cursor-pointer text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-lg"
+            className="rounded-lg border border-[#203f73] p-2 text-[#94a3b8] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF] xl:hidden"
           aria-label="Toggle sidebar"
         >
-          <PanelLeft size={24} strokeWidth={2} />
+            <Menu size={18} strokeWidth={2.2} />
         </button>
 
-        {title && (
-          <motion.div
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="hidden sm:block border-l border-gray-700 pl-4"
-          >
-            <h1 className="text-lg font-semibold text-white">{title}</h1>
-          </motion.div>
-        )}
+          <nav className="hidden items-center gap-2 xl:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                  isActive(item.href, item.label)
+                    ? "bg-[#00CDFF]/10 text-[#00CDFF]"
+                    : "text-[#8da4cf] hover:text-white"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
       </div>
 
-      {user && (
-        <div className="relative" ref={dropdownRef}>
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors"
+            className="rounded-lg border border-[#203f73] p-2 text-[#9fb2d8] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF]"
+            aria-label="Notifications"
           >
-            <div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-white">
-                {user.name || "User"}
-              </p>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center">
-              {user.image ? (
-                <img
-                  src={user.image}
-                  alt={user.name}
-                  className="w-full h-full rounded-full object-cover"
-                />
-              ) : (
-                <span className="text-white font-semibold text-sm">
-                  {user.name?.charAt(0).toUpperCase() || "U"}
-                </span>
-              )}
-            </div>
-            <ChevronDown
-              size={16}
-              className={`text-gray-400 transition-transform duration-200 cursor-pointer${
-                isDropdownOpen ? "rotate-180 cursor-pointer" : ""
-              }`}
-            />
+            <Bell size={17} />
           </button>
-          <AnimatePresence>
-            {isDropdownOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-                className="absolute right-0 mt-2 w-56 bg-[#1a1b1b] border border-gray-800 rounded-lg shadow-xl overflow-hidden"
-              >
-                <div className="px-4 py-3 border-b border-gray-800">
-                  <p className="text-sm font-semibold text-white">
-                    {user.name || "User"}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {user.email}
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setIsDropdownOpen(false);
-                    router.push("/dashboard/profile");
-                  }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                  <User size={18} />
-                  <span className="text-sm font-medium cursor-pointer">
-                    Profile
-                  </span>
-                </button>
-                <button
-                  onClick={() => {
-                    setIsDropdownOpen(false);
-                    signOut({ callbackUrl: "/" });
-                  }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                  <LogOut size={18} />
-                  <span className="text-sm font-medium cursor-pointer">
-                    Logout
-                  </span>
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <button
+            className="rounded-lg border border-[#203f73] p-2 text-[#9fb2d8] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF]"
+            aria-label="Settings"
+          >
+            <Cog size={17} />
+          </button>
+
+          {title && <span className="hidden text-xs uppercase tracking-[0.2em] text-[#6f86b2] lg:block">{title}</span>}
         </div>
-      )}
+      </div>
     </header>
   );
 };

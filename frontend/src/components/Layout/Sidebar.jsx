@@ -1,78 +1,52 @@
 "use client";
-import { Home, Group } from "lucide-react";
+import { Home, Users, UserRound, CircleHelp, LogOut, Plus } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useSelector } from "react-redux";
+import { signOut } from "next-auth/react";
 
 export default function Sidebar({ isOpen, onClose }) {
   const pathname = usePathname();
 
   const menuItems = [
     { icon: Home, label: "Home", href: "/dashboard" },
-    { icon: Group, label: "Groups", href: "/dashboard/groups" },
+    { icon: Users, label: "Groups", href: "/dashboard/groups" },
+    { icon: UserRound, label: "Profile", href: "/dashboard/profile" },
   ];
 
   const { user } = useSelector((state) => state.auth);
-  return (
+
+  const getIsActive = (href) => {
+    if (href === "/dashboard") return pathname === "/dashboard";
+    return pathname.startsWith(href);
+  };
+
+  const DesktopSidebarContent = () => (
     <>
-      {/* Mobile backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm lg:hidden"
-          onClick={onClose}
-        />
-      )}
-      <aside
-        className={`fixed top-16 left-0 z-40 w-64
-  h-[calc(100vh-4rem)]
-  bg-[#1a1b1b]
-  transition-transform duration-300 ease-in-out
-  ${isOpen ? "translate-x-0" : "-translate-x-full"}
-  flex flex-col`}
-      >
-      <div className="p-6">
-        <div className="flex flex-col items-center justify-center space-y-4 mt-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-300 overflow-hidden flex items-center justify-center">
-            {user?.image ? (
-              <img
-                src={user.image}
-                alt={user.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white font-bold">
-                {user?.name?.charAt(0).toUpperCase()}
-              </span>
-            )}
-          </div>
-          <div className="flex-1">
-            <h2 className="text-gray-300 font-semibold text-2xl">
-              {user?.name || "Name"}
-            </h2>
-          </div>
-        </div>
+      <div className="border-b border-[#17335f] px-6 py-5">
+        <h2 className="text-2xl font-bold text-[#00CDFF]">Quick Split</h2>
+        <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-[#6f86b2]">Precision spending</p>
       </div>
 
-      <nav className="flex-1 py-6 overflow-y-auto">
-        <ul className="space-y-1 px-3">
-          {menuItems.map((item, index) => {
+      <nav className="px-3 pt-6">
+        <ul className="space-y-1.5">
+          {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const isActive = getIsActive(item.href);
+
             return (
-              <li key={index}>
+              <li key={item.href}>
                 <Link
                   href={item.href}
                   onClick={onClose}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg
-                      transition-all duration-200 cursor-pointer
-                      ${
-                        isActive
-                          ? "bg-cyan-500/10 text-cyan-400"
-                          : "text-gray-400 hover:bg-gray-800/50 hover:text-gray-200"
-                      }`}
+                  className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                    isActive
+                      ? "bg-[#0c2758] text-[#00CDFF] shadow-[inset_3px_0_0_0_#00CDFF]"
+                      : "text-[#8ea4cd] hover:bg-[#0a1d44] hover:text-white"
+                  }`}
                 >
-                  <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                  <span className="font-semibold text-lg">{item.label}</span>
+                  <Icon size={18} className={isActive ? "text-[#00CDFF]" : "text-[#7891bc] group-hover:text-[#00CDFF]"} />
+                  <span>{item.label}</span>
                 </Link>
               </li>
             );
@@ -80,21 +54,84 @@ export default function Sidebar({ isOpen, onClose }) {
         </ul>
       </nav>
 
-      <div className="p-6">
-        <div className="flex flex-col items-center space-y-4 mb-4">
-          <div className="relative">
-            <div className="w-8 h-8 flex items-center justify-center">
-              <div className="absolute inset-0 bg-cyan-500 rounded-lg blur-md opacity-25"></div>
-              <div className="relative text-cyan-400 font-bold text-xl">⚡</div>
-            </div>
-          </div>
-          <div className="text-2xl font-bold">
-            <span className="text-white">Quick</span>
-            <span className="text-cyan-400"> Split</span>
-          </div>
+      <div className="mt-auto px-5 pb-6">
+        <Link
+          href="/dashboard/groups/create"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00CDFF] px-4 py-3 text-sm font-bold text-[#03203f] transition hover:bg-[#36d9ff]"
+        >
+          <Plus size={18} />
+          Add Expense
+        </Link>
+
+        <div className="mt-5 space-y-1.5">
+          <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[#7f97c3] hover:bg-[#0a1c42] hover:text-white">
+            <CircleHelp size={16} />
+            Help
+          </button>
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[#7f97c3] hover:bg-[#0a1c42] hover:text-[#ff9db8]"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
         </div>
+
+        {user && (
+          <div className="mt-5 rounded-xl border border-[#1e3b70] bg-[#071634] p-3">
+            <p className="truncate text-xs font-semibold text-[#a8bbdf]">{user.name || "User"}</p>
+            <p className="truncate text-[11px] text-[#6581b2]">{user.email}</p>
+          </div>
+        )}
       </div>
+    </>
+  );
+
+  return (
+    <>
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[2px] xl:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        className={`fixed left-0 top-0 z-50 flex h-screen w-70 flex-col border-r border-[#17335f] bg-[#041236] shadow-[16px_0_40px_rgba(0,0,0,0.35)] transition-transform duration-300 xl:hidden ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <DesktopSidebarContent />
       </aside>
+
+      <aside className="fixed left-0 top-0 z-30 hidden h-screen w-70 flex-col border-r border-[#17335f] bg-[#041236] xl:flex">
+        <DesktopSidebarContent />
+      </aside>
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#17335f] bg-[#071838]/95 px-3 pb-2 pt-2 backdrop-blur-xl xl:hidden">
+        <ul className="grid grid-cols-3 gap-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = getIsActive(item.href);
+
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] transition ${
+                    isActive
+                      ? "bg-[#0d2a5f] text-[#00CDFF]"
+                      : "text-[#7f98c4] hover:bg-[#0b224f] hover:text-white"
+                  }`}
+                >
+                  <Icon size={16} />
+                  <span>{item.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
     </>
   );
 }

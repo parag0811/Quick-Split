@@ -1,4 +1,4 @@
-import Group from "../models/group";
+import Group from "../models/group.js";
 
 const isGroupMember = async (req, res, next) => {
   try {
