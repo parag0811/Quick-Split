@@ -3,28 +3,33 @@
 import { apiFetch } from "@/lib/api";
 import {
   Plus,
-  ChevronDown,
-  ChevronUp,
-  Users,
-  UserCheck,
-  Split,
-  AlertTriangle,
+  Search,
+  SlidersHorizontal,
+  BadgeCheck,
+  CheckCircle2,
+  Clock3,
+  Receipt,
   Pencil,
   Trash2,
   ArrowLeft,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import GroupSocketListener from "@/components/socket/GroupSocketListener";
 import { useSelector } from "react-redux";
+import { toastError, toastSuccess } from "@/lib/toast";
 
 export default function ExpensePage() {
   const router = useRouter();
   const { groupId } = useParams();
 
   const [expandedExpense, setExpandedExpense] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
 
   const [data, setData] = useState({
     expenses: [],
@@ -33,15 +38,17 @@ export default function ExpensePage() {
   });
 
   const refreshKey = useSelector((state) => state.group.refreshKey);
-  const currentUserId = useSelector((state) => state.auth.user?._id);
 
   const [deletingId, setDeletingId] = useState(null);
+  const [markingPaidId, setMarkingPaidId] = useState(null);
   const [deleteError, setDeleteError] = useState("");
   const [deleteErrorId, setDeleteErrorId] = useState(null);
+  const [fetchError, setFetchError] = useState("");
 
-  const fetchExpenses = async () => {
+  const fetchExpenses = useCallback(async () => {
     try {
       setLoading(true);
+      setFetchError("");
       const response = await apiFetch(`/group/${groupId}/expense`);
       setData({
         expenses: response.expenses ?? [],
@@ -49,11 +56,11 @@ export default function ExpensePage() {
         count: response.count ?? 0,
       });
     } catch (error) {
-      console.error("Error while fetching expenses:", error);
+      setFetchError(error?.message || "Failed to fetch expenses.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [groupId]);
 
   useEffect(() => {
     if (groupId) fetchExpenses();
@@ -69,10 +76,11 @@ export default function ExpensePage() {
       setDeletingId(expenseId);
       setDeleteError("");
       setDeleteErrorId(null);
-      await apiFetch(`/group/expenses/${expenseId}/deleteExpense`, {
+      await apiFetch(`/group/${groupId}/expenses/${expenseId}/deleteExpense`, {
         method: "DELETE",
       });
-      fetchExpenses();
+      toastSuccess("Expense deleted.");
+      await fetchExpenses();
     } catch (error) {
       if (error.statusCode === 409) {
         setDeleteError(
@@ -88,8 +96,24 @@ export default function ExpensePage() {
         setDeleteError(error.message || "Failed to delete expense.");
       }
       setDeleteErrorId(expenseId);
+      toastError(error.message || "Failed to delete expense.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleMarkAsPaid = async (expenseId) => {
+    try {
+      setMarkingPaidId(expenseId);
+      await apiFetch(`/group/${groupId}/expenses/${expenseId}/mark-paid`, {
+        method: "PUT",
+      });
+      toastSuccess("Marked as paid.");
+      await fetchExpenses();
+    } catch (error) {
+      toastError(error?.message || "Failed to mark as paid.");
+    } finally {
+      setMarkingPaidId(null);
     }
   };
 
@@ -122,389 +146,375 @@ export default function ExpensePage() {
     return expense.isAnomalous === true;
   };
 
+  const { expenses, message, count } = data;
+
+  const filteredExpenses = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    return expenses.filter((expense) => {
+      const title = (expense.title || "").toLowerCase();
+      const payer = (expense.paidBy?.name || "").toLowerCase();
+      const category = (expense.category || "").toLowerCase();
+      const matchesQuery =
+        q.length === 0 ||
+        title.includes(q) ||
+        payer.includes(q) ||
+        category.includes(q);
+
+      const matchesFilter =
+        activeFilter === "all" ||
+        (activeFilter === "unpaid" && !expense.isPaid) ||
+        (activeFilter === "paid" && expense.isPaid) ||
+        (activeFilter === "anomaly" && shouldShowAnomaly(expense));
+
+      return matchesQuery && matchesFilter;
+    });
+  }, [expenses, searchQuery, activeFilter]);
+
+  const totals = useMemo(() => {
+    const totalAmount = expenses.reduce(
+      (sum, exp) => sum + Number(exp.totalAmount ?? exp.amount ?? 0),
+      0,
+    );
+    const pendingCount = expenses.filter((exp) => !exp.isPaid).length;
+    const paidCount = expenses.filter((exp) => exp.isPaid).length;
+
+    return {
+      totalAmount,
+      pendingCount,
+      paidCount,
+    };
+  }, [expenses]);
+
   if (loading) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="text-gray-400 p-6 text-center"
+        className="flex min-h-[340px] items-center justify-center"
       >
-        Loading expenses...
+        <div className="flex items-center gap-2 text-[#8aa1cc]">
+          <Loader2 className="h-5 w-5 animate-spin text-[#00CDFF]" />
+          Loading expenses...
+        </div>
       </motion.div>
     );
   }
 
-  const { expenses, message, count } = data;
-
   return (
     <>
       <GroupSocketListener groupId={groupId} />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8"
-      >
-        <div className="max-w-4xl mx-auto">
-          <motion.button
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-            onClick={() => router.push(`/dashboard/groups/${groupId}`)}
-            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-6 transition-colors cursor-pointer"
-          >
-            <ArrowLeft size={16} />
-            Back to Group
-          </motion.button>
-
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4"
-          >
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <h1 className="text-3xl font-bold text-white mb-2">Expenses</h1>
-              <p className="text-gray-400">
-                {message} · {count} expense{count !== 1 ? "s" : ""}
-              </p>
-            </motion.div>
-
+      <div className="mx-auto w-full max-w-345 space-y-5">
+        <motion.section
+          initial={{ opacity: 0, y: -14 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-[#17345f] bg-[#06173f]/80 p-4 sm:p-6"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() =>
-                router.push(`/dashboard/groups/${groupId}/expense/create`)
-              }
-              className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-pink-900/30"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3 }}
+              onClick={() => router.push(`/dashboard/groups/${groupId}`)}
+              className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-[#86a1d1] transition hover:text-[#d9e6ff]"
             >
-              <Plus size={20} />
-              <span>Add Expense</span>
+              <ArrowLeft size={14} />
+              Back to Group
             </motion.button>
-          </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.35 }}
-            className="mb-6 flex items-start gap-3 rounded-xl border border-cyan-900/30 bg-cyan-950/15 px-4 py-3"
-          >
-            <AlertTriangle size={16} className="text-cyan-400 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-cyan-200/70 leading-relaxed">
-              Some expenses may be flagged as unusual based on spending
-              patterns. This is only an informational insight and does not
-              affect the expense you add.
-            </p>
-          </motion.div>
+            <button
+              onClick={() => router.push(`/dashboard/groups/${groupId}/expense/create`)}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#00CDFF] px-4 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-[#03203f] transition hover:bg-[#35dcff]"
+            >
+              <Plus size={15} />
+              Add Expense
+            </button>
+          </div>
 
-          <AnimatePresence mode="wait">
-            {expenses.length > 0 ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-3"
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#6f88b7]">
+                Expense Ledger
+              </p>
+              <h1 className="mt-1 text-3xl font-bold tracking-tight text-[#d8e6ff] sm:text-4xl">
+                ₹{totals.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h1>
+              <p className="mt-2 text-sm text-[#8fa6d2]">
+                {message || "Track all group expenses"} · {count} expense
+                {count !== 1 ? "s" : ""}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-[#21477a] bg-[#081a43] p-4">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[#7f97c3]">
+                Action Required
+              </p>
+              <div className="mt-2 space-y-1.5">
+                <p className="text-2xl font-bold text-[#FF2D65]">
+                  {totals.pendingCount}
+                </p>
+                <p className="text-xs text-[#9eb2d7]">Pending expenses</p>
+                <p className="text-xs text-[#6f88b7]">
+                  {totals.paidCount} already marked paid
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.06 }}
+          className="grid gap-3 sm:grid-cols-[1fr_auto]"
+        >
+          <label className="flex items-center gap-2 rounded-xl border border-[#1b3c6c] bg-[#071a42] px-3 py-2.5">
+            <Search size={15} className="text-[#6f88b7]" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search expenses..."
+              className="w-full bg-transparent text-sm text-[#dbe7ff] outline-none placeholder:text-[#5f79a9]"
+            />
+          </label>
+
+          <div className="flex items-center gap-2 rounded-xl border border-[#1b3c6c] bg-[#071a42] p-1">
+            <SlidersHorizontal size={14} className="ml-2 text-[#6f88b7]" />
+            {[
+              { key: "all", label: "All" },
+              { key: "unpaid", label: "Pending" },
+              { key: "paid", label: "Paid" },
+              { key: "anomaly", label: "Anomaly" },
+            ].map((option) => (
+              <button
+                key={option.key}
+                onClick={() => setActiveFilter(option.key)}
+                className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] transition ${
+                  activeFilter === option.key
+                    ? "bg-[#00CDFF] text-[#03203f]"
+                    : "text-[#8ea5d1] hover:text-[#dbe7ff]"
+                }`}
               >
-                {expenses.map((expense, index) => {
-                  const isExpanded = expandedExpense === expense._id;
-                  const isAnomalous = shouldShowAnomaly(expense);
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </motion.section>
 
-                  return (
-                    <motion.div
-                      key={expense._id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: 0.4,
-                        delay: 0.1 + index * 0.05,
-                        type: "spring",
-                        stiffness: 200,
-                      }}
-                      className={`bg-[#1a1a1a] border rounded-xl overflow-hidden transition-all ${
-                        isAnomalous
-                          ? "border-orange-500/40 hover:border-orange-500/60 border-l-4 border-l-orange-500"
-                          : "border-gray-800 hover:border-gray-700"
-                      }`}
+        <AnimatePresence mode="wait">
+          {fetchError ? (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="rounded-2xl border border-[#FF2D65]/35 bg-[#FF2D65]/10 p-5"
+            >
+              <p className="text-sm text-[#ff9bb7]">{fetchError}</p>
+            </motion.div>
+          ) : filteredExpenses.length > 0 ? (
+            <motion.div
+              key="list"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-3"
+            >
+              {filteredExpenses.map((expense, index) => {
+                const isExpanded = expandedExpense === expense._id;
+                const isAnomalous = shouldShowAnomaly(expense);
+                const isPaid = Boolean(expense.isPaid);
+
+                return (
+                  <motion.article
+                    key={expense._id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.04 }}
+                    className={`overflow-hidden rounded-2xl border bg-[#06173f]/85 ${
+                      isAnomalous
+                        ? "border-[#FF2D65]/45"
+                        : "border-[#163465]"
+                    }`}
+                  >
+                    <button
+                      onClick={() => toggleExpand(expense._id)}
+                      className="flex w-full cursor-pointer flex-col gap-3 p-4 text-left sm:p-5"
                     >
-                      <motion.div
-                        onClick={() => toggleExpand(expense._id)}
-                        whileHover={{
-                          backgroundColor: "rgba(26, 26, 26, 0.8)",
-                        }}
-                        className="p-5 cursor-pointer"
-                      >
-                        <div className="flex justify-between mb-3">
-                          {/* Title + anomaly badge */}
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-lg font-semibold text-white">
-                              {expense.title ?? "Untitled"}
-                            </h3>
-                            {isAnomalous && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/15 border border-orange-500/30 text-orange-400 rounded-full text-xs font-medium">
-                                <AlertTriangle size={11} />
-                                Unusual
-                              </span>
-                            )}
-                          </div>
-
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{
-                              delay: 0.2 + index * 0.05,
-                              type: "spring",
-                              stiffness: 200,
-                            }}
-                            className="text-2xl font-bold text-white"
-                          >
-                            ₹{expense.amount ?? expense.totalAmount ?? 0}
-                          </motion.div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-base font-semibold text-[#dce8ff] sm:text-lg">
+                            {expense.title ?? "Untitled expense"}
+                          </p>
+                          <p className="mt-1 text-xs text-[#7f97c3]">
+                            {formatDate(expense.createdAt)} · Paid by {expense.paidBy?.name ?? "Unknown"}
+                          </p>
                         </div>
+                        <p className="shrink-0 text-lg font-bold text-[#00CDFF] sm:text-2xl">
+                          ₹{Number(expense.totalAmount ?? expense.amount ?? 0).toLocaleString("en-IN", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </p>
+                      </div>
 
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-md border border-[#21477a] bg-[#081a43] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#8fa6d2]">
+                          {expense.category || "other"}
+                        </span>
+                        <span className="rounded-md border border-[#21477a] bg-[#081a43] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#8fa6d2]">
+                          {getSplitDescription(expense)}
+                        </span>
                         {isAnomalous && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="flex items-start gap-2 mb-3 px-3 py-2 bg-orange-500/8 border border-orange-500/15 rounded-lg"
-                          >
-                            <AlertTriangle
-                              size={13}
-                              className="text-orange-400 mt-0.5 flex-shrink-0"
-                            />
-                            <div className="text-xs text-orange-300/80 leading-relaxed">
-                              <span className="font-medium text-orange-400">
-                                Anomaly Score:{" "}
-                                {expense.anomalyScore?.toFixed(2) ?? "N/A"}
-                              </span>
-                              {expense.anomalyReason && (
-                                <span className="ml-1">
-                                  — {expense.anomalyReason}
-                                </span>
-                              )}
-                            </div>
-                          </motion.div>
+                          <span className="inline-flex items-center gap-1 rounded-md border border-[#FF2D65]/35 bg-[#FF2D65]/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#ff9bb7]">
+                            <AlertTriangle size={12} />
+                            Unusual
+                          </span>
                         )}
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${
+                            isPaid
+                              ? "border border-[#00CDFF]/40 bg-[#00CDFF]/15 text-[#8ff0ff]"
+                              : "border border-[#FF2D65]/40 bg-[#FF2D65]/12 text-[#ff9bb7]"
+                          }`}
+                        >
+                          {isPaid ? <BadgeCheck size={12} /> : <Clock3 size={12} />}
+                          {isPaid ? "Paid" : "Pending"}
+                        </span>
+                      </div>
+                    </button>
 
-                        <div className="flex flex-wrap items-center gap-3 text-sm mb-3">
-                          <span className="text-gray-500">
-                            {formatDate(expense.createdAt)}
-                          </span>
-                          <span className="text-gray-700">•</span>
-                          <span className="text-gray-400">
-                            Paid by{" "}
-                            <span className="text-cyan-400 font-medium">
-                              {expense.paidBy?.name ?? "Unknown"}
-                            </span>
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-sm text-gray-400">
-                            {expense.splitType === "equal" ? (
-                              <Users size={16} className="text-emerald-500" />
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="overflow-hidden border-t border-[#14315e] bg-[#071a42]"
+                        >
+                          <div className="space-y-4 p-4 sm:p-5">
+                            {expense.notes ? (
+                              <p className="text-sm text-[#95add8]">{expense.notes}</p>
                             ) : (
-                              <Split size={16} className="text-amber-500" />
+                              <p className="text-sm text-[#6f88b7]">No notes for this expense.</p>
                             )}
-                            <span>{getSplitDescription(expense)}</span>
-                          </div>
 
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
-                            <span>{isExpanded ? "Hide" : "View"} details</span>
-                            <motion.div
-                              animate={{ rotate: isExpanded ? 180 : 0 }}
-                              transition={{ duration: 0.3 }}
-                            >
-                              {isExpanded ? (
-                                <ChevronUp size={16} />
-                              ) : (
-                                <ChevronDown size={16} />
-                              )}
-                            </motion.div>
-                          </div>
-                        </div>
-                      </motion.div>
-
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="border-t border-gray-800 bg-[#151515] overflow-hidden"
-                          >
-                            <div className="p-5">
-                              <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                                className="mb-4 space-y-2"
-                              >
-                                <div className="flex gap-2">
-                                  <span className="text-xs text-gray-500">
-                                    Category:
-                                  </span>
-                                  <span className="px-2 py-1 bg-purple-600/20 text-purple-400 rounded text-xs">
-                                    {expense.category ?? "other"}
-                                  </span>
-                                </div>
-
-                                {expense.notes && (
-                                  <p className="text-sm text-gray-400">
-                                    {expense.notes}
-                                  </p>
+                            {isAnomalous && (
+                              <div className="rounded-xl border border-[#FF2D65]/35 bg-[#FF2D65]/10 px-3 py-2">
+                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#ff9bb7]">
+                                  Anomaly score {expense.anomalyScore?.toFixed(2) ?? "N/A"}
+                                </p>
+                                {expense.anomalyReason && (
+                                  <p className="mt-1 text-xs text-[#ffc2d4]">{expense.anomalyReason}</p>
                                 )}
-                              </motion.div>
-
-                              <motion.h4
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.15 }}
-                                className="text-sm font-medium text-gray-400 mb-3 flex items-center gap-2"
-                              >
-                                <UserCheck size={14} />
-                                Split Breakdown
-                              </motion.h4>
-
-                              <div className="space-y-2">
-                                {expense.splits?.map((member, idx) => (
-                                  <motion.div
-                                    key={`${expense._id}-${member.user._id}`}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: 0.2 + idx * 0.05 }}
-                                    whileHover={{ scale: 1.02, x: 5 }}
-                                    className="flex items-center justify-between py-2 px-3 bg-[#1a1a1a] rounded-lg"
-                                  >
-                                    <span className="text-sm text-gray-300">
-                                      {member.user.name ?? "Member"}
-                                    </span>
-                                    <span className="text-sm font-semibold text-white">
-                                      ₹{member.amount ?? 0}
-                                    </span>
-                                  </motion.div>
-                                ))}
                               </div>
+                            )}
 
-                              {deleteError && deleteErrorId === expense._id && (
-                                <div className="mt-3 flex items-start gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                  <AlertTriangle
-                                    size={14}
-                                    className="text-red-400 mt-0.5 flex-shrink-0"
-                                  />
-                                  <p className="text-xs text-red-300">
-                                    {deleteError}
-                                  </p>
+                            <div className="space-y-2">
+                              {expense.splits?.map((member) => (
+                                <div
+                                  key={`${expense._id}-${member.user?._id || member.user}`}
+                                  className="flex items-center justify-between rounded-lg border border-[#1b3c6c] bg-[#081f4d] px-3 py-2"
+                                >
+                                  <span className="text-sm text-[#d9e7ff]">
+                                    {member.user?.name ?? "Member"}
+                                  </span>
+                                  <span className="text-sm font-semibold text-[#00CDFF]">
+                                    ₹{Number(member.amount ?? 0).toLocaleString("en-IN", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })}
+                                  </span>
                                 </div>
-                              )}
-
-                              {/* Edit & Delete actions */}
-                              <motion.div
-                                initial={{ opacity: 0, y: 6 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                                className="mt-4 pt-4 border-t border-gray-800 flex items-center gap-3"
-                              >
-                                <button
-                                  onClick={() =>
-                                    router.push(
-                                      `/dashboard/groups/${groupId}/expense/${expense._id}/edit`,
-                                    )
-                                  }
-                                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-cyan-400 bg-cyan-600/10 border border-cyan-600/20 hover:bg-cyan-600/20 rounded-lg transition-all cursor-pointer"
-                                >
-                                  <Pencil size={13} />
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(expense._id)}
-                                  disabled={deletingId === expense._id}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-400 bg-red-600/10 border border-red-600/20 hover:bg-red-600/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-all cursor-pointer"
-                                >
-                                  {deletingId === expense._id ? (
-                                    <span className="w-3 h-3 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin" />
-                                  ) : (
-                                    <Trash2 size={13} />
-                                  )}
-                                  {deletingId === expense._id
-                                    ? "Deleting..."
-                                    : "Delete"}
-                                </button>
-                              </motion.div>
+                              ))}
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  );
-                })}
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.5 }}
-                className="bg-[#1a1a1a] border border-gray-800 rounded-xl"
+
+                            {deleteError && deleteErrorId === expense._id && (
+                              <div className="rounded-lg border border-[#FF2D65]/35 bg-[#FF2D65]/10 px-3 py-2 text-xs text-[#ffb0c7]">
+                                {deleteError}
+                              </div>
+                            )}
+
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                              <button
+                                onClick={() =>
+                                  router.push(
+                                    `/dashboard/groups/${groupId}/expense/${expense._id}/edit`,
+                                  )
+                                }
+                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#25497e] bg-[#081a43] px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-[#c8d7f0] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF]"
+                              >
+                                <Pencil size={13} />
+                                Edit
+                              </button>
+
+                              <button
+                                onClick={() => handleDelete(expense._id)}
+                                disabled={deletingId === expense._id}
+                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#FF2D65]/40 bg-[#FF2D65]/12 px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-[#ff9bb7] transition hover:bg-[#FF2D65]/18 disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {deletingId === expense._id ? (
+                                  <Loader2 size={13} className="animate-spin" />
+                                ) : (
+                                  <Trash2 size={13} />
+                                )}
+                                {deletingId === expense._id ? "Deleting" : "Delete"}
+                              </button>
+
+                              <button
+                                onClick={() => handleMarkAsPaid(expense._id)}
+                                disabled={isPaid || markingPaidId === expense._id}
+                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#00CDFF] px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-[#03203f] transition hover:bg-[#35dcff] disabled:cursor-not-allowed disabled:bg-[#21477a] disabled:text-[#9eb2d7]"
+                              >
+                                {markingPaidId === expense._id ? (
+                                  <Loader2 size={13} className="animate-spin" />
+                                ) : (
+                                  <CheckCircle2 size={13} />
+                                )}
+                                {isPaid ? "Already Paid" : "Mark as Paid"}
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.article>
+                );
+              })}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="rounded-2xl border border-[#163465] bg-[#06173f]/80 p-8 text-center"
+            >
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-[#21477a] bg-[#081a43]">
+                <Receipt className="h-7 w-7 text-[#6f88b7]" />
+              </div>
+              <h3 className="text-lg font-semibold text-[#d9e6ff]">
+                {expenses.length === 0
+                  ? "No expenses yet"
+                  : "No expenses match your filter"}
+              </h3>
+              <p className="mt-2 text-sm text-[#8ea5d1]">
+                {expenses.length === 0
+                  ? "Create the first expense to start tracking splits."
+                  : "Try changing search or filter to see more results."}
+              </p>
+              <button
+                onClick={() => router.push(`/dashboard/groups/${groupId}/expense/create`)}
+                className="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-lg bg-[#00CDFF] px-4 py-2.5 text-xs font-bold uppercase tracking-[0.12em] text-[#03203f] transition hover:bg-[#35dcff]"
               >
-                <div className="flex flex-col items-center justify-center py-32 px-4">
-                  <motion.div
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 200,
-                      damping: 15,
-                      delay: 0.2,
-                    }}
-                  >
-                    <Users size={56} className="text-gray-600 mb-6" />
-                  </motion.div>
-                  <motion.h3
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.3 }}
-                    className="text-2xl font-semibold text-gray-300 mb-3"
-                  >
-                    No expenses added yet
-                  </motion.h3>
-                  <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.4 }}
-                    className="text-gray-500 mb-10 text-center max-w-md"
-                  >
-                    Start tracking by adding your first expense
-                  </motion.p>
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5, delay: 0.5, type: "spring" }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() =>
-                      router.push(`/dashboard/groups/${groupId}/expense/create`)
-                    }
-                    className="flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-600 text-white rounded-lg font-medium"
-                  >
-                    <Plus size={22} />
-                    <span>Add your first expense</span>
-                  </motion.button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </motion.div>
+                <Plus size={15} />
+                Add Expense
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </>
   );
 }
