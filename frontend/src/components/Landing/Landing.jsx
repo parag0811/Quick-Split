@@ -78,9 +78,9 @@ const Landing = () => {
       id="top"
       className="relative min-h-screen overflow-hidden bg-[#020816] text-[#d5e3ff]"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_-5%,rgba(0,181,255,0.24),transparent_40%),radial-gradient(circle_at_80%_10%,rgba(11,92,200,0.22),transparent_36%),linear-gradient(180deg,#041234_0%,#020b1f_48%,#020816_100%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[url('/images/q_s_bg.jpg')] bg-cover bg-center opacity-30" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_55%_40%,rgba(67,164,255,0.07),transparent_45%),radial-gradient(circle_at_20%_70%,rgba(71,211,255,0.09),transparent_35%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(95,35,146,0.3),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(26,173,255,0.22),transparent_36%),linear-gradient(180deg,#051536_0%,#020b1f_45%,#020818_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(100deg,rgba(95,35,146,0.25)_0%,transparent_28%,rgba(58,162,255,0.22)_45%,transparent_70%,rgba(39,130,221,0.15)_100%)] opacity-80" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,transparent_17px,rgba(49,91,145,0.4)_18px)] bg-size-[100%_18px] opacity-20" />
 
       <div className="relative z-10">
         <LandingHeader onLogin={handleSignUp} onSignup={handleSignUp} />

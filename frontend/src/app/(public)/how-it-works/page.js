@@ -1,184 +1,226 @@
 "use client";
+
 import { motion } from "framer-motion";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Users, Receipt, CheckCircle, PieChart, BarChart3, Zap, RefreshCw } from "lucide-react";
+import {
+  ArrowLeft,
+  Coins,
+  ReceiptText,
+  SendHorizontal,
+  Split,
+  Sparkles,
+  TrendingUp,
+  Zap,
+  RefreshCcw,
+} from "lucide-react";
+import LandingHeader from "../../../components/Landing/sections/LandingHeader";
+import LandingFooter from "../../../components/Landing/sections/LandingFooter";
+
+const phaseCards = [
+  {
+    phase: "Phase 01",
+    title: "Create a Group",
+    description:
+      "Initialize your ledger, invite participants via secure links, and set your base currency for the expedition.",
+    icon: Coins,
+  },
+  {
+    phase: "Phase 02",
+    title: "Add Expenses",
+    description:
+      "Deploy costs instantly. Smart receipt capture and split controls preserve accuracy for every member.",
+    icon: ReceiptText,
+  },
+  {
+    phase: "Phase 03",
+    title: "Settle Instantly",
+    description:
+      "Execute balances in one click. Anomaly-aware checks reduce errors before payout is confirmed.",
+    icon: SendHorizontal,
+  },
+];
+
+const superiorityCards = [
+  {
+    title: "Flexible Splitting",
+    description:
+      "Advanced rules for percentages, shares, and exact amounts for precision-grade cost distribution.",
+    icon: Split,
+    className: "md:col-span-2",
+  },
+  {
+    title: "Group Analytics",
+    description:
+      "Visualize spending momentum and uncover patterns with high-fidelity group trend signals.",
+    icon: TrendingUp,
+    className: "md:col-span-1",
+  },
+  {
+    title: "Instant Settlements",
+    description:
+      "Direct-to-bank execution with fewer reminders and smoother group cash flow.",
+    icon: Zap,
+    className: "md:col-span-1",
+  },
+  {
+    title: "Real-Time Updates",
+    description:
+      "Every transaction is broadcast instantly so every member stays synced across devices.",
+    icon: RefreshCcw,
+    className: "md:col-span-2",
+  },
+];
 
 const HowItWorks = () => {
   const router = useRouter();
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6, ease: "easeOut" },
-    },
+  const handleSignUp = () => {
+    signIn("google", { callbackUrl: "/dashboard" });
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden">
-      <div
-        className="
-          absolute inset-0
-          bg-[linear-gradient(180deg,rgba(0,0,0,0.5),rgba(0,0,0,0.4),rgba(0,0,0,0.6)),url('/images/q_s_bg.jpg')]
-          bg-cover bg-center
-        "
-      />
-      <div
-        className="
-          absolute inset-0
-          bg-[url('/noise.png')]
-          opacity-[0.04]
-          pointer-events-none
-        "
-      />
+    <main
+      id="top"
+      className="relative min-h-screen overflow-hidden bg-[#020919] text-[#d8e4ff]"
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(95,35,146,0.3),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(26,173,255,0.22),transparent_36%),linear-gradient(180deg,#051536_0%,#020b1f_45%,#020818_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(100deg,rgba(95,35,146,0.25)_0%,transparent_28%,rgba(58,162,255,0.22)_45%,transparent_70%,rgba(39,130,221,0.15)_100%)] opacity-80" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,transparent_17px,rgba(49,91,145,0.4)_18px)] bg-size-[100%_18px] opacity-20" />
 
-      <div className="relative z-10 min-h-screen px-6 py-12">
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          onClick={() => router.push("/")}
-          className="flex items-center gap-2 text-white hover:text-gray-300 transition-colors mb-12"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Back to Home</span>
-        </motion.button>
+      <div className="relative z-10">
+        <LandingHeader onLogin={handleSignUp} onSignup={handleSignUp} />
+
+        <div className="mx-auto w-full max-w-7xl px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            onClick={() => router.push("/")}
+            className="mb-8 flex items-center gap-2 text-sm text-[#8cabd3] transition hover:text-[#dbebff]"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span>Back to Home</span>
+          </motion.button>
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="text-center mb-16"
+          transition={{ duration: 0.65, ease: "easeOut" }}
+          className="mx-auto max-w-7xl px-4 pb-14 text-center sm:px-6 lg:px-8"
         >
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">How It Works</h1>
-          <p className="text-lg md:text-xl text-gray-300">
-            Three simple steps to hassle-free expense splitting
+          <h1 className="text-4xl font-bold uppercase leading-tight tracking-tight text-[#e5efff] sm:text-5xl md:text-6xl">
+            Precision <span className="text-[#49d6ff]">Social Finance</span>
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-sm text-[#9bb1d3] sm:text-base">
+            Stop chasing pennies. Quick Split provides the technical infrastructure for your social circle&apos;s economy.
+            High-velocity splitting, zero friction.
           </p>
         </motion.div>
 
         <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="max-w-5xl mx-auto mb-20"
+          initial={{ opacity: 0, y: 26 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="mx-auto mb-20 grid w-full max-w-7xl gap-6 px-4 md:grid-cols-3 sm:px-6 lg:px-8"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <motion.div variants={itemVariants} className="flex flex-col items-center text-center">
-              <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center mb-6">
-                <Users className="w-10 h-10 text-white" />
-              </div>
-              <div className="w-12 h-1 bg-gradient-to-r from-[#222255] to-purple-500 rounded-full mb-4" />
-              <h3 className="text-2xl font-bold mb-3">1. Create a Group</h3>
-              <p className="text-gray-300">
-                Start by creating a group for your trip, event, or shared expenses
-              </p>
-            </motion.div>
-
-            <motion.div variants={itemVariants} className="flex flex-col items-center text-center">
-              <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center mb-6">
-                <Receipt className="w-10 h-10 text-white" />
-              </div>
-              <div className="w-12 h-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mb-4" />
-              <h3 className="text-2xl font-bold mb-3">2. Add Expenses</h3>
-              <p className="text-gray-300">
-                Log expenses as they happen and choose how to split them
-              </p>
-            </motion.div>
-
-            <motion.div variants={itemVariants} className="flex flex-col items-center text-center">
-              <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center mb-6">
-                <CheckCircle className="w-10 h-10 text-white" />
-              </div>
-              <div className="w-12 h-1 bg-gradient-to-r from-pink-500 to-[#222255] rounded-full mb-4" />
-              <h3 className="text-2xl font-bold mb-3">3. Settle Instantly</h3>
-              <p className="text-gray-300">
-                See who owes what and settle up with a single tap
-              </p>
-            </motion.div>
-          </div>
+          {phaseCards.map((phase, index) => {
+            const Icon = phase.icon;
+            return (
+              <article
+                key={phase.title}
+                className="rounded-xl border border-[#1a2c52] bg-[linear-gradient(165deg,rgba(7,24,51,0.96),rgba(4,14,33,0.82))] p-6"
+              >
+                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-lg border border-[#254578] bg-[#102347] shadow-[0_0_0_1px_rgba(76,168,255,0.1)]">
+                  <Icon className="h-5 w-5 text-[#7fd9ff]" />
+                </div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#7f97be]">
+                  {phase.phase}
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold text-[#dce8ff]">
+                  {phase.title}
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-[#88a1c8]">
+                  {phase.description}
+                </p>
+                {index !== phaseCards.length - 1 ? (
+                  <div className="mt-6 h-px w-full bg-linear-to-r from-[#2a446d] via-[#203152] to-transparent" />
+                ) : null}
+              </article>
+            );
+          })}
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="max-w-6xl mx-auto"
+        <section
+          id="features"
+          className="mx-auto w-full max-w-7xl px-4 pb-24 sm:px-6 lg:px-8"
         >
-          <h2 className="text-3xl md:text-5xl font-bold text-center mb-12">
-            Feature Highlights
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all"
-            >
-              <PieChart className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Flexible Splitting</h3>
-              <p className="text-gray-400">
-                Split equally, unequally, or by percentage based on your needs
-              </p>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all"
-            >
-              <BarChart3 className="w-12 h-12 text-blue-400 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Group Analytics</h3>
-              <p className="text-gray-400">
-                Visualize spending patterns and track group expenses over time
-              </p>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all"
-            >
-              <Zap className="w-12 h-12 text-yellow-400 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Instant Settlements</h3>
-              <p className="text-gray-400">
-                Settle balances instantly and keep track of all transactions
-              </p>
-            </motion.div>
-
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all"
-            >
-              <RefreshCw className="w-12 h-12 text-green-400 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Real-Time Updates</h3>
-              <p className="text-gray-400">
-                Stay synced with your group as expenses are added and settled
-              </p>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 1 }}
-          className="text-center mt-16"
-        >
-          <button
-            onClick={() => router.push("/")}
-            className="bg-[#222255] text-white px-10 py-4 rounded-lg hover:bg-white hover:text-black transition-all duration-300 text-lg font-semibold"
+          <motion.h3
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+            className="text-center text-3xl font-bold uppercase text-[#dce8ff] sm:text-5xl"
           >
-            Get Started Now
-          </button>
-        </motion.div>
+            Technological Superiority
+          </motion.h3>
+          <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-[#25ceff]" />
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="mt-10 grid gap-5 md:grid-cols-3"
+          >
+            {superiorityCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <article
+                  key={card.title}
+                  className={`rounded-xl border border-[#182d51] bg-[linear-gradient(165deg,rgba(7,24,51,0.96),rgba(4,14,33,0.82))] p-7 ${card.className}`}
+                >
+                  <Icon className="mb-6 h-6 w-6 text-[#8ce0ff]" />
+                  <h4 className="text-3xl font-semibold leading-tight text-[#dce8ff] sm:text-4xl">
+                    {card.title}
+                  </h4>
+                  <p className="mt-4 max-w-2xl text-sm leading-6 text-[#88a1c8]">
+                    {card.description}
+                  </p>
+                </article>
+              );
+            })}
+          </motion.div>
+        </section>
+
+        <section id="about" className="px-4 pb-16 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+            className="mx-auto flex max-w-5xl flex-col items-center rounded-2xl border border-[#203c66] bg-[linear-gradient(150deg,rgba(15,34,62,0.92),rgba(8,20,40,0.92))] px-6 py-12 text-center sm:px-10"
+          >
+            <Sparkles className="h-6 w-6 text-[#49d6ff]" />
+            <h5 className="mt-3 text-3xl font-bold text-[#dce8ff] sm:text-4xl">
+              Ready to split smarter?
+            </h5>
+            <p className="mt-3 max-w-2xl text-base text-[#90a9cf]">
+              Launch your next group ledger with Quick Split and automate accurate settlements from day one.
+            </p>
+
+            <button
+              onClick={handleSignUp}
+              className="mt-7 cursor-pointer rounded-md bg-[#23ccff] px-10 py-4 text-sm font-bold uppercase tracking-[0.09em] text-[#03263d] shadow-[0_12px_30px_rgba(35,204,255,0.3)] transition hover:bg-[#6ce2ff]"
+            >
+              Get Started
+            </button>
+          </motion.div>
+        </section>
+
+        <LandingFooter />
       </div>
     </main>
   );
