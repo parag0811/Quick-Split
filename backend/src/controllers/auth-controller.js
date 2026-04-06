@@ -83,10 +83,14 @@ const getMyProfile = async (req, res, next) => {
       profileImage = await getSignedUrl(s3, command, { expiresIn: 3600 });
     }
 
-    const groups = await Group.find({ "members.user": user_id }).select("_id");
+    const groups = await Group.find({
+      "members.user": user_id,
+      isDeleted: false,
+    }).select("_id");
 
     const expenses = await Expense.find({
       $or: [{ paidBy: user_id }, { "splits.user": user_id }],
+      isDeleted: false,
     });
 
     let youPaidFor = 0; 
@@ -106,25 +110,28 @@ const getMyProfile = async (req, res, next) => {
 
     const settlements = await Settlement.find({
       $or: [{ from: user_id }, { to: user_id }],
-      isSettled: true,
+      isDeleted: false,
     });
 
-    let settledReceived = 0; 
-    let settledPaid = 0;     
+    let settlementReceived = 0;
+    let settlementPaid = 0;
 
     settlements.forEach((s) => {
       if (s.to.toString() === user_id) {
-        settledReceived += s.amount;
+        settlementReceived += s.amount;
       }
       if (s.from.toString() === user_id) {
-        settledPaid += s.amount;
+        settlementPaid += s.amount;
       }
     });
 
-    const totalSettled = Number((settledPaid + settledReceived).toFixed(2));
+    const totalRealTransactions = Number(
+      (settlementPaid + settlementReceived).toFixed(2),
+    );
 
+    // Expense ledger balance is independent of settlement records.
     const outstandingBalance = Number(
-      ((youPaidFor - totalSpent) - settledReceived + settledPaid).toFixed(2)
+      (youPaidFor - totalSpent).toFixed(2),
     );
 
     return res.status(200).json({
@@ -139,7 +146,9 @@ const getMyProfile = async (req, res, next) => {
         totalGroups: groups.length,
         totalSpent: Number(totalSpent.toFixed(2)),
         youPaidFor: Number(youPaidFor.toFixed(2)),
-        totalSettled,
+        settlementPaid: Number(settlementPaid.toFixed(2)),
+        settlementReceived: Number(settlementReceived.toFixed(2)),
+        totalRealTransactions,
         outstandingBalance,
       },
     });
@@ -234,8 +243,11 @@ const getUserSummary = async (req, res, next) => {
       profileImage = await getSignedUrl(s3, command, { expiresIn: 3600 });
     }
 
-    // Get all groups user is in
-    const userGroups = await Group.find({ "members.user": user_id }).select("_id members");
+    // Get all active groups user is in
+    const userGroups = await Group.find({
+      "members.user": user_id,
+      isDeleted: false,
+    }).select("_id members");
 
     let totalSpent = 0;
     let youOwe = 0;
@@ -248,7 +260,10 @@ const getUserSummary = async (req, res, next) => {
       const balance = {};
       memberIds.forEach((id) => { balance[id] = 0; });
 
-      const groupExpenses = await Expense.find({ group: groupId });
+      const groupExpenses = await Expense.find({
+        group: groupId,
+        isDeleted: false,
+      });
 
       groupExpenses.forEach((exp) => {
         const payerId = exp.paidBy.toString();
@@ -264,18 +279,6 @@ const getUserSummary = async (req, res, next) => {
         });
       });
 
-      const settledInGroup = await Settlement.find({
-        group: groupId,
-        isSettled: true,
-      });
-
-      settledInGroup.forEach((s) => {
-        const from = s.from.toString();
-        const to = s.to.toString();
-        if (balance[from] !== undefined) balance[from] += s.amount;
-        if (balance[to] !== undefined) balance[to] -= s.amount;
-      });
-
       // Current user's balance in this group
       const myBalance = balance[user_id] || 0;
       if (myBalance > 0) {
@@ -287,15 +290,27 @@ const getUserSummary = async (req, res, next) => {
 
     const recentSettlements = await Settlement.find({
       $or: [{ from: user_id }, { to: user_id }],
+      isDeleted: false,
     })
       .sort({ createdAt: -1 })
       .limit(5)
       .populate("from to", "name");
 
+    let settlementPaid = 0;
+    let settlementReceived = 0;
+
+    recentSettlements.forEach((s) => {
+      if (s.from._id.toString() === user_id) {
+        settlementPaid += s.amount;
+      }
+      if (s.to._id.toString() === user_id) {
+        settlementReceived += s.amount;
+      }
+    });
+
     const formattedSettlements = recentSettlements.map((s) => ({
       id: s._id,
       amount: s.amount,
-      isSettled: s.isSettled,
       direction:
         s.from._id.toString() === user_id ? "you_paid" : "you_received",
       from: s.from.name,
@@ -316,6 +331,11 @@ const getUserSummary = async (req, res, next) => {
         totalSpent: Number(totalSpent.toFixed(2)),
         youOwe: Number(youOwe.toFixed(2)),
         youAreOwed: Number(youAreOwed.toFixed(2)),
+        settlementPaid: Number(settlementPaid.toFixed(2)),
+        settlementReceived: Number(settlementReceived.toFixed(2)),
+        totalRealTransactions: Number(
+          (settlementPaid + settlementReceived).toFixed(2),
+        ),
       },
       recentSettlements: formattedSettlements,
     });

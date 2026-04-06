@@ -4,20 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   User,
-  Shield,
-  Users,
   Edit2,
   Save,
   X,
   Camera,
   Loader2,
-  Fingerprint,
   CreditCard,
   Sparkles,
-  ChevronRight,
-  UserRound,
   WalletCards,
-  Bell,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useDispatch, useSelector } from "react-redux";
@@ -143,7 +137,9 @@ export default function Profile() {
   const outstandingBalance = stats?.outstandingBalance || 0;
   const totalSpent = stats?.totalSpent || 0;
   const youPaidFor = stats?.youPaidFor || 0;
-  const totalSettled = stats?.totalSettled || 0;
+  const settlementPaid = stats?.settlementPaid || 0;
+  const settlementReceived = stats?.settlementReceived || 0;
+  const totalRealTransactions = stats?.totalRealTransactions || 0;
   const totalGroups = stats?.totalGroups || 0;
 
   return (
@@ -191,7 +187,6 @@ export default function Profile() {
             <div>
               <p className="text-[10px] uppercase tracking-[0.2em] text-[#7f97c3]">Quick Split Member</p>
               <h1 className="text-3xl font-bold tracking-tight text-[#d8e6ff] sm:text-5xl">{user?.name}</h1>
-              <p className="mt-1 text-xs uppercase tracking-[0.14em] text-[#6f88b7]">Premium tier member</p>
             </div>
           </div>
 
@@ -306,13 +301,21 @@ export default function Profile() {
           </div>
           <div className="flex items-center justify-between rounded-lg bg-[#081a43] px-3 py-2.5">
             <span className="text-sm text-[#8ba3cd]">Total settled</span>
-            <span className="text-sm font-bold text-[#dce8ff]">₹{totalSettled.toFixed(2)}</span>
+            <span className="text-sm font-bold text-[#dce8ff]">₹{totalRealTransactions.toFixed(2)}</span>
           </div>
           <div className="flex items-center justify-between rounded-lg bg-[#081a43] px-3 py-2.5 sm:col-span-2">
             <span className="text-sm text-[#8ba3cd]">Net outstanding</span>
             <span className={`text-sm font-bold ${outstandingBalance >= 0 ? "text-[#00CDFF]" : "text-[#FF2D65]"}`}>
               {outstandingBalance >= 0 ? "+" : "-"}₹{Math.abs(outstandingBalance).toFixed(2)}
             </span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-[#081a43] px-3 py-2.5">
+            <span className="text-sm text-[#8ba3cd]">Settlement paid</span>
+            <span className="text-sm font-bold text-[#dce8ff]">₹{settlementPaid.toFixed(2)}</span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg bg-[#081a43] px-3 py-2.5">
+            <span className="text-sm text-[#8ba3cd]">Settlement received</span>
+            <span className="text-sm font-bold text-[#dce8ff]">₹{settlementReceived.toFixed(2)}</span>
           </div>
         </div>
       </motion.section>
