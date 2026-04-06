@@ -1,5 +1,5 @@
 "use client";
-import { Plus, Users, RotateCcw } from "lucide-react";
+import { Plus, Users, RotateCcw, Crown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { useEffect, useState, useCallback } from "react";
@@ -35,49 +35,27 @@ export default function GroupList() {
     fetchGroups();
   }, [fetchGroups]);
 
-  const getGroupColor = (name) => {
-    const colors = [
-      "bg-purple-600",
-      "bg-rose-600",
-      "bg-pink-600",
-      "bg-teal-600",
-      "bg-indigo-600",
-      "bg-cyan-600",
-      "bg-blue-600",
-      "bg-emerald-600",
-      "bg-amber-600",
-      "bg-violet-600",
-    ];
-    return colors[name.length % colors.length];
-  };
-
-  const getGroupEmoji = (name) => {
-    const emojis = ["🎯", "💼", "⚙️", "💰", "💻", "🎨", "🎉", "📚", "🏋️", "🌟"];
-    return emojis[name.length % emojis.length];
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8"
+      className="w-full min-h-screen"
     >
-      <div className="max-w-7xl mx-auto">
-        {/* Page Header */}
+      <div className="mx-auto w-full max-w-350">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4"
+          className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <h1 className="text-3xl font-bold text-white mb-2">Groups</h1>
-            <p className="text-gray-400">Manage and track your group expenses</p>
+            <h1 className="text-3xl font-bold tracking-tight text-[#e8f1ff]">Groups</h1>
+            <p className="mt-1 text-sm text-[#7f97c3]">All your active groups and ownership status</p>
           </motion.div>
 
           <motion.div
@@ -89,10 +67,10 @@ export default function GroupList() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => router.push("/dashboard/groups/create")}
-              className="cursor-pointer flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50"
+              className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#00CDFF] px-5 py-2.5 text-sm font-semibold text-[#022342] shadow-[0_10px_25px_rgba(0,205,255,0.2)] transition hover:bg-[#35dcff]"
             >
-              <Plus size={20} />
-              <span>Create Group</span>
+              <Plus size={16} />
+              <span>New Group</span>
             </motion.button>
           </motion.div>
         </motion.div>
@@ -105,20 +83,20 @@ export default function GroupList() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
               transition={{ duration: 0.35 }}
-              className="flex flex-col items-center justify-center py-28 px-4"
+              className="flex flex-col items-center justify-center rounded-xl border border-[#2a3f6d] bg-[#09183f]/70 px-4 py-20"
             >
-              <div className="w-20 h-20 bg-red-500/10 rounded-2xl border border-red-500/20 flex items-center justify-center mb-6">
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10">
                 <span className="text-red-400 text-3xl">!</span>
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">
+              <h2 className="mb-2 text-xl font-bold text-[#dbe9ff]">
                 Couldn't load groups
               </h2>
-              <p className="text-gray-400 text-sm text-center max-w-sm mb-8">
+              <p className="mb-8 max-w-sm text-center text-sm text-[#8aa0c9]">
                 {error}
               </p>
               <button
                 onClick={fetchGroups}
-                className="flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 shadow-lg shadow-cyan-500/20 text-sm"
+                className="flex items-center gap-2 rounded-lg bg-[#00CDFF] px-5 py-2.5 text-sm font-semibold text-[#03203f] transition hover:bg-[#32d9ff]"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Retry</span>
@@ -132,22 +110,20 @@ export default function GroupList() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5"
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
             >
-              {[...Array(8)].map((_, i) => (
+              {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
-                  className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 animate-pulse"
+                  className="animate-pulse rounded-xl border border-[#1b3563] bg-[#09183f]/70 p-5"
                 >
-                  <div className="flex items-start space-x-3 mb-4">
-                    <div className="w-12 h-12 bg-gray-800 rounded-lg flex-shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-800 rounded w-3/4" />
-                      <div className="h-3 bg-gray-800 rounded w-1/2" />
-                    </div>
+                  <div className="mb-4 h-5 w-2/3 rounded bg-[#12306a]" />
+                  <div className="mb-2 h-3 w-full rounded bg-[#12306a]" />
+                  <div className="mb-4 h-3 w-3/4 rounded bg-[#12306a]" />
+                  <div className="flex items-center justify-between">
+                    <div className="h-3 w-1/3 rounded bg-[#12306a]" />
+                    <div className="h-3 w-1/4 rounded bg-[#12306a]" />
                   </div>
-                  <div className="h-3 bg-gray-800 rounded w-full mb-2" />
-                  <div className="h-3 bg-gray-800 rounded w-2/3" />
                 </div>
               ))}
             </motion.div>
@@ -159,12 +135,9 @@ export default function GroupList() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5"
+              className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
             >
               {groups.map((group, index) => {
-                const color = getGroupColor(group.name);
-                const emoji = getGroupEmoji(group.name);
-
                 return (
                   <motion.div
                     key={group.groupId}
@@ -180,34 +153,37 @@ export default function GroupList() {
                     whileHover={{ scale: 1.03, y: -5 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => router.push(`/dashboard/groups/${group.groupId}`)}
-                    className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-5 hover:border-gray-700 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 cursor-pointer group"
+                    className="group relative cursor-pointer overflow-hidden rounded-xl border border-[#17345f] bg-[#06173f]/80 p-5 transition-all duration-200 hover:border-[#2a5ea3] hover:shadow-[0_12px_28px_rgba(2,8,23,0.5)]"
                   >
-                    <div className="flex items-start space-x-3 mb-4">
-                      <motion.div
-                        whileHover={{ scale: 1.15, rotate: 5 }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                        className={`w-12 h-12 ${color} rounded-lg flex items-center justify-center text-2xl flex-shrink-0 shadow-lg`}
-                      >
-                        {emoji}
-                      </motion.div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-semibold text-white mb-1 truncate group-hover:text-cyan-400 transition-colors">
-                          {group.name}
-                        </h3>
-                        <div className="flex items-center space-x-1.5 text-sm text-gray-400">
-                          <Users size={14} />
-                          <span>
-                            {group.memberCount} member{group.memberCount !== 1 ? "s" : ""}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                    <span
+                      className={`absolute left-0 top-4 h-14 w-0.75 rounded-r-full ${
+                        group.isOwner ? "bg-[#00CDFF]" : "bg-[#FF2D65]"
+                      }`}
+                    />
 
-                    {group.description && (
-                      <p className="text-sm text-gray-500 line-clamp-2">
-                        {group.description}
-                      </p>
-                    )}
+                    <h3 className="pr-8 text-lg font-semibold tracking-tight text-[#d8e6ff] transition-colors group-hover:text-white">
+                      {group.name}
+                    </h3>
+
+                    <p className="mt-2 line-clamp-2 min-h-10 text-sm text-[#86a0cb]">
+                      {group.description || "No description provided."}
+                    </p>
+
+                    <div className="mt-5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.13em] text-[#6f88b7]">
+                        <Users size={13} />
+                        <span>
+                          {group.memberCount} member{group.memberCount !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+
+                      {group.isOwner ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-[#00CDFF]/40 bg-[#00CDFF]/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6de6ff]">
+                          <Crown size={11} />
+                          Group Owner
+                        </span>
+                      ) : null}
+                    </div>
                   </motion.div>
                 );
               })}
@@ -221,9 +197,9 @@ export default function GroupList() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.5 }}
-              className="bg-[#1a1a1a] border border-gray-800 rounded-xl"
+              className="rounded-xl border border-[#17345f] bg-[#06173f]/70"
             >
-              <div className="flex flex-col items-center justify-center py-32 px-4">
+              <div className="flex flex-col items-center justify-center px-4 py-24">
                 <motion.div
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
@@ -233,15 +209,15 @@ export default function GroupList() {
                     damping: 15,
                     delay: 0.2,
                   }}
-                  className="w-28 h-28 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full flex items-center justify-center mb-6 shadow-xl"
+                  className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-[#0a2255]"
                 >
-                  <Users size={56} className="text-gray-600" />
+                  <Users size={50} className="text-[#4e73aa]" />
                 </motion.div>
                 <motion.h3
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.3 }}
-                  className="text-2xl font-semibold text-gray-300 mb-3"
+                  className="mb-3 text-2xl font-semibold text-[#d8e6ff]"
                 >
                   You're not part of any group yet
                 </motion.h3>
@@ -249,7 +225,7 @@ export default function GroupList() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.4 }}
-                  className="text-gray-500 mb-10 text-center max-w-md text-base"
+                  className="mb-10 max-w-md text-center text-base text-[#7f97c3]"
                 >
                   Create your first group to start splitting expenses with friends,
                   family, or colleagues
@@ -261,9 +237,9 @@ export default function GroupList() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => router.push("/dashboard/groups/create")}
-                  className="cursor-pointer flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg font-medium transition-all duration-200 shadow-lg shadow-pink-900/30 hover:shadow-pink-900/50"
+                  className="flex cursor-pointer items-center gap-2 rounded-lg bg-[#00CDFF] px-7 py-3 text-base font-semibold text-[#022342] transition hover:bg-[#35dcff]"
                 >
-                  <Plus size={22} />
+                  <Plus size={20} />
                   <span className="text-base">Create your first group</span>
                 </motion.button>
               </div>

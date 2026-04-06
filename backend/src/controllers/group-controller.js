@@ -67,7 +67,7 @@ const joinGroup = async (req, res, next) => {
     const { inviteToken } = req.body;
     const user_id = req.user.id;
 
-    const group = await Group.findOne({ inviteToken });
+    const group = await Group.findOne({ inviteToken, isDeleted: false });
     if (!group) {
       const error = new Error("Group does not exist.");
       error.statusCode = 404;
@@ -185,15 +185,20 @@ const getGroups = async (req, res, next) => {
   try {
     const user_id = req.user.id;
 
-    const groups = await Group.find({ "members.user": user_id }).select(
-      "name description members",
-    );
+    const groups = await Group.find({
+      "members.user": user_id,
+      isDeleted: false,
+    })
+      .select("name description members createdBy")
+      .sort({ lastActivityAt: -1 });
 
     const formattedGroupData = groups.map((group) => ({
       groupId: group._id,
       name: group.name,
       description: group.description,
       memberCount: group.members.length,
+      isOwner: group.createdBy.toString() === user_id.toString(),
+      ownerId: group.createdBy,
     }));
 
     return res.status(200).json({
@@ -238,11 +243,6 @@ const getGroupSummary = async (req, res, next) => {
 
     const expenses = await Expense.find({ group: group_id, isDeleted: false });
 
-    const settledSettlements = await Settlement.find({
-      group: group_id,
-      isDeleted: false,
-    });
-
     let balance = {};
 
     members.forEach((m) => {
@@ -258,19 +258,6 @@ const getGroupSummary = async (req, res, next) => {
         balance[splitUserId] -= split.amount;
       });
     });
-    settledSettlements.forEach((s) => {
-      const from = s.from.toString();
-      const to = s.to.toString();
-
-      if (balance[from] !== undefined) {
-        balance[from] += s.amount;
-      }
-
-      if (balance[to] !== undefined) {
-        balance[to] -= s.amount;
-      }
-    });
-
     const totalExpenses = expenses.reduce((sum, e) => sum + e.totalAmount, 0);
 
     const yourBalance = Number((balance[user_id] || 0).toFixed(2));
@@ -330,6 +317,10 @@ const getGroupSummary = async (req, res, next) => {
     const isSettled =
       yourBalance === 0 && creditors.length === 0 && debtors.length === 0;
 
+    const inviteLink = group.inviteToken
+      ? `${process.env.CLIENT_URL}/join/${group.inviteToken}`
+      : null;
+
     return res.status(200).json({
       message: "Group Summary fetched successfully.",
       group: {
@@ -343,6 +334,8 @@ const getGroupSummary = async (req, res, next) => {
       expenseCount: expenses.length,
       isSettled,
       yourBalance,
+      inviteLink,
+      inviteTokenExpiresAt: group.inviteTokenExpiresAt,
       youOwe,
       youGet,
     });
@@ -406,20 +399,6 @@ const removeMember = async (req, res, next) => {
       throw error;
     }
 
-    const hasPendingSettlement = await Settlement.findOne({
-      group: group._id,
-      isDeleted: false,
-      $or: [{ from: member_id }, { to: member_id }],
-    });
-
-    if (hasPendingSettlement) {
-      const error = new Error(
-        "Member has active settlements. Settle them first.",
-      );
-      error.statusCode = 403;
-      throw error;
-    }
-
     const expenses = await Expense.find({ group: group._id, isDeleted: false });
 
     let balance = {};
@@ -436,18 +415,6 @@ const removeMember = async (req, res, next) => {
         const splitUserId = split.user.toString();
         balance[splitUserId] -= split.amount;
       });
-    });
-
-    const completedSettlements = await Settlement.find({
-      group: group._id,
-      isDeleted: false,
-    });
-
-    completedSettlements.forEach((s) => {
-      const from = s.from.toString();
-      const to = s.to.toString();
-      balance[from] += s.amount;
-      balance[to] -= s.amount;
     });
 
     if (balance[member_id.toString()] !== 0) {

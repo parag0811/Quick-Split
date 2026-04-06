@@ -1,5 +1,5 @@
 "use client";
-import { Bell, Cog, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -49,19 +49,6 @@ const Header = ({ toggleSidebar, title }) => {
       </div>
 
         <div className="flex items-center gap-2">
-          <button
-            className="cursor-pointer rounded-lg border border-[#203f73] p-2 text-[#9fb2d8] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF]"
-            aria-label="Notifications"
-          >
-            <Bell size={17} />
-          </button>
-          <button
-            className="cursor-pointer rounded-lg border border-[#203f73] p-2 text-[#9fb2d8] transition hover:border-[#00CDFF]/40 hover:text-[#00CDFF]"
-            aria-label="Settings"
-          >
-            <Cog size={17} />
-          </button>
-
           {title && <span className="hidden text-xs uppercase tracking-[0.2em] text-[#6f86b2] lg:block">{title}</span>}
         </div>
       </div>

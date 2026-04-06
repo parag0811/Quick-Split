@@ -1,17 +1,10 @@
 "use client";
+
 import { apiFetch } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  X,
-  Copy,
-  Check,
-  Link2,
-  Clock,
-  ExternalLink,
-  Loader2,
-} from "lucide-react";
+import { X, Copy, Check, UserPlus, Clock, Loader2, Mail } from "lucide-react";
 import { toastSuccess, toastError } from "@/lib/toast";
 
 export default function GroupForm() {
@@ -24,7 +17,36 @@ export default function GroupForm() {
   const [errors, setErrors] = useState({});
   const [copied, setCopied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
   const router = useRouter();
+
+  const getInviteDisplayText = (inviteLink) => {
+    try {
+      const parsed = new URL(inviteLink);
+      return `${parsed.host}${parsed.pathname}`;
+    } catch {
+      return inviteLink;
+    }
+  };
+
+  const formatExpiryTime = (expiryDate) => {
+    const date = new Date(expiryDate);
+    const now = new Date();
+    const diffMs = date - now;
+
+    if (diffMs <= 0) {
+      return "Link expired";
+    }
+
+    const hoursLeft = Math.floor(diffMs / (1000 * 60 * 60));
+    const minutesLeft = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hoursLeft > 0) {
+      return `Expires in ${hoursLeft}h ${minutesLeft}m`;
+    }
+
+    return `Expires in ${minutesLeft}m`;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -46,17 +68,6 @@ export default function GroupForm() {
     }
   };
 
-  const formatExpiryTime = (expiryDate) => {
-    const date = new Date(expiryDate);
-    const now = new Date();
-    const hoursLeft = Math.floor((date - now) / (1000 * 60 * 60));
-    const minutesLeft = Math.floor(
-      ((date - now) % (1000 * 60 * 60)) / (1000 * 60),
-    );
-    if (hoursLeft > 0) return `Expires in ${hoursLeft}h ${minutesLeft}m`;
-    return `Expires in ${minutesLeft}m`;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
@@ -68,6 +79,7 @@ export default function GroupForm() {
 
     try {
       setSubmitting(true);
+
       const data = await apiFetch("/create-group", {
         method: "POST",
         body: formData,
@@ -83,18 +95,27 @@ export default function GroupForm() {
     } catch (error) {
       if (error.validation && Array.isArray(error.validation)) {
         const fieldErrors = {};
-        error.validation.forEach((e) => {
-          fieldErrors[e.path] = e.msg;
+
+        error.validation.forEach((entry) => {
+          fieldErrors[entry.path] = entry.msg;
         });
+
         setErrors(fieldErrors);
       } else {
-        toastError(
-          error?.message || "Failed to create group. Please try again.",
-        );
+        toastError(error?.message || "Failed to create group. Please try again.");
       }
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const closeCreateModal = () => {
+    router.push("/dashboard/groups");
+  };
+
+  const closeInviteModal = () => {
+    setInviteData(null);
+    router.push("/dashboard/groups");
   };
 
   return (
@@ -103,47 +124,45 @@ export default function GroupForm() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#020811]/85 px-4 py-6 backdrop-blur-sm"
     >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(0,205,255,0.2),transparent_38%)]" />
+
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="bg-[#1a1a1a] border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="relative z-10 flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-[#204078] bg-[#0f2148] shadow-[0_25px_80px_rgba(0,8,25,0.75)]"
       >
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex items-center justify-between p-6 border-b border-gray-800"
+          className="flex items-start justify-between px-5 pb-3 pt-5 sm:px-7 sm:pt-6"
         >
           <div>
-            <h2 className="text-2xl font-bold text-white">
-              Create a New Group
+            <h2 className="text-2xl font-bold tracking-tight text-[#d9e6ff]">
+              New Collective
             </h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Fill in the details below to create your group
+            <p className="mt-1 text-sm text-[#8ca5d4]">
+              Initialize a shared ledger for your next venture.
             </p>
           </div>
+
           <motion.button
             whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => router.push("/dashboard/groups")}
-            className="p-2 hover:bg-[#252525] rounded-lg transition-all text-gray-400 hover:text-white cursor-pointer"
+            onClick={closeCreateModal}
+            className="cursor-pointer rounded-lg p-2 text-[#7f95be] transition hover:bg-[#1a315f] hover:text-[#d4e2ff]"
+            aria-label="Close create group modal"
           >
             <X size={20} />
           </motion.button>
         </motion.div>
 
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          className="flex-1 overflow-y-auto"
-        >
-          <div className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} noValidate className="flex-1 overflow-y-auto">
+          <div className="space-y-6 px-5 py-4 sm:px-7">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -151,9 +170,9 @@ export default function GroupForm() {
             >
               <label
                 htmlFor="name"
-                className="block text-sm font-medium text-gray-300 mb-2"
+                className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[#3cb9de]"
               >
-                Group Name <span className="text-red-400">*</span>
+                Group Name
               </label>
               <motion.input
                 whileFocus={{ scale: 1.005 }}
@@ -165,8 +184,8 @@ export default function GroupForm() {
                 onChange={handleChange}
                 required
                 disabled={submitting}
-                className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 text-white rounded-lg focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600 transition-all placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Enter group name"
+                placeholder="Enter group identity..."
+                className="w-full rounded-lg border border-[#2a4372] bg-[#1a2e59] px-4 py-3 text-[#d9e7ff] placeholder:text-[#7087b3] outline-none transition focus:border-[#41d6ff] focus:ring-2 focus:ring-[#00CDFF]/35 disabled:cursor-not-allowed disabled:opacity-50"
               />
               <AnimatePresence>
                 {errors.name && (
@@ -175,7 +194,7 @@ export default function GroupForm() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.2 }}
-                    className="text-red-400 text-sm mt-1"
+                    className="mt-1 text-sm text-[#ff8fb1]"
                   >
                     {errors.name}
                   </motion.p>
@@ -190,21 +209,21 @@ export default function GroupForm() {
             >
               <label
                 htmlFor="description"
-                className="block text-sm font-medium text-gray-300 mb-2"
+                className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[#8ca5d4]"
               >
-                Description
+                Group Description
               </label>
               <motion.textarea
                 whileFocus={{ scale: 1.005 }}
                 transition={{ type: "spring", stiffness: 300 }}
                 id="description"
                 name="description"
-                rows="4"
+                rows="5"
                 value={formData.description}
                 onChange={handleChange}
                 disabled={submitting}
-                className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 text-white rounded-lg focus:outline-none focus:border-cyan-600 focus:ring-1 focus:ring-cyan-600 transition-all resize-none placeholder-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Describe your group"
+                placeholder="Define the purpose of this group..."
+                className="w-full resize-none rounded-lg border border-[#2a4372] bg-[#1a2e59] px-4 py-3 text-[#d9e7ff] placeholder:text-[#7087b3] outline-none transition focus:border-[#41d6ff] focus:ring-2 focus:ring-[#00CDFF]/35 disabled:cursor-not-allowed disabled:opacity-50"
               />
               <AnimatePresence>
                 {errors.description && (
@@ -213,15 +232,12 @@ export default function GroupForm() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.2 }}
-                    className="text-red-400 text-sm mt-1"
+                    className="mt-1 text-sm text-[#ff8fb1]"
                   >
                     {errors.description}
                   </motion.p>
                 )}
               </AnimatePresence>
-              <p className="mt-1 text-xs text-gray-500">
-                Help others understand what this group is about
-              </p>
             </motion.div>
           </div>
 
@@ -229,25 +245,15 @@ export default function GroupForm() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="p-6 border-t border-gray-800 bg-[#1a1a1a]"
+            className="px-5 pb-6 pt-2 sm:px-7"
           >
-            <div className="flex gap-3">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => router.push("/dashboard/groups")}
-                type="button"
-                disabled={submitting}
-                className="flex-1 px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 hover:bg-[#252525] text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </motion.button>
+            <div className="space-y-3">
               <motion.button
                 whileHover={{ scale: submitting ? 1 : 1.02 }}
                 whileTap={{ scale: submitting ? 1 : 0.98 }}
                 type="submit"
                 disabled={submitting}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-cyan-900/30 hover:shadow-cyan-900/50 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#00CDFF] px-4 py-3 text-base font-semibold text-[#043056] shadow-[0_10px_25px_rgba(0,205,255,0.25)] transition hover:bg-[#35dcff] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
                   <>
@@ -258,6 +264,15 @@ export default function GroupForm() {
                   "Create Group"
                 )}
               </motion.button>
+
+              <button
+                type="button"
+                onClick={closeCreateModal}
+                disabled={submitting}
+                className="w-full cursor-pointer py-2 text-center text-sm font-semibold text-[#8ea6d2] transition hover:text-[#d1def8] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Discard Draft
+              </button>
             </div>
           </motion.div>
         </form>
@@ -269,154 +284,129 @@ export default function GroupForm() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-[#020811]/85 px-4 py-6 backdrop-blur-sm"
               onClick={(e) => {
                 if (e.target === e.currentTarget) {
-                  setInviteData(null);
-                  router.push("/dashboard/groups");
+                  closeInviteModal();
                 }
               }}
             >
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(0,205,255,0.2),transparent_38%)]" />
+
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
                 transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                className="bg-[#1a1a1a] border border-gray-800 rounded-2xl w-full max-w-lg overflow-hidden"
+                className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-[#204078] bg-[#0f2148] shadow-[0_25px_80px_rgba(0,8,25,0.75)]"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Modal Header */}
-                <div className="p-6 border-b border-gray-800">
-                  <div className="flex items-center gap-3 mb-2">
+                <div className="p-5 sm:p-6">
+                  <div className="mb-2 flex items-start justify-between">
                     <motion.div
-                      initial={{ scale: 0, rotate: -180 }}
-                      animate={{ scale: 1, rotate: 0 }}
-                      transition={{ type: "spring", delay: 0.1 }}
-                      className="w-12 h-12 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center"
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.1 }}
+                      className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#183b73] text-[#65dcff]"
                     >
-                      <Check size={24} className="text-white" />
+                      <UserPlus size={20} />
                     </motion.div>
-                    <div>
-                      <motion.h3
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.15 }}
-                        className="text-xl font-bold text-white"
-                      >
-                        Group Created Successfully!
-                      </motion.h3>
-                      <motion.p
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-sm text-gray-400"
-                      >
-                        Share this invite link with others
-                      </motion.p>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Modal Body */}
-                <div className="p-6 space-y-4">
-                  {/* Invite Link */}
+                    <button
+                      onClick={closeInviteModal}
+                      className="cursor-pointer rounded-md p-1.5 text-[#8ba3cd] transition hover:bg-[#1a315f] hover:text-[#d4e2ff]"
+                      aria-label="Close invite modal"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  <motion.h3
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="text-3xl font-bold tracking-tight text-[#dce8ff]"
+                  >
+                    Invite Members
+                  </motion.h3>
+
+                  <motion.p
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="mt-2 text-sm text-[#8ea6d2]"
+                  >
+                    Group created successfully. Share this link with your friends to start splitting expenses.
+                  </motion.p>
+
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.25 }}
+                    className="mt-6"
                   >
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      <Link2 size={16} className="inline mr-2" />
-                      Invite Link
+                    <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-[#8ca5d4]">
+                      Magic Invite Link
                     </label>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 px-4 py-3 bg-[#0f0f0f] border border-gray-800 rounded-lg text-gray-300 text-sm font-mono truncate">
-                        {inviteData.inviteLink}
+
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <div className="flex min-w-0 flex-1 items-center rounded-lg border border-[#2a4372] bg-[#1a2e59] px-4 py-3 text-sm text-[#87b5da]">
+                        <span className="truncate">
+                          {getInviteDisplayText(inviteData.inviteLink)}
+                        </span>
                       </div>
+
                       <motion.button
-                        whileHover={{ scale: 1.05 }}
+                        whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={handleCopy}
-                        className="px-4 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg font-medium transition-all shadow-lg shadow-cyan-900/30 hover:shadow-cyan-900/50 cursor-pointer flex items-center gap-2"
+                        className="flex min-w-28 cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#00CDFF] px-4 py-3 text-sm font-semibold text-[#043056] transition hover:bg-[#35dcff]"
                       >
                         {copied ? (
                           <>
-                            <Check size={18} />
-                            <span className="hidden sm:inline">Copied!</span>
+                            <Check size={16} />
+                            <span>COPIED</span>
                           </>
                         ) : (
                           <>
-                            <Copy size={18} />
-                            <span className="hidden sm:inline">Copy</span>
+                            <Copy size={16} />
+                            <span>COPY</span>
                           </>
                         )}
                       </motion.button>
                     </div>
                   </motion.div>
 
-                  {/* Expiry */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="flex items-center gap-2 p-4 bg-amber-600/10 border border-amber-600/30 rounded-lg"
+                    className="mt-4 flex items-center gap-2 rounded-lg border border-[#5f2c44] bg-[#3f2032]/45 px-3 py-3"
                   >
-                    <Clock size={18} className="text-amber-400 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-amber-400">
-                        {formatExpiryTime(inviteData.inviteTokenExpiresAt)}
+                    <Clock size={16} className="shrink-0 text-[#ff7f9e]" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[#ff8eaa]">
+                        Link is active for 24hrs only
                       </p>
-                      <p className="text-xs text-amber-300/70 mt-0.5">
-                        Link will expire on{" "}
-                        {new Date(
-                          inviteData.inviteTokenExpiresAt,
-                        ).toLocaleString()}
+                      <p className="mt-0.5 truncate text-[11px] text-[#f7acc0]">
+                        {formatExpiryTime(inviteData.inviteTokenExpiresAt)}
                       </p>
                     </div>
                   </motion.div>
-
-                  {/* Tip */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.35 }}
-                    className="p-4 bg-blue-600/10 border border-blue-600/30 rounded-lg"
-                  >
-                    <p className="text-sm text-blue-300">
-                      <strong>💡 Tip:</strong> Anyone with this link can join
-                      your group. You can regenerate a new invite link from the
-                      group settings if needed.
-                    </p>
-                  </motion.div>
                 </div>
 
-                {/* Modal Footer */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="p-6 border-t border-gray-800 flex gap-3"
+                  className="border-t border-[#1b376a] bg-[#0c1c42] px-6 py-4"
                 >
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => window.open(inviteData.inviteLink, "_blank")}
-                    className="flex-1 px-4 py-2.5 bg-[#0f0f0f] border border-gray-800 hover:bg-[#252525] text-gray-300 hover:text-white rounded-lg text-sm font-medium transition-all cursor-pointer flex items-center justify-center gap-2"
+                  <button
+                    onClick={closeInviteModal}
+                    className="w-full cursor-pointer text-right text-sm font-semibold text-[#8ea6d2] transition hover:text-[#d4e2ff]"
                   >
-                    <ExternalLink size={18} />
-                    Open Link
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      setInviteData(null);
-                      router.push("/dashboard/groups");
-                    }}
-                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-purple-900/30 hover:shadow-purple-900/50 cursor-pointer"
-                  >
-                    Go to Groups
-                  </motion.button>
+                    Done
+                  </button>
                 </motion.div>
               </motion.div>
             </motion.div>

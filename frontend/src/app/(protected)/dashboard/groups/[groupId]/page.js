@@ -15,6 +15,7 @@ import {
   UserMinus,
   X,
   RefreshCw,
+  RefreshCcw,
   Copy,
   Check,
   Link2,
@@ -57,7 +58,24 @@ export default function GroupOverview() {
       setLoading(true);
       setFetchError("");
       const response = await apiFetch(`/groups/${groupId}/summary`);
+      if (
+        !response ||
+        !response.group ||
+        !Array.isArray(response.members) ||
+        !Array.isArray(response.youOwe) ||
+        !Array.isArray(response.youGet)
+      ) {
+        throw new Error("Invalid group summary received.");
+      }
       setData(response);
+      setInviteData(
+        response?.inviteLink
+          ? {
+              inviteLink: response.inviteLink,
+              inviteTokenExpiresAt: response.inviteTokenExpiresAt,
+            }
+          : null,
+      );
     } catch (error) {
       setFetchError(
         error?.message || "Failed to load group details. Please try again.",
@@ -98,10 +116,20 @@ export default function GroupOverview() {
         method: "POST",
       });
       toastSuccess(response?.message || "Invite link regenerated!");
-      setInviteData({
+      const nextInviteData = {
         inviteLink: response.inviteLink,
         inviteTokenExpiresAt: response.inviteTokenExpiresAt,
-      });
+      };
+      setInviteData(nextInviteData);
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              inviteLink: response.inviteLink,
+              inviteTokenExpiresAt: response.inviteTokenExpiresAt,
+            }
+          : prev,
+      );
       setShowInviteModal(true);
     } catch (error) {
       toastError(error?.message || "Failed to regenerate invite link.");
@@ -112,13 +140,38 @@ export default function GroupOverview() {
 
   const handleCopyInvite = async () => {
     try {
-      await navigator.clipboard.writeText(inviteData.inviteLink);
+      const linkToCopy = inviteData?.inviteLink || data?.inviteLink;
+      if (!linkToCopy) {
+        toastError("No invite link available to copy.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(linkToCopy);
       setCopied(true);
       toastSuccess("Invite link copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toastError("Failed to copy link. Please copy it manually.");
     }
+  };
+
+  const openInviteModal = () => {
+    const linkToShow = inviteData?.inviteLink || data?.inviteLink;
+    if (!linkToShow) {
+      toastError("No active invite link yet.");
+      return;
+    }
+
+    setInviteData({
+      inviteLink: linkToShow,
+      inviteTokenExpiresAt:
+        inviteData?.inviteTokenExpiresAt || data?.inviteTokenExpiresAt,
+    });
+    setShowInviteModal(true);
+  };
+
+  const closeInviteModal = () => {
+    setShowInviteModal(false);
   };
 
   const formatExpiryTime = (expiryDate) => {
@@ -188,32 +241,66 @@ export default function GroupOverview() {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8">
-        <div className="max-w-5xl mx-auto space-y-6 animate-pulse">
-          <div className="flex items-start gap-4 mb-8">
-            <div className="w-16 h-16 bg-gray-800 rounded-xl shrink-0" />
-            <div className="flex-1 space-y-3 pt-1">
-              <div className="h-7 bg-gray-800 rounded w-48" />
-              <div className="h-4 bg-gray-800 rounded w-72" />
+      <div className="w-full min-h-[calc(100vh-6rem)] bg-[radial-gradient(circle_at_20%_0%,#0d2b73_0%,#07163f_45%,#020817_100%)] p-4 sm:p-6 lg:p-8">
+        <div className="mx-auto w-full max-w-[1600px] space-y-6 animate-pulse">
+          <div className="rounded-2xl border border-[#17345f] bg-[#06173f]/80 p-4 sm:p-6">
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+              <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                <div className="h-12 w-12 shrink-0 rounded-xl bg-[#102850] sm:h-16 sm:w-16" />
+                <div className="min-w-0 flex-1 space-y-3 pt-1">
+                  <div className="h-4 w-28 rounded bg-[#102850]" />
+                  <div className="h-8 w-56 rounded bg-[#102850] sm:h-12" />
+                  <div className="h-4 w-72 max-w-full rounded bg-[#102850]" />
+                  <div className="flex gap-2 pt-1">
+                    <div className="h-8 w-8 rounded-full bg-[#102850]" />
+                    <div className="h-8 w-8 rounded-full bg-[#102850]" />
+                    <div className="h-8 w-8 rounded-full bg-[#102850]" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2 xl:w-105">
+                <div className="h-28 rounded-2xl border border-[#17345f] bg-[#081a43]" />
+                <div className="h-28 rounded-2xl border border-[#17345f] bg-[#081a43]" />
+              </div>
+
+              <div className="flex flex-col gap-3 xl:w-105">
+                <div className="h-28 rounded-2xl border border-[#17345f] bg-[#081a43]" />
+                <div className="flex gap-2">
+                  <div className="h-10 flex-1 rounded-lg bg-[#102850]" />
+                  <div className="h-10 flex-1 rounded-lg bg-[#102850]" />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-4 h-20" />
+          <div className="rounded-2xl border border-[#17345f] bg-[#06173f]/80 p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-5 w-24 rounded bg-[#102850]" />
+              <div className="h-9 w-24 rounded-lg bg-[#102850]" />
+            </div>
+            <div className="flex gap-3 overflow-hidden">
+              <div className="h-10 w-10 rounded-full bg-[#102850]" />
+              <div className="h-10 w-10 rounded-full bg-[#102850]" />
+              <div className="h-10 w-10 rounded-full bg-[#102850]" />
+              <div className="h-10 w-10 rounded-full bg-[#102850]" />
+            </div>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {[1, 2, 3].map((item) => (
               <div
-                key={i}
-                className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 h-32"
+                key={item}
+                className="h-32 rounded-xl border border-[#17345f] bg-[#06173f]/80"
               />
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {[1, 2, 3].map((item) => (
               <div
-                key={i}
-                className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 h-28"
+                key={item}
+                className="h-28 rounded-xl border border-[#17345f] bg-[#06173f]/80"
               />
             ))}
           </div>
@@ -262,8 +349,24 @@ export default function GroupOverview() {
     );
   }
 
-  const isPositiveBalance = data.yourBalance > 0;
-  const isZeroBalance = data.yourBalance === 0;
+  const activeInviteLink = inviteData?.inviteLink || data?.inviteLink || null;
+  const activeInviteExpiry =
+    inviteData?.inviteTokenExpiresAt || data?.inviteTokenExpiresAt || null;
+  const group = data?.group ?? {
+    id: "",
+    name: "Unknown group",
+    description: "",
+    createdBy: "",
+  };
+  const members = Array.isArray(data?.members) ? data.members : [];
+  const youOwe = Array.isArray(data?.youOwe) ? data.youOwe : [];
+  const youGet = Array.isArray(data?.youGet) ? data.youGet : [];
+  const totalExpenses = Number(data?.totalExpenses ?? 0);
+  const expenseCount = Number(data?.expenseCount ?? 0);
+  const yourBalance = Number(data?.yourBalance ?? 0);
+  const isSettled = Boolean(data?.isSettled);
+  const isPositiveBalance = yourBalance > 0;
+  const isZeroBalance = yourBalance === 0;
 
   return (
     <>
@@ -274,7 +377,7 @@ export default function GroupOverview() {
         transition={{ duration: 0.5 }}
         className="w-full min-h-screen bg-[radial-gradient(circle_at_20%_0%,#0d2b73_0%,#07163f_45%,#020817_100%)] p-4 sm:p-6 lg:p-8"
       >
-        <div className="mx-auto w-full max-w-345 space-y-6">
+        <div className="mx-auto w-full max-w-[1600px] space-y-6">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -282,7 +385,7 @@ export default function GroupOverview() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="rounded-2xl border border-[#17345f] bg-[#06173f]/80 p-4 sm:p-6"
           >
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between xl:gap-8">
               <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                 <motion.div
                   initial={{ scale: 0, rotate: -180 }}
@@ -307,16 +410,16 @@ export default function GroupOverview() {
                     Active Group
                   </p>
                   <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#dce8ff] mb-1 sm:mb-2 truncate">
-                    {data.group.name}
+                    {group.name}
                   </h1>
-                  {data.group.description && (
+                  {group.description && (
                     <p className="text-[#8ea4cd] text-sm sm:text-base truncate">
-                      {data.group.description}
+                      {group.description}
                     </p>
                   )}
                   <div className="mt-3 flex items-center gap-2 text-xs text-[#8ea4cd]">
                     <div className="flex -space-x-2">
-                      {data.members.slice(0, 3).map((member) => (
+                      {members.slice(0, 3).map((member) => (
                         <div
                           key={member._id}
                           className="overflow-hidden rounded-full border-2 border-[#06173f]"
@@ -324,13 +427,13 @@ export default function GroupOverview() {
                           {renderMemberAvatar(member, "small")}
                         </div>
                       ))}
-                      {data.members.length > 3 && (
+                      {members.length > 3 && (
                         <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#06173f] bg-[#102850] text-[10px] font-bold text-[#dce8ff]">
-                          +{data.members.length - 3}
+                          +{members.length - 3}
                         </div>
                       )}
                     </div>
-                    <span>{data.members.length} members active</span>
+                    <span>{members.length} members active</span>
                   </div>
                 </motion.div>
               </div>
@@ -341,10 +444,10 @@ export default function GroupOverview() {
                     Total expenses
                   </p>
                   <p className="mt-1 text-3xl font-bold text-[#dce8ff]">
-                    ₹{data.totalExpenses.toFixed(2)}
+                    ₹{totalExpenses.toFixed(2)}
                   </p>
                   <p className="mt-1 text-xs text-[#6f88b7]">
-                    {data.expenseCount} recorded items
+                    {expenseCount} recorded items
                   </p>
                 </div>
                 <div className="rounded-2xl border border-[#17345f] bg-[#081a43] p-4">
@@ -352,15 +455,15 @@ export default function GroupOverview() {
                     My balance
                   </p>
                   <p
-                    className={`mt-1 text-3xl font-bold ${isPositiveBalance ? "text-[#00CDFF]" : isZeroBalance ? "text-[#8ea4cd]" : "text-[#FF2D65]"}`}
+                    className={`mt-1 text-3xl font-bold ${yourBalance > 0 ? "text-[#00CDFF]" : yourBalance === 0 ? "text-[#8ea4cd]" : "text-[#FF2D65]"}`}
                   >
-                    {isPositiveBalance ? "+" : ""}₹
-                    {Math.abs(data.yourBalance).toFixed(2)}
+                    {yourBalance > 0 ? "+" : ""}₹
+                    {Math.abs(yourBalance).toFixed(2)}
                   </p>
                   <p className="mt-1 text-xs text-[#6f88b7]">
-                    {isPositiveBalance
+                    {yourBalance > 0
                       ? "You get back"
-                      : isZeroBalance
+                      : yourBalance === 0
                         ? "All settled"
                         : "You owe"}
                   </p>
@@ -369,25 +472,36 @@ export default function GroupOverview() {
 
               <div className="flex flex-col gap-3 xl:w-105">
                 <div className="rounded-2xl border border-[#17345f] bg-[#081a43] p-4">
-                  <div className="mb-2 flex items-center justify-between">
+                  <div className="mb-3 flex items-center justify-between gap-3">
                     <p className="text-[10px] uppercase tracking-[0.18em] text-[#7f97c3]">
                       Invite link
                     </p>
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={handleRegenerateInvite}
+                      disabled={regeneratingInvite}
+                      className="flex items-center gap-2 rounded-lg border border-[#00CDFF]/30 bg-[#00CDFF]/10 px-3 py-2 text-xs font-semibold text-[#00CDFF] transition hover:bg-[#00CDFF]/15 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {regeneratingInvite ? (
+                        <RefreshCw size={14} className="animate-spin" />
+                      ) : (
+                        <RefreshCcw size={14} />
+                      )}
+                      <span>Regenerate</span>
+                    </motion.button>
                   </div>
-                  <div className="rounded-lg border border-[#1b3e71] bg-[#071634] px-3 py-3 text-xs text-[#8ea4cd] truncate">
-                    {inviteData?.inviteLink ||
-                      "Generate a link to invite members"}
+                  <div className="rounded-lg border border-[#1b3e71] bg-[#071634] px-3 py-3 text-xs text-[#8ea4cd] break-all">
+                    {activeInviteLink || "No active invite link yet."}
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2">
+                  <div className="mt-3 flex items-center gap-2">
                   <motion.button
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.5, delay: 0.35 }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowInviteModal(true)}
+                    onClick={openInviteModal}
                     className="cursor-pointer flex flex-1 items-center justify-center gap-2 rounded-lg border border-[#00CDFF]/30 bg-[#00CDFF]/10 px-4 py-2 font-medium text-[#00CDFF] transition-all duration-200 disabled:opacity-50"
                   >
                     <Link2 size={18} />
@@ -407,6 +521,7 @@ export default function GroupOverview() {
                     <span>Delete Group</span>
                   </motion.button>
                 </div>
+                </div>
               </div>
             </div>
 
@@ -415,7 +530,7 @@ export default function GroupOverview() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              className="rounded-2xl border border-[#17345f] bg-[#06173f]/80 p-4"
+              className="mt-5 rounded-2xl border border-[#17345f] bg-[#06173f]/80 p-4 sm:p-5"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
@@ -431,8 +546,8 @@ export default function GroupOverview() {
                       Members
                     </h3>
                     <p className="text-xs text-[#8ea4cd]">
-                      {data.members.length} member
-                      {data.members.length !== 1 ? "s" : ""}
+                      {members.length} member
+                      {members.length !== 1 ? "s" : ""}
                     </p>
                   </div>
                 </div>
@@ -466,7 +581,7 @@ export default function GroupOverview() {
                     className="flex items-center gap-3"
                   >
                     <div className="flex items-center">
-                      {data.members.slice(0, 5).map((member, index) => (
+                      {members.slice(0, 5).map((member, index) => (
                         <motion.div
                           key={member._id}
                           initial={{ opacity: 0, scale: 0, x: -20 }}
@@ -478,20 +593,20 @@ export default function GroupOverview() {
                           }}
                           whileHover={{ scale: 1.2, zIndex: 999 }}
                           className="-ml-2 first:ml-0 overflow-hidden"
-                          style={{ zIndex: data.members.length - index }}
+                          style={{ zIndex: members.length - index }}
                           title={member.name}
                         >
                           {renderMemberAvatar(member, "default")}
                         </motion.div>
                       ))}
-                      {data.members.length > 5 && (
+                      {members.length > 5 && (
                         <motion.div
                           initial={{ opacity: 0, scale: 0 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: 0.25, type: "spring" }}
                           className="w-9 h-9 bg-[#081a43] rounded-full flex items-center justify-center text-xs font-bold text-[#8ea4cd] border-2 border-[#06173f] -ml-2"
                         >
-                          +{data.members.length - 5}
+                          +{members.length - 5}
                         </motion.div>
                       )}
                     </div>
@@ -506,7 +621,7 @@ export default function GroupOverview() {
                     transition={{ duration: 0.3 }}
                     className="space-y-2 mt-2"
                   >
-                    {data.members.map((member, index) => (
+                    {members.map((member, index) => (
                       <motion.div
                         key={member._id}
                         initial={{ opacity: 0, x: -20 }}
@@ -528,7 +643,7 @@ export default function GroupOverview() {
                             </p>
                           </div>
                         </div>
-                        {currentUserId === data.group.createdBy && (
+                        {currentUserId === group.createdBy && (
                           <motion.button
                             className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 bg-[#FF2D65]/10 hover:bg-[#FF2D65]/15 border border-[#FF2D65]/30 hover:border-[#FF2D65] text-[#FF9AB1] rounded-lg text-xs font-medium transition-colors"
                             onClick={() =>
@@ -641,7 +756,7 @@ export default function GroupOverview() {
                   transition={{ duration: 0.5 }}
                   className={`w-10 h-10 ${data.isSettled ? "bg-[#00CDFF]/10" : "bg-[#A855F7]/10"} rounded-lg flex items-center justify-center`}
                 >
-                  {data.isSettled ? (
+                  {isSettled ? (
                     <CheckCircle2 size={20} className="text-[#00CDFF]" />
                   ) : (
                     <AlertCircle size={20} className="text-[#A855F7]" />
@@ -652,23 +767,22 @@ export default function GroupOverview() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.8, type: "spring", stiffness: 200 }}
-                className={`text-3xl font-bold mb-1 ${data.isSettled ? "text-[#00CDFF]" : "text-[#A855F7]"}`}
+                className={`text-3xl font-bold mb-1 ${isSettled ? "text-[#00CDFF]" : "text-[#A855F7]"}`}
               >
-                {data.isSettled
+                {isSettled
                   ? "Settled"
-                  : `${data.youOwe.length + data.youGet.length}`}
+                  : `${youOwe.length + youGet.length}`}
               </motion.div>
               <div className="text-xs text-[#8ea4cd]">
-                {data.isSettled
+                {isSettled
                   ? "All balanced"
-                  : `Pending payment${data.youOwe.length + data.youGet.length !== 1 ? "s" : ""}`}
+                  : `Pending payment${youOwe.length + youGet.length !== 1 ? "s" : ""}`}
               </div>
             </motion.div>
           </div>
 
           <AnimatePresence>
-            {!data.isSettled &&
-              (data.youOwe.length > 0 || data.youGet.length > 0) && (
+            {!isSettled && (youOwe.length > 0 || youGet.length > 0) && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -676,7 +790,7 @@ export default function GroupOverview() {
                   transition={{ duration: 0.5, delay: 0.8 }}
                   className="mb-8 space-y-4"
                 >
-                  {data.youOwe.length > 0 && (
+                  {youOwe.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -688,7 +802,7 @@ export default function GroupOverview() {
                         You Owe
                       </h3>
                       <div className="space-y-2">
-                        {data.youOwe.map((item, index) => (
+                        {youOwe.map((item, index) => (
                           <motion.div
                             key={index}
                             initial={{ opacity: 0, x: -20 }}
@@ -730,7 +844,7 @@ export default function GroupOverview() {
                     </motion.div>
                   )}
 
-                  {data.youGet.length > 0 && (
+                  {youGet.length > 0 && (
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -742,7 +856,7 @@ export default function GroupOverview() {
                         You Get Back
                       </h3>
                       <div className="space-y-2">
-                        {data.youGet.map((item, index) => (
+                        {youGet.map((item, index) => (
                           <motion.div
                             key={index}
                             initial={{ opacity: 0, x: -20 }}
@@ -796,9 +910,7 @@ export default function GroupOverview() {
             <motion.button
               whileHover={{ scale: 1.05, y: -5 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() =>
-                router.push(`/dashboard/groups/${data.group.id}/expense`)
-              }
+              onClick={() => router.push(`/dashboard/groups/${group.id}/expense`)}
               className="bg-linear-to-br from-[#06173f] to-[#081a43] border border-[#17345f] rounded-xl p-6 hover:border-[#00CDFF]/30 hover:bg-[#0a1c42] transition-all duration-200 text-left group cursor-pointer"
             >
               <div className="flex items-center justify-between mb-4">
@@ -829,9 +941,7 @@ export default function GroupOverview() {
             <motion.button
               whileHover={{ scale: 1.05, y: -5 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() =>
-                router.push(`/dashboard/groups/${data.group.id}/settlement`)
-              }
+              onClick={() => router.push(`/dashboard/groups/${group.id}/settlement`)}
               className="bg-linear-to-br from-[#06173f] to-[#081a43] border border-[#17345f] rounded-xl p-6 hover:border-[#00CDFF]/30 hover:bg-[#0a1c42] transition-all duration-200 text-left group cursor-pointer"
             >
               <div className="flex items-center justify-between mb-4">
@@ -860,9 +970,7 @@ export default function GroupOverview() {
             <motion.button
               whileHover={{ scale: 1.05, y: -5 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() =>
-                router.push(`/dashboard/groups/${data.group.id}/analytics`)
-              }
+              onClick={() => router.push(`/dashboard/groups/${group.id}/analytics`)}
               className="bg-linear-to-br from-[#06173f] to-[#081a43] border border-[#17345f] rounded-xl p-6 hover:border-[#00CDFF]/30 hover:bg-[#0a1c42] transition-all duration-200 text-left group cursor-pointer"
             >
               <div className="flex items-center justify-between mb-4">
@@ -1137,18 +1245,20 @@ export default function GroupOverview() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-              onClick={() => setShowInviteModal(false)}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-[#020811]/85 px-4 py-6 backdrop-blur-sm"
+              onClick={closeInviteModal}
             >
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(0,205,255,0.2),transparent_38%)]" />
+
               <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.9, opacity: 0, y: 20 }}
                 transition={{ type: "spring", stiffness: 300, damping: 25 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#1a1a1a] border border-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden"
+                className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-[#204078] bg-[#0f2148] shadow-[0_25px_80px_rgba(0,8,25,0.75)]"
               >
-                <div className="p-6 border-b border-gray-800">
+                <div className="p-6 border-b border-[#1b376a]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <motion.div
@@ -1164,7 +1274,7 @@ export default function GroupOverview() {
                           initial={{ opacity: 0, x: -15 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.15 }}
-                          className="text-xl font-bold text-white"
+                          className="text-xl font-bold text-[#dce8ff]"
                         >
                           New Invite Link
                         </motion.h3>
@@ -1172,7 +1282,7 @@ export default function GroupOverview() {
                           initial={{ opacity: 0, x: -15 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.2 }}
-                          className="text-sm text-gray-400"
+                          className="text-sm text-[#8ea4cd]"
                         >
                           Your invite has been regenerated
                         </motion.p>
@@ -1181,8 +1291,8 @@ export default function GroupOverview() {
                     <motion.button
                       whileHover={{ scale: 1.1, rotate: 90 }}
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => setShowInviteModal(false)}
-                      className="p-2 hover:bg-[#252525] rounded-lg transition-all text-gray-400 hover:text-white cursor-pointer"
+                      onClick={closeInviteModal}
+                      className="cursor-pointer rounded-lg p-2 text-[#8ea4cd] transition hover:bg-[#1a315f] hover:text-[#d4e2ff]"
                     >
                       <X size={20} />
                     </motion.button>
@@ -1195,21 +1305,20 @@ export default function GroupOverview() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.25 }}
                   >
-                    <label className="flex items-center gap-1.5 text-sm font-medium text-gray-300 mb-2">
+                    <label className="mb-2 flex items-center gap-1.5 text-sm font-medium text-[#dce8ff]">
                       <Link2 size={14} />
                       Invite Link
                     </label>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 px-4 py-3 bg-[#0f0f0f] border border-gray-800 rounded-lg text-gray-300 text-sm font-mono truncate">
-                        {inviteData?.inviteLink ||
-                          "Generate or regenerate an invite link to see it here."}
+                      <div className="flex-1 rounded-lg border border-[#2a4372] bg-[#1a2e59] px-4 py-3 text-sm text-[#d9e7ff] break-all">
+                        {activeInviteLink || "No active invite link yet."}
                       </div>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={handleCopyInvite}
-                        disabled={!inviteData?.inviteLink}
-                        className="shrink-0 px-4 py-3 bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg font-medium transition-all shadow-lg shadow-cyan-900/30 cursor-pointer flex items-center gap-2"
+                        disabled={!activeInviteLink}
+                        className="shrink-0 flex cursor-pointer items-center gap-2 rounded-lg bg-[#00CDFF] px-4 py-3 font-medium text-[#043056] shadow-[0_10px_25px_rgba(0,205,255,0.25)] transition hover:bg-[#35dcff] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <AnimatePresence mode="wait">
                           {copied ? (
@@ -1221,7 +1330,7 @@ export default function GroupOverview() {
                               className="flex items-center gap-1.5"
                             >
                               <Check size={16} />
-                              <span className="hidden sm:inline text-sm">
+                              <span className="hidden text-sm sm:inline">
                                 Copied!
                               </span>
                             </motion.div>
@@ -1234,7 +1343,7 @@ export default function GroupOverview() {
                               className="flex items-center gap-1.5"
                             >
                               <Copy size={16} />
-                              <span className="hidden sm:inline text-sm">
+                              <span className="hidden text-sm sm:inline">
                                 Copy
                               </span>
                             </motion.div>
@@ -1248,21 +1357,21 @@ export default function GroupOverview() {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="flex items-start gap-3 p-4 bg-amber-600/10 border border-amber-600/30 rounded-lg"
+                    className="flex items-start gap-3 rounded-lg border border-[#5f2c44] bg-[#3f2032]/45 p-4"
                   >
                     <Clock
                       size={18}
-                      className="text-amber-400 mt-0.5 shrink-0"
+                      className="mt-0.5 shrink-0 text-[#ff7f9e]"
                     />
                     <div>
-                      <p className="text-sm font-semibold text-amber-400">
-                        {inviteData?.inviteTokenExpiresAt
-                          ? formatExpiryTime(inviteData.inviteTokenExpiresAt)
+                      <p className="text-sm font-semibold text-[#ff8eaa]">
+                        {activeInviteExpiry
+                          ? formatExpiryTime(activeInviteExpiry)
                           : "No active invite yet"}
                       </p>
-                      <p className="text-xs text-amber-300/70 mt-0.5">
-                        {inviteData?.inviteTokenExpiresAt
-                          ? `Expires on ${new Date(inviteData.inviteTokenExpiresAt).toLocaleString()}`
+                      <p className="mt-0.5 text-xs text-[#f7acc0]">
+                        {activeInviteExpiry
+                          ? `Expires on ${new Date(activeInviteExpiry).toLocaleString()}`
                           : "Generate an invite to set an expiry"}
                       </p>
                     </div>
@@ -1272,9 +1381,9 @@ export default function GroupOverview() {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.35 }}
-                    className="p-4 bg-blue-600/10 border border-blue-600/30 rounded-lg"
+                    className="rounded-lg border border-[#234274] bg-[#0c1c42] p-4"
                   >
-                    <p className="text-sm text-blue-300">
+                    <p className="text-sm text-[#8ea6d2]">
                       <strong>💡 Note:</strong> The old invite link is now
                       invalid. Share this new link with anyone you want to
                       invite.
@@ -1286,13 +1395,13 @@ export default function GroupOverview() {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 }}
-                  className="p-6 border-t border-gray-800"
+                  className="border-t border-[#1b376a] p-6"
                 >
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setInviteData(null)}
-                    className="w-full px-4 py-2.5 bg-linear-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-blue-900/30 cursor-pointer"
+                    onClick={closeInviteModal}
+                    className="w-full cursor-pointer rounded-lg bg-[#00CDFF] px-4 py-2.5 text-sm font-medium text-[#043056] shadow-[0_10px_25px_rgba(0,205,255,0.25)] transition hover:bg-[#35dcff]"
                   >
                     Done
                   </motion.button>
