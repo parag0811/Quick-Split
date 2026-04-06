@@ -1,6 +1,9 @@
-import Expense from "../models/expense";
-import Settlement from "../models/settlement";
-import Group from "../models/group";
+import Expense from "../models/expense.js";
+import Settlement from "../models/settlement.js";
+import Group from "../models/group.js";
+import { s3 } from "../config/s3.js";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 const getGroupBalances = async (req, res, next) => {
   try {
@@ -50,7 +53,7 @@ const getGroupBalances = async (req, res, next) => {
     let balance = {};
 
     members.forEach((m) => {
-      balance[m.user.toString()] = 0;
+      balance[m._id.toString()] = 0;
     });
 
     expenses.forEach((expense) => {

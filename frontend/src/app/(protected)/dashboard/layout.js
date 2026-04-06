@@ -19,6 +19,7 @@ export default function DashboardLayout({ children }) {
 
   const getPageTitle = () => {
     if (pathName.includes("/expense")) return "Expense";
+    if (pathName.includes("/balance")) return "Balance";
     if (pathName.includes("/settlement")) return "Settlement";
     if (pathName.startsWith("/dashboard/groups")) return "Groups";
     if (pathName === "/dashboard") return null;

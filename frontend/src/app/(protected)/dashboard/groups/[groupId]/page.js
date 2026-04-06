@@ -4,6 +4,7 @@ import {
   Receipt,
   ArrowRightLeft,
   BarChart3,
+  Scale,
   TrendingUp,
   TrendingDown,
   CheckCircle2,
@@ -905,7 +906,7 @@ export default function GroupOverview() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 1.1 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+            className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4"
           >
             <motion.button
               whileHover={{ scale: 1.05, y: -5 }}
@@ -965,6 +966,35 @@ export default function GroupOverview() {
                 Settlement
               </h3>
               <p className="text-sm text-[#8ea4cd]">See who paid whom</p>
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.05, y: -5 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => router.push(`/dashboard/groups/${group.id}/balance`)}
+              className="bg-linear-to-br from-[#06173f] to-[#081a43] border border-[#17345f] rounded-xl p-6 hover:border-[#00CDFF]/30 hover:bg-[#0a1c42] transition-all duration-200 text-left group cursor-pointer"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <motion.div
+                  whileHover={{ scale: 1.2, rotate: 10 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  className="w-12 h-12 bg-[#22D3EE]/12 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
+                >
+                  <Scale size={24} className="text-[#22D3EE]" />
+                </motion.div>
+                <motion.div
+                  initial={{ x: -10, opacity: 0 }}
+                  whileHover={{ x: 0, opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-cyan-300"
+                >
+                  →
+                </motion.div>
+              </div>
+              <h3 className="text-lg font-semibold text-[#dce8ff] mb-1 group-hover:text-[#22D3EE] transition-colors">
+                Balance
+              </h3>
+              <p className="text-sm text-[#8ea4cd]">Optimize who pays whom</p>
             </motion.button>
 
             <motion.button

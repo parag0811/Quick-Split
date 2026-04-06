@@ -12,6 +12,7 @@ import auth_route from "./routes/auth-route.js";
 import group_route from "./routes/group-route.js";
 import expense_route from "./routes/expense-route.js";
 import settlement_route from "./routes/settlement-route.js";
+import balance_route from "./routes/balance-route.js";
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use(auth_route);
 app.use(group_route);
 app.use(expense_route);
 app.use(settlement_route);
+app.use(balance_route);
 
 app.use((error, req, res, next) => {
   const status = error.statusCode || 500;
