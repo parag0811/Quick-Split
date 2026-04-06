@@ -6,7 +6,6 @@ import {
   Search,
   SlidersHorizontal,
   BadgeCheck,
-  CheckCircle2,
   Clock3,
   Receipt,
   Pencil,
@@ -40,7 +39,6 @@ export default function ExpensePage() {
   const refreshKey = useSelector((state) => state.group.refreshKey);
 
   const [deletingId, setDeletingId] = useState(null);
-  const [markingPaidId, setMarkingPaidId] = useState(null);
   const [deleteError, setDeleteError] = useState("");
   const [deleteErrorId, setDeleteErrorId] = useState(null);
   const [fetchError, setFetchError] = useState("");
@@ -99,21 +97,6 @@ export default function ExpensePage() {
       toastError(error.message || "Failed to delete expense.");
     } finally {
       setDeletingId(null);
-    }
-  };
-
-  const handleMarkAsPaid = async (expenseId) => {
-    try {
-      setMarkingPaidId(expenseId);
-      await apiFetch(`/group/${groupId}/expenses/${expenseId}/mark-paid`, {
-        method: "PUT",
-      });
-      toastSuccess("Marked as paid.");
-      await fetchExpenses();
-    } catch (error) {
-      toastError(error?.message || "Failed to mark as paid.");
-    } finally {
-      setMarkingPaidId(null);
     }
   };
 
@@ -462,18 +445,6 @@ export default function ExpensePage() {
                                 {deletingId === expense._id ? "Deleting" : "Delete"}
                               </button>
 
-                              <button
-                                onClick={() => handleMarkAsPaid(expense._id)}
-                                disabled={isPaid || markingPaidId === expense._id}
-                                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-[#00CDFF] px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-[#03203f] transition hover:bg-[#35dcff] disabled:cursor-not-allowed disabled:bg-[#21477a] disabled:text-[#9eb2d7]"
-                              >
-                                {markingPaidId === expense._id ? (
-                                  <Loader2 size={13} className="animate-spin" />
-                                ) : (
-                                  <CheckCircle2 size={13} />
-                                )}
-                                {isPaid ? "Already Paid" : "Mark as Paid"}
-                              </button>
                             </div>
                           </div>
                         </motion.div>
