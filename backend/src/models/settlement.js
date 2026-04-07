@@ -53,6 +53,16 @@ const settlementSchema = new mongoose.Schema(
       type: String,
     },
 
+    isCompleted: {
+      type: Boolean,
+      default: false,
+    },
+
+    markedPaidAt: {
+      type: Date,
+      default: null,
+    },
+
     isDeleted: {
       type: Boolean,
       default: false,
