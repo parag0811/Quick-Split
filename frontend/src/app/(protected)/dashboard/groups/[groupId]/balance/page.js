@@ -24,6 +24,19 @@ import { triggerRefresh } from "../../../../../../../store/groupSlice";
 
 const PAYMENT_METHODS = ["UPI", "Cash", "Bank Transfer", "Card", "Other"];
 
+const getRiskStyles = (riskLevel) => {
+  switch ((riskLevel || "").toLowerCase()) {
+    case "high":
+      return "border-red-400/35 bg-red-500/10 text-red-200";
+    case "medium":
+      return "border-amber-400/35 bg-amber-500/10 text-amber-100";
+    case "low":
+      return "border-emerald-400/35 bg-emerald-500/10 text-emerald-100";
+    default:
+      return "border-slate-500/35 bg-slate-500/10 text-slate-200";
+  }
+};
+
 export default function GroupBalancePage() {
   const { groupId } = useParams();
   const router = useRouter();
@@ -458,6 +471,23 @@ export default function GroupBalancePage() {
                           />
                           ₹{Number(suggestion.amount || 0).toFixed(2)}
                         </div>
+                        {suggestion?.risk && (
+                          <div
+                            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] ${getRiskStyles(
+                              suggestion.risk.risk_level,
+                            )}`}
+                          >
+                            <span>
+                              Risk: {suggestion.risk.risk_level || "Low"}
+                            </span>
+                            <span className="text-[10px] normal-case tracking-normal opacity-80">
+                              {Math.round(
+                                Number(suggestion.risk.delay_probability || 0) *
+                                  100,
+                              )}% delay probability
+                            </span>
+                          </div>
+                        )}
                         <button
                           onClick={() => openSettleModal(suggestion)}
                           className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#00CDFF] px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-[#03203f] transition hover:bg-[#35dcff]"
@@ -551,6 +581,26 @@ export default function GroupBalancePage() {
                     </span>
                   </div>
                 </div>
+
+                {selectedSuggestion?.risk && (
+                  <div
+                    className={`rounded-lg border px-3 py-2 text-sm font-medium ${getRiskStyles(
+                      selectedSuggestion.risk.risk_level,
+                    )}`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span>
+                        Settlement Risk: {selectedSuggestion.risk.risk_level || "Low"}
+                      </span>
+                      <span className="text-xs normal-case tracking-normal opacity-80">
+                        {Math.round(
+                          Number(selectedSuggestion.risk.delay_probability || 0) *
+                            100,
+                        )}% probability
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-[#7f99c7]">

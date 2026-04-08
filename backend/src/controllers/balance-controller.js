@@ -4,6 +4,7 @@ import Group from "../models/group.js";
 import { s3 } from "../config/s3.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { predictSettlementRisk } from "../services/ml/settlementRiskService.js";
 
 const getGroupBalances = async (req, res, next) => {
   try {
@@ -121,11 +122,14 @@ const getGroupBalances = async (req, res, next) => {
       memberMap[m._id.toString()] = m;
     });
 
-    const formattedSuggestions = suggestions.map((s) => ({
-      from: memberMap[s.from],
-      to: memberMap[s.to],
-      amount: s.amount,
-    }));
+    const formattedSuggestions = await Promise.all(
+      suggestions.map(async (s) => ({
+        from: memberMap[s.from],
+        to: memberMap[s.to],
+        amount: s.amount,
+        risk: await predictSettlementRisk(s.from, s.amount),
+      })),
+    );
 
     return res.status(200).json({
       message: "Group balances calculated successfully",

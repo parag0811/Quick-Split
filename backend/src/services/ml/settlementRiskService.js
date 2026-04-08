@@ -5,7 +5,7 @@ export const predictSettlementRisk = async (userId, currentAmount) => {
 
   const settlements = await Settlement.find({
     from: userId,
-    isSettled: true,
+    isDeleted: false,
   }).sort({ createdAt: -1 });
 
   if (settlements.length <= 5) {
