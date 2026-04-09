@@ -9,7 +9,7 @@ import updateGroupActivity from "../helper/group-activity.js";
 import { s3 } from "../config/s3.js";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
-import mongoose from "mongoose";
+import { generateAIInsights } from "../features/ai/ai-insights-service.js";
 
 const createGroup = async (req, res, next) => {
   try {
@@ -446,12 +446,12 @@ const removeMember = async (req, res, next) => {
   }
 };
 
-const groupAnalytics = async (req, res, next) => {
+export const groupAnalytics = async (req, res, next) => {
   try {
     const group = req.group;
-
     const objectGroupId = group._id;
 
+    //  OVERVIEW
     const overviewAgg = await Expense.aggregate([
       { $match: { group: objectGroupId, isDeleted: false } },
       {
@@ -472,13 +472,14 @@ const groupAnalytics = async (req, res, next) => {
       maxExpense: 0,
     };
 
-    const memberContribution = await Expense.aggregate([
+    // OWED
+    const memberStats = await Expense.aggregate([
       { $match: { group: objectGroupId, isDeleted: false } },
+      { $unwind: "$splits" },
       {
         $group: {
-          _id: "$paidBy",
-          totalPaid: { $sum: "$totalAmount" },
-          count: { $sum: 1 },
+          _id: "$splits.user",
+          totalOwed: { $sum: "$splits.amount" },
         },
       },
       {
@@ -495,13 +496,40 @@ const groupAnalytics = async (req, res, next) => {
           _id: 0,
           userId: "$user._id",
           name: "$user.name",
-          totalPaid: 1,
-          count: 1,
+          totalOwed: { $round: ["$totalOwed", 2] },
         },
       },
-      { $sort: { totalPaid: -1 } },
     ]);
 
+    // PAID
+    const paidAgg = await Expense.aggregate([
+      { $match: { group: objectGroupId, isDeleted: false } },
+      {
+        $group: {
+          _id: "$paidBy",
+          totalPaid: { $sum: "$totalAmount" },
+        },
+      },
+    ]);
+
+    const paidMap = {};
+    paidAgg.forEach((p) => {
+      paidMap[p._id.toString()] = p.totalPaid;
+    });
+
+    // MERGE
+    const finalMemberStats = memberStats.map((m) => {
+      const paid = paidMap[m.userId.toString()] || 0;
+      const netBalance = paid - m.totalOwed;
+
+      return {
+        ...m,
+        totalPaid: Number(paid.toFixed(2)),
+        netBalance: Number(netBalance.toFixed(2)),
+      };
+    });
+
+    // CATEGORY
     const categoryBreakdown = await Expense.aggregate([
       { $match: { group: objectGroupId, isDeleted: false } },
       {
@@ -522,8 +550,9 @@ const groupAnalytics = async (req, res, next) => {
       { $sort: { total: -1 } },
     ]);
 
+    // TREND
     const dailyTrend = await Expense.aggregate([
-      { $match: { group: objectGroupId, isDeleted : false } },
+      { $match: { group: objectGroupId, isDeleted: false } },
       {
         $group: {
           _id: {
@@ -532,16 +561,9 @@ const groupAnalytics = async (req, res, next) => {
             day: { $dayOfMonth: "$createdAt" },
           },
           total: { $sum: "$totalAmount" },
-          count: { $sum: 1 },
         },
       },
-      {
-        $sort: {
-          "_id.year": 1,
-          "_id.month": 1,
-          "_id.day": 1,
-        },
-      },
+      { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } },
       {
         $project: {
           _id: 0,
@@ -558,10 +580,33 @@ const groupAnalytics = async (req, res, next) => {
             },
           },
           total: { $round: ["$total", 2] },
-          count: 1,
         },
       },
     ]);
+
+    // AI INPUT
+    const aiInput = {
+      groupName: group.name,
+      totalExpenses: overview.expenseCount,
+      totalAmount: overview.totalSpent,
+      members: finalMemberStats.map((m) => ({
+        name: m.name,
+        paid: m.totalPaid,
+        owed: m.totalOwed,
+        net: m.netBalance,
+      })),
+    };
+
+    // AI CALL
+    let aiInsights = "Not enough data for insights";
+
+    if (finalMemberStats.length >= 2 && overview.expenseCount > 0) {
+      try {
+        aiInsights = await generateAIInsights(aiInput);
+      } catch (err) {
+        console.log("AI failed, fallback used");
+      }
+    }
 
     return res.status(200).json({
       message: "Group analytics fetched successfully.",
@@ -575,9 +620,10 @@ const groupAnalytics = async (req, res, next) => {
         avgExpense: Number((overview.avgExpense || 0).toFixed(2)),
         maxExpense: Number((overview.maxExpense || 0).toFixed(2)),
       },
-      memberContribution,
+      memberStats: finalMemberStats,
       categoryBreakdown,
       dailyTrend,
+      aiInsights,
     });
   } catch (error) {
     console.log("Error in group analytics: ", error);

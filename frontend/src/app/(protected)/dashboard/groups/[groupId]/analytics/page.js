@@ -1,44 +1,40 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useParams, useRouter } from "next/navigation";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   CartesianGrid,
-  Legend,
+  XAxis,
+  YAxis,
+  Tooltip,
 } from "recharts";
 import { motion } from "framer-motion";
 import {
-  BarChart3,
-  TrendingUp,
-  Receipt,
-  DollarSign,
   ArrowLeft,
-  AlertCircle,
   RotateCcw,
+  AlertCircle,
+  DollarSign,
+  TrendingUp,
   PieChart as PieChartIcon,
-  Activity,
+  Sparkles,
+  ChartNoAxesCombined,
 } from "lucide-react";
 import GroupSocketListener from "@/components/socket/GroupSocketListener";
 import { useSelector } from "react-redux";
 
 const CATEGORY_COLORS = {
-  food: "#f97316",
-  travel: "#3b82f6",
-  rent: "#8b5cf6",
-  shopping: "#ec4899",
-  other: "#6b7280",
+  food: "#ff7b00",
+  travel: "#38bdf8",
+  rent: "#a855f7",
+  shopping: "#f472b6",
+  other: "#64748b",
 };
 
 const CATEGORY_LABELS = {
@@ -49,44 +45,107 @@ const CATEGORY_LABELS = {
   other: "Other",
 };
 
-const BAR_COLORS = ["#06b6d4", "#8b5cf6", "#f97316", "#ec4899", "#10b981", "#eab308", "#ef4444", "#3b82f6"];
+const numberFormatter = new Intl.NumberFormat("en-IN", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+const currency = (value) => `₹${numberFormatter.format(Number(value || 0))}`;
+
+const parseAIInsights = (insights) => {
+  if (!insights) return [];
+
+  return insights
+    .split(/\n+/)
+    .map((line) => line.trim().replace(/^[-•]\s*/, "").replace(/\*+/g, ""))
+    .filter(Boolean)
+    .map((line) => {
+      const cleaned = line.replace(/^Insight:\s*/i, "").replace(/\*+/g, "");
+      const match = cleaned.match(/^([^:]+):\s*(.*)$/);
+
+      if (!match) {
+        return { label: "Insight", value: cleaned };
+      }
+
+      return {
+        label: match[1].trim(),
+        value: match[2].trim(),
+      };
+    });
+};
 
 const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 shadow-xl">
-        <p className="text-sm font-medium text-white mb-1">{label}</p>
-        {payload.map((entry, index) => (
-          <p key={index} className="text-sm" style={{ color: entry.color || "#06b6d4" }}>
-            {entry.name}: ₹{Number(entry.value).toFixed(2)}
-          </p>
-        ))}
-      </div>
-    );
-  }
-  return null;
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#07111f] px-4 py-3 shadow-2xl shadow-black/30">
+      <p className="mb-1 text-sm font-medium text-white">{label}</p>
+      {payload.map((entry, index) => (
+        <p key={index} className="text-sm" style={{ color: entry.color || "#ff7b00" }}>
+          {entry.name}: {currency(entry.value)}
+        </p>
+      ))}
+    </div>
+  );
 };
 
 const PieTooltip = ({ active, payload }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 shadow-xl">
-        <p className="text-sm font-medium text-white">{payload[0].name}</p>
-        <p className="text-sm text-cyan-400">₹{Number(payload[0].value).toFixed(2)}</p>
-        <p className="text-xs text-gray-400">{payload[0].payload.count} expense{payload[0].payload.count !== 1 ? "s" : ""}</p>
-      </div>
-    );
-  }
-  return null;
+  if (!active || !payload?.length) return null;
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#07111f] px-4 py-3 shadow-2xl shadow-black/30">
+      <p className="text-sm font-medium text-white">{payload[0].name}</p>
+      <p className="text-sm text-[#ffb36b]">{currency(payload[0].value)}</p>
+      <p className="text-xs text-slate-400">
+        {payload[0].payload.count} expense{payload[0].payload.count !== 1 ? "s" : ""}
+      </p>
+    </div>
+  );
 };
+
+function MetricCard({ label, value, hint, icon: Icon }) {
+  return (
+    <div className="rounded-2xl border border-[#173b70] bg-[#081b45] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.25)] transition hover:border-[#3f629e]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-[#6f88b7]">{label}</p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">{value}</h3>
+          <p className="mt-1 text-sm text-[#8fa6d2]">{hint}</p>
+        </div>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0b2a5f] text-[#7fe9ff] ring-1 ring-[#244a80]">
+          <Icon size={18} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CardShell({ title, subtitle, icon: Icon, children, className = "" }) {
+  return (
+    <section className={`rounded-2xl border border-[#1a3c72] bg-[#06173f]/88 p-5 shadow-[0_18px_40px_rgba(0,0,0,0.25)] ${className}`}>
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0b2a5f] text-[#7fe9ff] ring-1 ring-[#244a80]">
+          <Icon size={18} />
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-white">{title}</h3>
+          <p className="text-xs text-slate-400">{subtitle}</p>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
 
 export default function GroupAnalyticsPage() {
   const { groupId } = useParams();
   const router = useRouter();
+  const refreshKey = useSelector((state) => state.group.refreshKey);
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
-  const refreshKey = useSelector((state) => state.group.refreshKey);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchAnalytics = useCallback(async () => {
     try {
@@ -106,26 +165,61 @@ export default function GroupAnalyticsPage() {
     if (groupId) fetchAnalytics();
   }, [groupId, fetchAnalytics, refreshKey]);
 
+  const regenerateInsights = async () => {
+    try {
+      setRefreshing(true);
+      await fetchAnalytics();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const overview = data?.overview;
+  const memberStats = data?.memberStats || [];
+  const categoryBreakdown = data?.categoryBreakdown || [];
+  const dailyTrend = data?.dailyTrend || [];
+  const aiInsights = data?.aiInsights || "";
+
+  const hasData = Boolean(
+    overview || memberStats.length || categoryBreakdown.length || dailyTrend.length || aiInsights,
+  );
+
+  const totalSpent = Number(overview?.totalSpent || 0);
+  const expenseCount = Number(overview?.expenseCount || 0);
+  const avgExpense = Number(overview?.avgExpense || 0);
+  const maxExpense = Number(overview?.maxExpense || 0);
+
+  const lineData = dailyTrend.map((item) => ({
+    date: item.date,
+    total: Number(item.total || 0),
+  }));
+
+  const pieData = categoryBreakdown.map((item) => ({
+    name: CATEGORY_LABELS[item.category] || item.category,
+    value: Number(item.total || 0),
+    count: item.count || 0,
+    color: CATEGORY_COLORS[item.category] || "#64748b",
+  }));
+
+  const maxNetBalance = useMemo(() => {
+    return Math.max(...memberStats.map((item) => Math.abs(Number(item.netBalance) || 0)), 1);
+  }, [memberStats]);
+
   if (loading) {
     return (
-      <div className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8">
-        <div className="max-w-5xl mx-auto space-y-6 animate-pulse">
-          <div className="flex items-start gap-4 mb-8">
-            <div className="w-10 h-10 bg-gray-800 rounded-lg flex-shrink-0" />
-            <div className="flex-1 space-y-3 pt-1">
-              <div className="h-7 bg-gray-800 rounded w-48" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 h-32" />
+      <div className="min-h-screen bg-[radial-gradient(circle_at_18%_0%,#0e2f75_0%,#081d4f_45%,#030b1d_100%)] px-4 py-5 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl space-y-6 animate-pulse">
+          <div className="h-28 rounded-2xl border border-[#173b70] bg-[#081b45]" />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item} className="h-28 rounded-2xl border border-[#173b70] bg-[#081b45]" />
             ))}
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-[#1a1a1a] border border-gray-800 rounded-xl p-6 h-80" />
-            ))}
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <div className="h-80 rounded-2xl border border-[#173b70] bg-[#081b45]" />
+            <div className="h-80 rounded-2xl border border-[#173b70] bg-[#081b45]" />
           </div>
+          <div className="h-72 rounded-2xl border border-[#173b70] bg-[#081b45]" />
         </div>
       </div>
     );
@@ -133,333 +227,267 @@ export default function GroupAnalyticsPage() {
 
   if (fetchError) {
     return (
-      <div className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8">
-        <div className="max-w-5xl mx-auto flex flex-col items-center justify-center py-28 px-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.35 }}
-            className="flex flex-col items-center text-center"
-          >
-            <div className="w-20 h-20 bg-red-500/10 rounded-2xl border border-red-500/20 flex items-center justify-center mb-6">
-              <AlertCircle className="w-9 h-9 text-red-400" />
+      <div className="min-h-screen bg-[radial-gradient(circle_at_18%_0%,#0e2f75_0%,#081d4f_45%,#030b1d_100%)] px-4 py-5 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-center py-28 text-center">
+          <div className="max-w-md rounded-2xl border border-[#1a3c72] bg-[#06173f]/88 p-8">
+            <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10">
+              <AlertCircle className="h-9 w-9 text-red-400" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Couldn&apos;t load analytics</h2>
-            <p className="text-gray-400 text-sm text-center max-w-sm mb-8">{fetchError}</p>
-            <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-white">Couldn&apos;t load analytics</h2>
+            <p className="mt-2 text-sm text-slate-400">{fetchError}</p>
+            <div className="mt-8 flex items-center justify-center gap-3">
               <button
                 onClick={fetchAnalytics}
-                className="flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 shadow-lg shadow-cyan-500/20 text-sm"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#ff7b00] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#ff8a1f]"
               >
-                <RotateCcw className="w-4 h-4" />
-                <span>Retry</span>
+                <RotateCcw className="h-4 w-4" />
+                Retry
               </button>
               <button
                 onClick={() => router.push(`/dashboard/groups/${groupId}`)}
-                className="flex items-center space-x-2 bg-[#1a1a1a] border border-gray-700 text-gray-300 px-6 py-2.5 rounded-lg font-semibold hover:bg-gray-800 hover:border-gray-600 hover:text-white transition-all duration-200 text-sm"
+                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/3 px-5 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-white/20 hover:text-white"
               >
                 Back to Group
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     );
   }
 
-  const { overview, memberContribution, categoryBreakdown, dailyTrend } = data;
-
-  const pieData = (categoryBreakdown || []).map((item) => ({
-    name: CATEGORY_LABELS[item.category] || item.category,
-    value: item.total,
-    count: item.count,
-    color: CATEGORY_COLORS[item.category] || "#6b7280",
-  }));
+  if (!hasData) {
+    return (
+      <div className="min-h-screen bg-[radial-gradient(circle_at_18%_0%,#0e2f75_0%,#081d4f_45%,#030b1d_100%)] px-4 py-5 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-center py-28 text-center">
+          <div className="max-w-md rounded-2xl border border-[#1a3c72] bg-[#06173f]/88 p-8">
+            <p className="text-lg font-semibold text-white">No data available</p>
+            <p className="mt-2 text-sm text-slate-400">Add some expenses to populate the analytics dashboard.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
-    <GroupSocketListener groupId={groupId} />
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8"
-    >
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-8"
-        >
-          <div className="flex items-center gap-4">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => router.push(`/dashboard/groups/${groupId}`)}
-              className="w-10 h-10 bg-[#1a1a1a] border border-gray-800 rounded-lg flex items-center justify-center hover:border-gray-600 transition-colors cursor-pointer"
-            >
-              <ArrowLeft size={18} className="text-gray-400" />
-            </motion.button>
-            <div>
-              <h1 className="text-2xl font-bold text-white">
-                {data.group.name} — Analytics
-              </h1>
-              <p className="text-sm text-gray-400 mt-1">Spending insights & breakdown</p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Overview Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[
-            {
-              label: "Total Spent",
-              value: `₹${overview.totalSpent.toFixed(2)}`,
-              icon: DollarSign,
-              color: "purple",
-              delay: 0.2,
-            },
-            {
-              label: "Expenses",
-              value: overview.expenseCount,
-              icon: Receipt,
-              color: "cyan",
-              delay: 0.3,
-            },
-            {
-              label: "Average",
-              value: `₹${overview.avgExpense.toFixed(2)}`,
-              icon: TrendingUp,
-              color: "emerald",
-              delay: 0.4,
-            },
-            {
-              label: "Highest",
-              value: `₹${overview.maxExpense.toFixed(2)}`,
-              icon: Activity,
-              color: "amber",
-              delay: 0.5,
-            },
-          ].map((stat) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: stat.delay }}
-              whileHover={{ scale: 1.03, y: -5 }}
-              className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-gray-800 rounded-xl p-5 hover:border-gray-700 transition-all"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-sm font-medium text-gray-400">{stat.label}</div>
-                <motion.div
-                  whileHover={{ rotate: 360, scale: 1.2 }}
-                  transition={{ duration: 0.5 }}
-                  className={`w-9 h-9 bg-${stat.color}-600/20 rounded-lg flex items-center justify-center`}
+      <GroupSocketListener groupId={groupId} />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="min-h-screen bg-[radial-gradient(circle_at_18%_0%,#0e2f75_0%,#081d4f_45%,#030b1d_100%)] px-4 py-5 text-white sm:px-6 lg:px-8"
+      >
+        <div className="mx-auto max-w-6xl space-y-6">
+          <motion.header
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            className="rounded-2xl border border-[#1a3c72] bg-[#06173f]/88 p-5 shadow-[0_18px_40px_rgba(0,0,0,0.25)] backdrop-blur"
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-4">
+                <button
+                  onClick={() => router.push(`/dashboard/groups/${groupId}`)}
+                  className="mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#244a80] bg-[#0b2a5f] text-slate-300 transition hover:border-[#3f629e] hover:text-white"
                 >
-                  <stat.icon size={18} className={`text-${stat.color}-400`} />
-                </motion.div>
-              </div>
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: stat.delay + 0.1, type: "spring", stiffness: 200 }}
-                className="text-2xl font-bold text-white"
-              >
-                {stat.value}
-              </motion.div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Member Contributions Bar Chart */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <motion.div
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center"
-              >
-                <BarChart3 size={20} className="text-cyan-400" />
-              </motion.div>
-              <div>
-                <h3 className="text-sm font-semibold text-white">Member Contributions</h3>
-                <p className="text-xs text-gray-400">Amount paid by each member</p>
-              </div>
-            </div>
-
-            {memberContribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={memberContribution} barSize={40}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    stroke="#555"
-                    tick={{ fill: "#9ca3af", fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    stroke="#555"
-                    tick={{ fill: "#9ca3af", fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => `₹${v}`}
-                  />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(6, 182, 212, 0.08)" }} />
-                  <Bar dataKey="totalPaid" name="Total Paid" radius={[6, 6, 0, 0]}>
-                    {memberContribution.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[280px] flex items-center justify-center text-gray-500 text-sm">
-                No expense data yet
-              </div>
-            )}
-          </motion.div>
-
-          {/* Category Breakdown Pie Chart */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
-            className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <motion.div
-                whileHover={{ scale: 1.1, rotate: 5 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                className="w-10 h-10 bg-purple-600/20 rounded-lg flex items-center justify-center"
-              >
-                <PieChartIcon size={20} className="text-purple-400" />
-              </motion.div>
-              <div>
-                <h3 className="text-sm font-semibold text-white">Category Breakdown</h3>
-                <p className="text-xs text-gray-400">Spending distribution by category</p>
-              </div>
-            </div>
-
-            {pieData.length > 0 ? (
-              <div className="flex flex-col items-center">
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={90}
-                      paddingAngle={3}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<PieTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="flex flex-wrap justify-center gap-3 mt-2">
-                  {pieData.map((entry, index) => (
-                    <div key={index} className="flex items-center gap-1.5">
-                      <div
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: entry.color }}
-                      />
-                      <span className="text-xs text-gray-400">
-                        {entry.name} (₹{entry.value.toFixed(0)})
-                      </span>
-                    </div>
-                  ))}
+                  <ArrowLeft size={18} />
+                </button>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.28em] text-[#79a0d8]">Financial Intelligence</p>
+                  <h1 className="mt-1 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                    Spending Pulse
+                  </h1>
+                  <p className="mt-2 text-sm text-slate-400">Group financial insights</p>
                 </div>
               </div>
-            ) : (
-              <div className="h-[280px] flex items-center justify-center text-gray-500 text-sm">
-                No expense data yet
-              </div>
-            )}
-          </motion.div>
-        </div>
 
-        {/* Daily Spending Trend - Full Width */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.8 }}
-          className="bg-gradient-to-br from-[#1a1a1a] to-[#151515] border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition-all"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <motion.div
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              transition={{ type: "spring", stiffness: 300 }}
-              className="w-10 h-10 bg-emerald-600/20 rounded-lg flex items-center justify-center"
-            >
-              <TrendingUp size={20} className="text-emerald-400" />
-            </motion.div>
-            <div>
-              <h3 className="text-sm font-semibold text-white">Daily Spending Trend</h3>
-              <p className="text-xs text-gray-400">How spending flows over time</p>
+              <div className="min-w-52 lg:min-w-80">
+                <MetricCard
+                  label="Total Volume"
+                  value={currency(totalSpent)}
+                  hint={`${expenseCount} expenses recorded`}
+                  icon={DollarSign}
+                />
+              </div>
             </div>
+          </motion.header>
+
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_0.9fr]">
+            <CardShell title="Daily Velocity" subtitle="Transaction peaks over the last 30 days" icon={TrendingUp}>
+              {lineData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={320}>
+                  <LineChart data={lineData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                    <CartesianGrid stroke="rgba(123,225,255,0.08)" strokeDasharray="4 4" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#70809a"
+                      tick={{ fill: "#94a3b8", fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      stroke="#70809a"
+                      tick={{ fill: "#94a3b8", fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => `₹${value}`}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="total"
+                      name="Total Spent"
+                      stroke="#7be1ff"
+                      strokeWidth={3}
+                      dot={{ r: 4, fill: "#7be1ff", stroke: "#040815", strokeWidth: 2 }}
+                      activeDot={{ r: 7, fill: "#d9fbff", stroke: "#040815", strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-80 items-center justify-center rounded-xl border border-dashed border-[#173152] text-sm text-slate-500">
+                  No data available
+                </div>
+              )}
+            </CardShell>
+
+            <CardShell title="Allocation" subtitle="Expenditure by category" icon={PieChartIcon}>
+              {pieData.length > 0 ? (
+                <div className="space-y-4">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={72}
+                        outerRadius={105}
+                        paddingAngle={2}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`category-cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<PieTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {pieData.map((entry) => {
+                      const percentage = totalSpent > 0 ? (entry.value / totalSpent) * 100 : 0;
+
+                      return (
+                        <div key={entry.name} className="rounded-xl border border-[#173152] bg-[#0b1426] px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.color }} />
+                            <p className="truncate text-sm text-slate-200">{entry.name}</p>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-400">{percentage.toFixed(1)}%</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex h-80 items-center justify-center rounded-xl border border-dashed border-[#173152] text-sm text-slate-500">
+                  No data available
+                </div>
+              )}
+            </CardShell>
           </div>
 
-          {dailyTrend.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={dailyTrend}>
-                <defs>
-                  <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  stroke="#555"
-                  tick={{ fill: "#9ca3af", fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  stroke="#555"
-                  tick={{ fill: "#9ca3af", fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `₹${v}`}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey="total"
-                  name="Total"
-                  stroke="#10b981"
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#colorTotal)"
-                  dot={{ fill: "#10b981", strokeWidth: 0, r: 4 }}
-                  activeDot={{ r: 6, fill: "#10b981", stroke: "#0f0f0f", strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-[300px] flex items-center justify-center text-gray-500 text-sm">
-              No expense data yet
+          <CardShell title="Consensus & Contributions" subtitle="Who is funding the ecosystem" icon={ChartNoAxesCombined}>
+            {memberStats.length > 0 ? (
+              <div className="space-y-4">
+                {memberStats.map((member) => {
+                  const netBalance = Number(member.netBalance || 0);
+                  const isPositive = netBalance >= 0;
+                  const width = Math.max((Math.abs(netBalance) / maxNetBalance) * 100, 8);
+
+                  return (
+                    <div key={member.userId} className="rounded-xl border border-[#173152] bg-[#0b1426] p-4 transition hover:border-[#2d5c88]">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-white">{member.name}</p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            Paid {currency(member.totalPaid)} · Owed {currency(member.totalOwed)}
+                          </p>
+                        </div>
+
+                        <div className={`text-sm font-semibold ${isPositive ? "text-emerald-400" : "text-red-400"}`}>
+                          {isPositive ? "+" : "-"}
+                          {currency(Math.abs(netBalance))}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/5">
+                        <div
+                          className={`h-full rounded-full ${isPositive ? "bg-emerald-400" : "bg-red-400"}`}
+                          style={{ width: `${width}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-[#173152] py-16 text-center text-sm text-slate-500">
+                No data available
+              </div>
+            )}
+          </CardShell>
+
+          <CardShell title="AI Insights" subtitle="Generated summary for the group" icon={Sparkles}>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-4">
+                <p className="text-sm text-slate-400">Insight summary</p>
+                <button
+                  type="button"
+                  onClick={regenerateInsights}
+                  disabled={refreshing}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#2a5b96] bg-[#0b2558] px-4 py-2 text-sm font-semibold text-[#9edfff] transition hover:border-[#3b75bc] hover:bg-[#10306d] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {refreshing ? (
+                    <span className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  ) : (
+                    <RotateCcw className="h-4 w-4" />
+                  )}
+                  Regenerate
+                </button>
+              </div>
+
+              <div className="rounded-2xl border border-[#173152] bg-[#0b1426] p-5">
+                {parseAIInsights(aiInsights).length > 0 ? (
+                  <div className="space-y-3">
+                    {parseAIInsights(aiInsights).map((item) => (
+                      <div key={`${item.label}-${item.value}`} className="rounded-xl border border-[#1b457d] bg-[#081a43] p-4">
+                        <p className="text-[10px] uppercase tracking-[0.22em] text-[#7be1ff]">{item.label}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-200">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm leading-6 text-slate-300">{aiInsights || "AI insights unavailable"}</p>
+                )}
+              </div>
             </div>
-          )}
-        </motion.div>
-      </div>
-    </motion.div>
+          </CardShell>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <MetricCard
+              label="Expenses"
+              value={expenseCount}
+              hint="Total transactions in the group"
+              icon={ChartNoAxesCombined}
+            />
+            <MetricCard label="Average" value={currency(avgExpense)} hint="Average expense amount" icon={TrendingUp} />
+            <MetricCard label="Highest" value={currency(maxExpense)} hint="Largest single expense" icon={DollarSign} />
+          </div>
+        </div>
+      </motion.div>
     </>
   );
 }
