@@ -20,7 +20,7 @@ function FieldError({ msg }) {
   if (!msg) return null;
   return (
     <p className="mt-1.5 flex items-center gap-1 text-xs text-[#ff9bb7]">
-      <AlertCircle size={11} className="flex-shrink-0" />
+      <AlertCircle size={11} className="shrink-0" />
       {msg}
     </p>
   );
@@ -41,8 +41,8 @@ function renderMemberAvatar(member, isSelected) {
     <div
       className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#17345f] text-sm font-bold text-white ${
         isSelected
-          ? "bg-gradient-to-br from-[#00CDFF] to-[#1d7eff]"
-          : "bg-gradient-to-br from-[#314a7a] to-[#1d355f]"
+          ? "bg-linear-to-br from-[#00CDFF] to-[#1d7eff]"
+          : "bg-linear-to-br from-[#314a7a] to-[#1d355f]"
       }`}
     >
       {member.name?.charAt(0)?.toUpperCase() || "?"}
@@ -56,6 +56,11 @@ export default function CreateExpenseForm() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [splits, setSplits] = useState({});
+  const [contextDescription, setContextDescription] = useState("");
+  const [aiReason, setAiReason] = useState("");
+  const [aiError, setAiError] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   const { groupId } = useParams();
   const router = useRouter();
@@ -100,44 +105,148 @@ export default function CreateExpenseForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const syncParticipantSplits = (participants) => {
+    const nextSplits = participants.reduce((acc, participant) => {
+      if (participant.value !== "" && participant.value !== null && !Number.isNaN(participant.value)) {
+        acc[participant.userId] = Number(participant.value);
+      }
+      return acc;
+    }, {});
+
+    setSplits(nextSplits);
+  };
+
+  const updateParticipants = (nextParticipants) => {
+    setFormData((prev) => ({
+      ...prev,
+      participants: nextParticipants,
+    }));
+    syncParticipantSplits(nextParticipants);
+  };
+
   const handleSplitTypeChange = (type) => {
+    const nextParticipants = formData.participants.map(({ userId }) => ({ userId, value: "" }));
+    setAiError("");
+    setAiReason("");
     setFormData((prev) => ({
       ...prev,
       splitType: type,
-      participants: prev.participants.map(({ userId }) => ({ userId, value: "" })),
+      participants: nextParticipants,
     }));
+    setSplits({});
   };
 
   const toggleParticipant = (userId) => {
-    setFormData((prev) => {
-      const exists = prev.participants.some((p) => p.userId === userId);
-      return {
-        ...prev,
-        participants: exists
-          ? prev.participants.filter((p) => p.userId !== userId)
-          : [...prev.participants, { userId, value: "" }],
-      };
-    });
+    const exists = formData.participants.some((participant) => participant.userId === userId);
+    const nextParticipants = exists
+      ? formData.participants.filter((participant) => participant.userId !== userId)
+      : [...formData.participants, { userId, value: "" }];
+
+    setAiError("");
+    updateParticipants(nextParticipants);
   };
 
   const handleParticipantValue = (userId, value) => {
     clearFieldError("split");
-    setFormData((prev) => ({
-      ...prev,
-      participants: prev.participants.map((p) =>
-        p.userId === userId ? { ...p, value: value === "" ? "" : Number(value) } : p,
-      ),
-    }));
+    const nextParticipants = formData.participants.map((participant) =>
+      participant.userId === userId ? { ...participant, value: value === "" ? "" : Number(value) } : participant,
+    );
+
+    updateParticipants(nextParticipants);
   };
 
-  const selectAllParticipants = () =>
-    setFormData((prev) => ({
-      ...prev,
-      participants: members.map((m) => ({ userId: m._id, value: "" })),
-    }));
+  const selectAllParticipants = () => {
+    const nextParticipants = members.map((member) => ({ userId: member._id, value: "" }));
+    updateParticipants(nextParticipants);
+  };
 
-  const clearAllParticipants = () =>
-    setFormData((prev) => ({ ...prev, participants: [] }));
+  const clearAllParticipants = () => {
+    updateParticipants([]);
+  };
+
+  const handleContextDescriptionChange = (e) => {
+    setContextDescription(e.target.value);
+    setAiError("");
+  };
+
+  const handleSuggestSplit = async () => {
+    setAiError("");
+    setAiReason("");
+
+    const amount = Number(formData.totalAmount);
+    if (!amount || amount <= 0) {
+      setAiError("Enter a valid amount before asking for a suggestion.");
+      return;
+    }
+
+    if (formData.participants.length < 2) {
+      setAiError("Select at least 2 participants to generate a split.");
+      return;
+    }
+
+    const payload = {
+      amount,
+      participants: formData.participants
+        .map((participant) => {
+          const member = members.find((item) => item._id === participant.userId);
+          if (!member) return null;
+
+          return {
+            userId: member._id,
+            name: member.name,
+          };
+        })
+        .filter(Boolean),
+      context: {
+        description: contextDescription.trim(),
+      },
+    };
+
+    if (payload.participants.length < 2) {
+      setAiError("Could not resolve the selected participants. Please try again.");
+      return;
+    }
+
+    try {
+      setAiLoading(true);
+      const apiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
+      const res = await fetch(`${apiBaseUrl}/ai/suggest-split`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (parseError) {
+        data = {};
+      }
+
+      if (!res.ok || !data?.success || !Array.isArray(data?.data?.suggestions)) {
+        throw new Error(data?.message || "AI suggestion failed. Please try again.");
+      }
+
+      const suggestionMap = data.data.suggestions.reduce((acc, suggestion) => {
+        acc[suggestion.userId] = Number(suggestion.percentage);
+        return acc;
+      }, {});
+
+      const nextParticipants = formData.participants.map((participant) => ({
+        ...participant,
+        value: suggestionMap[participant.userId] ?? participant.value,
+      }));
+
+      updateParticipants(nextParticipants);
+      setAiReason(data.data.reason || "AI generated split suggestion.");
+    } catch (error) {
+      setAiError(error.message || "AI suggestion failed. Your current values were kept.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const participantSum = formData.participants.reduce(
     (acc, p) => acc + (parseFloat(p.value) || 0), 0,
@@ -271,7 +380,7 @@ export default function CreateExpenseForm() {
           <div className="border-b border-[#14315e] p-4 sm:p-6">
             {submitError && (
               <div className="flex items-start gap-3 rounded-xl border border-[#FF2D65]/35 bg-[#FF2D65]/10 px-4 py-3">
-                <AlertCircle size={16} className="mt-0.5 flex-shrink-0 text-[#ff9bb7]" />
+                <AlertCircle size={16} className="mt-0.5 shrink-0 text-[#ff9bb7]" />
                 <p className="text-sm text-[#ffc2d4]">{submitError}</p>
               </div>
             )}
@@ -427,6 +536,63 @@ export default function CreateExpenseForm() {
                 <FieldError msg={fieldErrors.splitType} />
               </div>
 
+              {formData.splitType === "percentage" && (
+                <div className="rounded-xl border border-[#17345f] bg-[#071a42] p-4">
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[#6f88b7]">
+                      <span className="inline-flex items-center gap-2 normal-case tracking-normal text-sm font-medium text-[#dbe7ff]">
+                        <FileText size={16} />
+                        Split Context
+                      </span>
+                    </label>
+                    <textarea
+                      value={contextDescription}
+                      onChange={handleContextDescriptionChange}
+                      placeholder="Optional context for the AI suggestion"
+                      rows={3}
+                      className={`${inputClass("contextDescription")} resize-none`}
+                    />
+                    <p className="mt-2 text-xs text-[#8ea5d1]">
+                      Examples: "Rahul had more drinks", "Sneha used the cab alone", "I joined only for dessert".
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleSuggestSplit}
+                      disabled={aiLoading || membersLoading || formData.participants.length < 2 || !formData.totalAmount}
+                      className="inline-flex items-center gap-2 rounded-lg border border-[#00CDFF]/35 bg-[#00CDFF]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8ff0ff] transition hover:border-[#00CDFF]/60 hover:bg-[#00CDFF]/15 disabled:cursor-not-allowed disabled:border-[#21477a] disabled:text-[#6f88b7]"
+                    >
+                      {aiLoading ? (
+                        <span className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                      ) : (
+                        "✨"
+                      )}
+                      {aiLoading ? "Suggesting..." : "Suggest Split"}
+                    </button>
+
+                    <p className="text-xs text-[#8ea5d1]">
+                      AI will prefill percentage values for the selected people.
+                    </p>
+                  </div>
+
+                  <p
+                    className={`mt-2 text-xs ${
+                      formData.participants.length < 2 ? "text-[#ff9bb7]" : "text-[#8ea5d1]"
+                    }`}
+                  >
+                    Select at least 2 people to add the expense split and enable AI suggestions.
+                  </p>
+
+                  {aiError ? (
+                    <p className="mt-3 text-sm text-[#ff9bb7]">{aiError}</p>
+                  ) : aiReason ? (
+                    <p className="mt-3 text-sm text-[#8ff0ff]">Reason: {aiReason}</p>
+                  ) : null}
+                </div>
+              )}
+
               <div>
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <label className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6f88b7]">
@@ -516,6 +682,7 @@ export default function CreateExpenseForm() {
                                   min="0"
                                   max={formData.splitType === "percentage" ? 100 : undefined}
                                   step={formData.splitType === "manual" ? "0.01" : "1"}
+                                  style={formData.splitType === "percentage" && splits[member._id] !== undefined ? { transition: "all 180ms ease" } : undefined}
                                   className={`${inputClass("split")} ${formData.splitType === "manual" ? "pl-8" : "pr-8"}`}
                                 />
                                 {formData.splitType === "percentage" && (

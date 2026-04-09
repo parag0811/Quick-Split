@@ -4,10 +4,10 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-export const callGemini = async (prompt) => {
+export const callGroq = async (prompt) => {
   try {
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile", // Free, very capable
+      model: "llama-3.3-70b-versatile", // free tier
       messages: [
         { role: "user", content: prompt }
       ],
