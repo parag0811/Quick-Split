@@ -11,6 +11,7 @@ export default function HomePage() {
   const [userData, setUserData] = useState(null);
   const [stats, setStats] = useState(null);
   const [recentSettlements, setRecentSettlements] = useState([]);
+  const [latestGroups, setLatestGroups] = useState([]);
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -20,6 +21,7 @@ export default function HomePage() {
         setUserData(data.user);
         setStats(data.stats);
         setRecentSettlements(data.recentSettlements || []);
+        setLatestGroups(data.latestGroups || []);
       } catch (err) {
         setError(err.message || "Failed to load dashboard data.");
       } finally {
@@ -47,17 +49,17 @@ export default function HomePage() {
     return (
       <div className="max-w-7xl mx-auto">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 w-56 bg-gray-800 rounded-lg" />
-          <div className="h-4 w-40 bg-gray-800 rounded" />
+          <div className="h-8 w-56 rounded-lg bg-[#0f2a57]" />
+          <div className="h-4 w-40 rounded bg-[#0f2a57]" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 h-28"
+                className="h-28 rounded-xl border border-[#1b3b74] bg-[#071b46]/90 p-6"
               />
             ))}
           </div>
-          <div className="bg-[#1a1b1b] border border-gray-800 rounded-xl p-6 h-64" />
+          <div className="h-64 rounded-xl border border-[#1b3b74] bg-[#071b46]/90 p-6" />
         </div>
       </div>
     );
@@ -101,21 +103,6 @@ export default function HomePage() {
     Math.max(Math.round(totalSpent * 0.09), 160),
   ];
   const maxValue = Math.max(...weeklyValues, 1);
-
-  const topGroups = [
-    {
-      name: "Loft 402 Expenses",
-      subtitle: "Household bills & rent",
-      status: "6 active",
-      accent: "#00CDFF",
-    },
-    {
-      name: "Tokyo Trip 2024",
-      subtitle: "Flights & accommodation",
-      status: "Upcoming",
-      accent: "#A855F7",
-    },
-  ];
 
   return (
     <div className="mx-auto w-full max-w-345">
@@ -255,7 +242,7 @@ export default function HomePage() {
                                     {isPositive ? settlement.from : settlement.to}
                                   </p>
                                   <p className="text-[10px] uppercase tracking-[0.14em] text-[#6f88b7]">
-                                    {settlement.isSettled ? "Settled" : "Pending"}
+                                    Recorded
                                   </p>
                                 </div>
                                 <p className={`text-sm font-bold ${amountColor}`}>
@@ -282,20 +269,38 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              {topGroups.map((group) => (
-                <div key={group.name} className="rounded-2xl border border-[#173462] bg-[#081a43]/80 p-5">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="rounded-md p-2" style={{ backgroundColor: `${group.accent}1f` }}>
-                      <Users size={17} style={{ color: group.accent }} />
-                    </div>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7f97c3]">{group.status}</span>
-                  </div>
-                  <h3 className="text-xl font-semibold text-[#dce8ff]">{group.name}</h3>
-                  <p className="mt-1 text-sm text-[#87a0cb]">{group.subtitle}</p>
-                </div>
-              ))}
-            </div>
+            {latestGroups.length > 0 && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {latestGroups.slice(0, 2).map((group, index) => {
+                  const accent = index % 2 === 0 ? "#00CDFF" : "#A855F7";
+                  return (
+                    <Link
+                      key={group.groupId}
+                      href={`/dashboard/groups/${group.groupId}`}
+                      className="rounded-2xl border border-[#173462] bg-[#081a43]/80 p-5 transition hover:border-[#2a5d97]"
+                    >
+                      <div className="mb-3 flex items-center justify-between">
+                        <div
+                          className="rounded-md p-2"
+                          style={{ backgroundColor: `${accent}1f` }}
+                        >
+                          <Users size={17} style={{ color: accent }} />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7f97c3]">
+                          {group.memberCount} members
+                        </span>
+                      </div>
+                      <h3 className="text-xl font-semibold text-[#dce8ff]">
+                        {group.name}
+                      </h3>
+                      <p className="mt-1 truncate text-sm text-[#87a0cb]">
+                        {group.description}
+                      </p>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </motion.div>
 
           <motion.aside variants={item} className="space-y-4 xl:col-span-4">

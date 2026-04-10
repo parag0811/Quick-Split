@@ -247,7 +247,7 @@ const getUserSummary = async (req, res, next) => {
     const userGroups = await Group.find({
       "members.user": user_id,
       isDeleted: false,
-    }).select("_id members");
+    }).select("_id name description members createdBy");
 
     let totalSpent = 0;
     let youOwe = 0;
@@ -279,6 +279,19 @@ const getUserSummary = async (req, res, next) => {
         });
       });
 
+      const groupSettlements = await Settlement.find({
+        group: groupId,
+        isDeleted: false,
+      }).select("from to amount");
+
+      groupSettlements.forEach((settlement) => {
+        const fromId = settlement.from.toString();
+        const toId = settlement.to.toString();
+
+        if (balance[fromId] !== undefined) balance[fromId] += settlement.amount;
+        if (balance[toId] !== undefined) balance[toId] -= settlement.amount;
+      });
+
       // Current user's balance in this group
       const myBalance = balance[user_id] || 0;
       if (myBalance > 0) {
@@ -287,6 +300,28 @@ const getUserSummary = async (req, res, next) => {
         youOwe += Math.abs(myBalance); // I owe others
       }
     }
+
+    const latestGroups = userGroups
+      .map((group) => {
+        const membership = group.members.find(
+          (member) => member.user.toString() === user_id,
+        );
+
+        return {
+          groupId: group._id,
+          name: group.name,
+          description: group.description || "No description",
+          memberCount: group.members.length,
+          isOwner: group.createdBy?.toString() === user_id,
+          joinedAt: membership?.joinedAt || null,
+        };
+      })
+      .sort((a, b) => {
+        const aTime = a.joinedAt ? new Date(a.joinedAt).getTime() : 0;
+        const bTime = b.joinedAt ? new Date(b.joinedAt).getTime() : 0;
+        return bTime - aTime;
+      })
+      .slice(0, 2);
 
     const recentSettlements = await Settlement.find({
       $or: [{ from: user_id }, { to: user_id }],
@@ -337,6 +372,7 @@ const getUserSummary = async (req, res, next) => {
           (settlementPaid + settlementReceived).toFixed(2),
         ),
       },
+      latestGroups,
       recentSettlements: formattedSettlements,
     });
   } catch (error) {
