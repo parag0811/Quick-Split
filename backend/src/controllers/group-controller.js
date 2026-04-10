@@ -317,8 +317,8 @@ const getGroupSummary = async (req, res, next) => {
     const isSettled =
       yourBalance === 0 && creditors.length === 0 && debtors.length === 0;
 
-    const inviteLink = group.inviteToken
-      ? `${process.env.CLIENT_URL}/join/${group.inviteToken}`
+    const inviteLink = fullGroup.inviteToken
+      ? `${process.env.CLIENT_URL}/join/${fullGroup.inviteToken}`
       : null;
 
     return res.status(200).json({
@@ -335,7 +335,7 @@ const getGroupSummary = async (req, res, next) => {
       isSettled,
       yourBalance,
       inviteLink,
-      inviteTokenExpiresAt: group.inviteTokenExpiresAt,
+      inviteTokenExpiresAt: fullGroup.inviteTokenExpiresAt,
       youOwe,
       youGet,
     });
