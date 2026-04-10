@@ -6,7 +6,6 @@ const footerLinks = [
   "Privacy Policy",
   "Terms of Service",
   "Contact",
-  "Twitter",
   "GitHub",
 ];
 

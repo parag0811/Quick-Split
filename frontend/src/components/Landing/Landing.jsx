@@ -31,22 +31,29 @@ const featureCards = [
     wide: false,
   },
   {
-    title: "Deep Insights",
+    title: "Settlement Risk Prediction",
     description:
-      "Visualize how money moves across trips, homes, and events using clear trend analytics.",
+      "Predict delayed or risky repayments before they happen, so groups can proactively settle high-risk transactions first.",
     icon: Activity,
     wide: false,
   },
   {
-    title: "Infinite Groups",
+    title: "Groq AI Assist",
     description:
-      "Organize your life into ledgers. Roommates, travel partners, and dinner circles all in one place.",
+      "Groq-powered intelligence helps groups split smarter and understand spending behavior with instant contextual guidance.",
+    icon: Sparkles,
+    wide: false,
+    tags: ["Smart Split Suggestion", "AI Spending Insights"],
+  },
+  {
+    title: "Secure Invite Links",
+    description:
+      "Share expiring join links with one tap and regenerate them instantly, keeping group access controlled without manual onboarding.",
     icon: Users,
     wide: false,
+    tags: ["Token Expiry", "One-Tap Regenerate"],
   },
 ];
-
-const groupTypes = ["Travel", "Home", "Dinner", "Events"];
 
 const Landing = () => {
   const router = useRouter();
@@ -227,33 +234,6 @@ const Landing = () => {
               );
             })}
 
-            <motion.article
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.28 }}
-              transition={{ duration: 0.45, delay: 0.2, ease: "easeOut" }}
-              className="rounded-xl border border-[#162a4a] bg-[linear-gradient(160deg,rgba(8,28,57,0.95),rgba(4,16,36,0.82))] p-7 md:col-span-2 lg:col-span-1"
-            >
-              <p className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-[#7192c0]">
-                Ledger Channels
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {groupTypes.map((group, index) => (
-                  <div
-                    key={group}
-                    className="flex items-center justify-center rounded-md border border-[#2a436f] bg-[#111f3f] px-4 py-4 text-xs font-semibold uppercase tracking-[0.15em] text-[#d8e5ff]"
-                    style={{
-                      boxShadow:
-                        index % 2 === 0
-                          ? "inset 3px 0 0 rgba(85,226,255,0.9)"
-                          : "inset 3px 0 0 rgba(255,96,140,0.9)",
-                    }}
-                  >
-                    {group}
-                  </div>
-                ))}
-              </div>
-            </motion.article>
           </div>
         </section>
 

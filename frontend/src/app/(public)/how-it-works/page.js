@@ -43,31 +43,31 @@ const phaseCards = [
 
 const superiorityCards = [
   {
-    title: "Flexible Splitting",
+    title: "Groq Smart Split Suggestion",
     description:
-      "Advanced rules for percentages, shares, and exact amounts for precision-grade cost distribution.",
-    icon: Split,
+      "Context-aware split recommendations generated with Groq help groups choose fair percentage allocations for uneven usage.",
+    icon: Sparkles,
     className: "md:col-span-2",
   },
   {
-    title: "Group Analytics",
+    title: "AI Spending Insights",
     description:
-      "Visualize spending momentum and uncover patterns with high-fidelity group trend signals.",
+      "Groq analyzes member spend behavior to surface imbalance signals, overpayment patterns, and actionable recommendations.",
+    icon: Split,
+    className: "md:col-span-1",
+  },
+  {
+    title: "Expense Anomaly Detection Model",
+    description:
+      "ML anomaly scoring flags unusual or suspicious expense entries early using historical group spending patterns.",
     icon: TrendingUp,
     className: "md:col-span-1",
   },
   {
-    title: "Instant Settlements",
+    title: "Settlement Risk Prediction Model",
     description:
-      "Direct-to-bank execution with fewer reminders and smoother group cash flow.",
+      "Predictive risk scoring estimates settlement delay probability so groups can prioritize high-risk dues before they become blockers.",
     icon: Zap,
-    className: "md:col-span-1",
-  },
-  {
-    title: "Real-Time Updates",
-    description:
-      "Every transaction is broadcast instantly so every member stays synced across devices.",
-    icon: RefreshCcw,
     className: "md:col-span-2",
   },
 ];
@@ -164,7 +164,7 @@ const HowItWorks = () => {
             transition={{ duration: 0.45, ease: "easeOut" }}
             className="text-center text-3xl font-bold uppercase text-[#dce8ff] sm:text-5xl"
           >
-            Technological Superiority
+            AI + ML Intelligence Layer
           </motion.h3>
           <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-[#25ceff]" />
 
