@@ -22,7 +22,12 @@ import { toastError, toastSuccess } from "@/lib/toast";
 import GroupSocketListener from "@/components/socket/GroupSocketListener";
 import { triggerRefresh } from "../../../../../../../store/groupSlice";
 
-const PAYMENT_METHODS = ["UPI", "Cash", "Bank Transfer", "Card", "Other"];
+const PAYMENT_METHODS = [
+  { label: "UPI", value: "upi" },
+  { label: "Cash", value: "cash" },
+  { label: "Bank Transfer", value: "bank" },
+  { label: "Other", value: "other" },
+];
 
 const getRiskStyles = (riskLevel) => {
   switch ((riskLevel || "").toLowerCase()) {
@@ -59,7 +64,7 @@ export default function GroupBalancePage() {
   const [selectedSuggestion, setSelectedSuggestion] = useState(null);
   const [formError, setFormError] = useState("");
   const [form, setForm] = useState({
-    method: "UPI",
+    method: "upi",
     notes: "",
   });
 
@@ -122,7 +127,7 @@ export default function GroupBalancePage() {
 
   const openSettleModal = (suggestion) => {
     setSelectedSuggestion(suggestion);
-    setForm({ method: "UPI", notes: "" });
+    setForm({ method: "upi", notes: "" });
     setFormError("");
     setIsModalOpen(true);
   };
@@ -131,7 +136,7 @@ export default function GroupBalancePage() {
     setIsModalOpen(false);
     setSelectedSuggestion(null);
     setFormError("");
-    setForm({ method: "UPI", notes: "" });
+    setForm({ method: "upi", notes: "" });
   };
 
   const handleRecordPayment = async () => {
@@ -614,8 +619,8 @@ export default function GroupBalancePage() {
                     className="w-full rounded-lg border border-[#254e82] bg-[#0b2659] px-3 py-2.5 text-sm text-[#dce8ff] outline-none transition focus:border-[#2e66ab]"
                   >
                     {PAYMENT_METHODS.map((method) => (
-                      <option key={method} value={method}>
-                        {method}
+                      <option key={method.value} value={method.value}>
+                        {method.label}
                       </option>
                     ))}
                   </select>

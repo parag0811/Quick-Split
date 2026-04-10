@@ -13,12 +13,13 @@ import group_route from "./routes/group-route.js";
 import expense_route from "./routes/expense-route.js";
 import settlement_route from "./routes/settlement-route.js";
 import balance_route from "./routes/balance-route.js";
+import aiRoutes from "./features/ai/ai-routes.js";
 
 const app = express();
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://quick-split-gamma.vercel.app"
+  "https://quick-split-gamma.vercel.app",
 ];
 
 app.use(
@@ -39,6 +40,7 @@ app.use(group_route);
 app.use(expense_route);
 app.use(settlement_route);
 app.use(balance_route);
+app.use("/ai", aiRoutes);
 
 app.use((error, req, res, next) => {
   const status = error.statusCode || 500;

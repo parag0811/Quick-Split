@@ -13,6 +13,11 @@ const createSettlement = async (req, res, next) => {
     const group_id = group._id;
 
     const { from, to, amount, method, notes } = req.body;
+    const normalizedMethod = String(method || "other").toLowerCase();
+    const allowedMethods = ["cash", "upi", "bank", "other"];
+    const resolvedMethod = allowedMethods.includes(normalizedMethod)
+      ? normalizedMethod
+      : "other";
 
     if (!from || !to || !amount) {
       const error = new Error("Payer, Receiver and amount are required.");
@@ -55,7 +60,7 @@ const createSettlement = async (req, res, next) => {
       paidAt: new Date(),
       currency: group.currency,
       createdBy: user_id,
-      method,
+      method: resolvedMethod,
       notes,
     });
 
