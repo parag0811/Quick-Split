@@ -15,34 +15,13 @@ import { apiFetch } from "@/lib/api";
 import GroupSocketListener from "@/components/socket/GroupSocketListener";
 import { useSelector } from "react-redux";
 
-const STATUS_TABS = [
-  { key: "pending", label: "Pending Settlements", icon: Clock },
-  { key: "completed", label: "Completed Settlements", icon: CheckCircle2 },
-];
-
 const PAGE_SIZE = 6;
-
-const statusMeta = {
-  pending: {
-    amountClass: "text-rose-300",
-    borderClass: "border-rose-400/40",
-    badgeClass: "bg-rose-500/15 text-rose-300 border border-rose-400/30",
-    badgeText: "Pending",
-  },
-  completed: {
-    amountClass: "text-emerald-300",
-    borderClass: "border-cyan-400/40",
-    badgeClass: "bg-emerald-500/15 text-emerald-300 border border-emerald-400/30",
-    badgeText: "Completed",
-  },
-};
 
 export default function SettlementPage() {
   const { groupId } = useParams();
   const refreshKey = useSelector((state) => state.group.refreshKey);
   const currentUserId = useSelector((state) => state.auth.user?._id);
 
-  const [activeTab, setActiveTab] = useState("pending");
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
   const [allSettlements, setAllSettlements] = useState([]);
@@ -81,14 +60,7 @@ export default function SettlementPage() {
     }
   }, [groupId, refreshKey, fetchBalance, fetchSettlements]);
 
-  const filteredSettlements = useMemo(() => {
-    if (activeTab === "completed") {
-      return allSettlements.filter((item) => item.isCompleted === true);
-    }
-    return allSettlements.filter((item) => item.isCompleted !== true);
-  }, [activeTab, allSettlements]);
-
-  const totalCount = filteredSettlements.length;
+  const totalCount = allSettlements.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   useEffect(() => {
@@ -100,14 +72,8 @@ export default function SettlementPage() {
   const paginatedSettlements = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
     const end = start + PAGE_SIZE;
-    return filteredSettlements.slice(start, end);
-  }, [currentPage, filteredSettlements]);
-
-  const handleTabChange = (tabKey) => {
-    if (tabKey === activeTab) return;
-    setActiveTab(tabKey);
-    setCurrentPage(1);
-  };
+    return allSettlements.slice(start, end);
+  }, [currentPage, allSettlements]);
 
   const handleNextPage = () => {
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
@@ -128,7 +94,7 @@ export default function SettlementPage() {
           <div className="mb-6">
             <h1 className="text-4xl font-bold text-slate-100">Settlements</h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-400">
-              Settlement history of real payments recorded between group members.
+                Settlement history of recorded payments between group members.
             </p>
           </div>
 
@@ -161,34 +127,6 @@ export default function SettlementPage() {
           )}
         </section>
 
-        <div className="mt-6 flex flex-wrap items-center gap-2 border-b border-slate-700 pb-3">
-          {STATUS_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const tabCount =
-              tab.key === "pending"
-                ? allSettlements.filter((item) => item.isCompleted !== true).length
-                : allSettlements.filter((item) => item.isCompleted === true).length;
-
-            return (
-              <button
-                key={tab.key}
-                onClick={() => handleTabChange(tab.key)}
-                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
-                  activeTab === tab.key
-                    ? "border border-cyan-400/40 bg-cyan-500/15 text-cyan-200"
-                    : "border border-slate-700 bg-slate-900/60 text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <Icon size={16} />
-                <span>{tab.label}</span>
-                <span className="rounded-md bg-slate-800/80 px-1.5 py-0.5 text-xs text-slate-300">
-                  {tabCount}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
         <div className="mt-6">
           {loading ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -217,7 +155,7 @@ export default function SettlementPage() {
           ) : paginatedSettlements.length === 0 ? (
             <div className="rounded-xl border border-slate-700 bg-slate-900/70 p-10 text-center">
               <Banknote className="mx-auto mb-3 h-10 w-10 text-slate-500" />
-              <p className="text-slate-300">No settlements in this tab.</p>
+              <p className="text-slate-300">No settlements recorded yet.</p>
               <p className="mt-1 text-sm text-slate-500">
                 Transactions recorded from the Balance page will appear here.
               </p>
@@ -229,8 +167,6 @@ export default function SettlementPage() {
                   {paginatedSettlements.map((settlement, idx) => {
                     const fromYou = settlement.from?._id === currentUserId;
                     const toYou = settlement.to?._id === currentUserId;
-                    const itemStatus = settlement.isCompleted === true ? "completed" : "pending";
-                    const meta = statusMeta[itemStatus];
                     const headline = fromYou
                       ? `You paid ${settlement.to?.name || "Member"}`
                       : toYou
@@ -243,7 +179,7 @@ export default function SettlementPage() {
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.04 }}
-                        className={`rounded-xl border bg-slate-950/70 p-4 ${meta.borderClass}`}
+                        className="rounded-xl border border-cyan-400/30 bg-slate-950/70 p-4"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
@@ -254,11 +190,11 @@ export default function SettlementPage() {
                           </div>
 
                           <div className="text-right">
-                            <p className={`text-2xl font-bold ${meta.amountClass}`}>
+                            <p className="text-2xl font-bold text-emerald-300">
                               ₹{Number(settlement.amount || 0).toFixed(2)}
                             </p>
-                            <span className={`mt-1 inline-block rounded px-2 py-0.5 text-[11px] font-semibold ${meta.badgeClass}`}>
-                              {meta.badgeText}
+                            <span className="mt-1 inline-block rounded border border-emerald-400/30 bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
+                              Recorded
                             </span>
                           </div>
                         </div>
