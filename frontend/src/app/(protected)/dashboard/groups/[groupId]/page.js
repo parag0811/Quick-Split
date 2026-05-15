@@ -15,6 +15,7 @@ import {
   Trash2,
   UserMinus,
   X,
+  Plus,
   RefreshCw,
   RefreshCcw,
   Copy,
@@ -243,7 +244,7 @@ export default function GroupOverview() {
   if (loading) {
     return (
       <div className="w-full min-h-[calc(100vh-6rem)] bg-[radial-gradient(circle_at_20%_0%,#0d2b73_0%,#07163f_45%,#020817_100%)] p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto w-full max-w-[1600px] space-y-6 animate-pulse">
+        <div className="mx-auto w-full max-w-400 space-y-6 animate-pulse">
           <div className="rounded-2xl border border-[#17345f] bg-[#06173f]/80 p-4 sm:p-6">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
               <div className="flex min-w-0 items-start gap-3 sm:gap-4">
@@ -312,7 +313,7 @@ export default function GroupOverview() {
 
   if (fetchError) {
     return (
-      <div className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8">
+      <div className="w-full">
         <div className="max-w-5xl mx-auto flex flex-col items-center justify-center py-28 px-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -349,8 +350,6 @@ export default function GroupOverview() {
       </div>
     );
   }
-
-  const activeInviteLink = inviteData?.inviteLink || data?.inviteLink || null;
   const activeInviteExpiry =
     inviteData?.inviteTokenExpiresAt || data?.inviteTokenExpiresAt || null;
   const group = data?.group ?? {
@@ -376,9 +375,9 @@ export default function GroupOverview() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full min-h-screen bg-[radial-gradient(circle_at_20%_0%,#0d2b73_0%,#07163f_45%,#020817_100%)] p-4 sm:p-6 lg:p-8"
+        className="w-full"
       >
-        <div className="mx-auto w-full max-w-[1600px] space-y-6">
+        <div className="mx-auto w-full max-w-400 space-y-6">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -436,6 +435,7 @@ export default function GroupOverview() {
                     </div>
                     <span>{members.length} members active</span>
                   </div>
+
                 </motion.div>
               </div>
 
@@ -472,6 +472,20 @@ export default function GroupOverview() {
               </div>
 
               <div className="flex flex-col gap-3 xl:w-105">
+                <motion.button
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.15 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() =>
+                    router.push(`/dashboard/groups/${group.id}/expense/create`)
+                  }
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#00CDFF]/40 bg-[#00CDFF]/15 px-4 py-2.5 text-sm font-semibold text-[#00CDFF] transition hover:bg-[#00CDFF]/25"
+                >
+                  <Plus size={18} />
+                  Add Expense
+                </motion.button>
                 <div className="rounded-2xl border border-[#17345f] bg-[#081a43] p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <p className="text-[10px] uppercase tracking-[0.18em] text-[#7f97c3]">
@@ -750,7 +764,7 @@ export default function GroupOverview() {
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="text-sm font-medium text-[#8ea4cd]">
-                  Pending Expenses
+                  Pending Settlements
                 </div>
                 <motion.div
                   whileHover={{ rotate: 360, scale: 1.2 }}
@@ -810,7 +824,7 @@ export default function GroupOverview() {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.9 + index * 0.1 }}
                             whileHover={{ scale: 1.02, x: 5 }}
-                            className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg"
+                            className="flex items-center justify-between rounded-lg border border-[#17345f] bg-[#081a43] p-3"
                           >
                             <div className="flex items-center gap-3">
                               <motion.div

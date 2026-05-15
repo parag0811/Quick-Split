@@ -40,7 +40,7 @@ export default function GroupList() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="w-full min-h-screen"
+      className="w-full"
     >
       <div className="mx-auto w-full max-w-350">
         <motion.div
@@ -57,22 +57,18 @@ export default function GroupList() {
             <h1 className="text-3xl font-bold tracking-tight text-[#e8f1ff]">Groups</h1>
             <p className="mt-1 text-sm text-[#7f97c3]">All your active groups and ownership status</p>
           </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => router.push("/dashboard/groups/create")}
+            className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#00CDFF] px-5 py-2.5 text-sm font-semibold text-[#022342] shadow-[0_10px_25px_rgba(0,205,255,0.2)] transition hover:bg-[#35dcff]"
           >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => router.push("/dashboard/groups/create")}
-              className="flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-[#00CDFF] px-5 py-2.5 text-sm font-semibold text-[#022342] shadow-[0_10px_25px_rgba(0,205,255,0.2)] transition hover:bg-[#35dcff]"
-            >
-              <Plus size={16} />
-              <span>New Group</span>
-            </motion.button>
-          </motion.div>
+            <Plus size={16} />
+            <span>New Group</span>
+          </motion.button>
         </motion.div>
 
         <AnimatePresence mode="wait">

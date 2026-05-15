@@ -69,6 +69,8 @@ export const detectAnomaly = async (userId, currentAmount, excludeExpenseId = nu
     day_of_week,
   };
 
+  console.log("Anomaly detection payload:", payload);
+
   // Calling fastAPi microservice
   const baseUrl = process.env.ANOMALY_ML_SERVICE_URL;
   try {
@@ -85,6 +87,7 @@ export const detectAnomaly = async (userId, currentAmount, excludeExpenseId = nu
     }
 
     const data = await response.json();
+    console.log("Anomaly detection response:", data);
 
     const isAnomalous = data.is_suspicious ?? false;
     const anomalyScore = data.anomaly_score ?? 0;
