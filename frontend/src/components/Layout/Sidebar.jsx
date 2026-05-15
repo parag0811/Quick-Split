@@ -1,5 +1,5 @@
 "use client";
-import { Home, Users, UserRound, CircleHelp, LogOut, Plus } from "lucide-react";
+import { Home, Users, UserRound, LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useSelector } from "react-redux";
@@ -55,19 +55,7 @@ export default function Sidebar({ isOpen, onClose }) {
       </nav>
 
       <div className="mt-auto px-5 pb-6">
-        <Link
-          href="/dashboard/groups/create"
-          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#00CDFF] px-4 py-3 text-sm font-bold text-[#03203f] transition hover:bg-[#36d9ff]"
-        >
-          <Plus size={18} />
-          Add Expense
-        </Link>
-
         <div className="mt-5 space-y-1.5">
-          <button className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[#7f97c3] hover:bg-[#0a1c42] hover:text-white">
-            <CircleHelp size={16} />
-            Help
-          </button>
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
             className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-[#7f97c3] hover:bg-[#0a1c42] hover:text-[#ff9db8]"
