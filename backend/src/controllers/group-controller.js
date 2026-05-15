@@ -584,11 +584,21 @@ export const groupAnalytics = async (req, res, next) => {
       },
     ]);
 
+    const latestExpense = await Expense.findOne({
+      group: objectGroupId,
+      isDeleted: false,
+    })
+      .sort({ createdAt: -1 })
+      .select("currency")
+      .lean();
+    const currency = latestExpense?.currency || "INR";
+
     // AI INPUT
     const aiInput = {
       groupName: group.name,
       totalExpenses: overview.expenseCount,
       totalAmount: overview.totalSpent,
+      currency,
       members: finalMemberStats.map((m) => ({
         name: m.name,
         paid: m.totalPaid,

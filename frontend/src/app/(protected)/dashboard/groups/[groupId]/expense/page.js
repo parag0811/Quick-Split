@@ -4,9 +4,6 @@ import { apiFetch } from "@/lib/api";
 import {
   Plus,
   Search,
-  SlidersHorizontal,
-  BadgeCheck,
-  Clock3,
   Receipt,
   Pencil,
   Trash2,
@@ -146,8 +143,6 @@ export default function ExpensePage() {
 
       const matchesFilter =
         activeFilter === "all" ||
-        (activeFilter === "unpaid" && !expense.isPaid) ||
-        (activeFilter === "paid" && expense.isPaid) ||
         (activeFilter === "anomaly" && shouldShowAnomaly(expense));
 
       return matchesQuery && matchesFilter;
@@ -159,13 +154,11 @@ export default function ExpensePage() {
       (sum, exp) => sum + Number(exp.totalAmount ?? exp.amount ?? 0),
       0,
     );
-    const pendingCount = expenses.filter((exp) => !exp.isPaid).length;
-    const paidCount = expenses.filter((exp) => exp.isPaid).length;
+    const anomalyCount = expenses.filter((exp) => exp.isAnomalous).length;
 
     return {
       totalAmount,
-      pendingCount,
-      paidCount,
+      anomalyCount,
     };
   }, [expenses]);
 
@@ -230,16 +223,13 @@ export default function ExpensePage() {
 
             <div className="rounded-xl border border-[#21477a] bg-[#081a43] p-4">
               <p className="text-[10px] uppercase tracking-[0.14em] text-[#7f97c3]">
-                Action Required
+                Anomaly Alerts
               </p>
               <div className="mt-2 space-y-1.5">
                 <p className="text-2xl font-bold text-[#FF2D65]">
-                  {totals.pendingCount}
+                  {totals.anomalyCount}
                 </p>
-                <p className="text-xs text-[#9eb2d7]">Pending expenses</p>
-                <p className="text-xs text-[#6f88b7]">
-                  {totals.paidCount} already marked paid
-                </p>
+                <p className="text-xs text-[#9eb2d7]">Unusual expenses detected</p>
               </div>
             </div>
           </div>
@@ -262,11 +252,8 @@ export default function ExpensePage() {
           </label>
 
           <div className="flex items-center gap-2 rounded-xl border border-[#1b3c6c] bg-[#071a42] p-1">
-            <SlidersHorizontal size={14} className="ml-2 text-[#6f88b7]" />
             {[
               { key: "all", label: "All" },
-              { key: "unpaid", label: "Pending" },
-              { key: "paid", label: "Paid" },
               { key: "anomaly", label: "Anomaly" },
             ].map((option) => (
               <button
@@ -306,8 +293,6 @@ export default function ExpensePage() {
               {filteredExpenses.map((expense, index) => {
                 const isExpanded = expandedExpense === expense._id;
                 const isAnomalous = shouldShowAnomaly(expense);
-                const isPaid = Boolean(expense.isPaid);
-
                 return (
                   <motion.article
                     key={expense._id}
@@ -354,16 +339,6 @@ export default function ExpensePage() {
                             Unusual
                           </span>
                         )}
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] ${
-                            isPaid
-                              ? "border border-[#00CDFF]/40 bg-[#00CDFF]/15 text-[#8ff0ff]"
-                              : "border border-[#FF2D65]/40 bg-[#FF2D65]/12 text-[#ff9bb7]"
-                          }`}
-                        >
-                          {isPaid ? <BadgeCheck size={12} /> : <Clock3 size={12} />}
-                          {isPaid ? "Paid" : "Pending"}
-                        </span>
                       </div>
                     </button>
 

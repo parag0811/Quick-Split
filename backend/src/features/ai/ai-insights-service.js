@@ -1,6 +1,7 @@
 import { callGroq } from "../helpers/groq-helper.js";
 
 export const generateAIInsights = async (data) => {
+  const currencyCode = data.currency || "INR";
   const prompt = `
 You are a financial assistant.
 
@@ -13,6 +14,10 @@ Return a short insight including:
 - who is underpaying
 - fairness of group
 - one suggestion
+
+Formatting rules:
+- Use only the ${currencyCode} currency for all amounts.
+- Do not mention any other currency symbols or codes.
 
 Keep it short and clean.
 `;

@@ -147,9 +147,10 @@ export default function GroupAnalyticsPage() {
   const [fetchError, setFetchError] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchAnalytics = useCallback(async () => {
+  const fetchAnalytics = useCallback(async (options = {}) => {
+    const { showLoading = true } = options;
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       setFetchError("");
       const response = await apiFetch(`/groups/${groupId}/analytics`);
       setData(response);
@@ -157,7 +158,7 @@ export default function GroupAnalyticsPage() {
       setFetchError(error?.message || "Failed to load analytics. Please try again.");
       setData(null);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [groupId]);
 
@@ -168,7 +169,7 @@ export default function GroupAnalyticsPage() {
   const regenerateInsights = async () => {
     try {
       setRefreshing(true);
-      await fetchAnalytics();
+      await fetchAnalytics({ showLoading: false });
     } finally {
       setRefreshing(false);
     }
@@ -207,8 +208,7 @@ export default function GroupAnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_18%_0%,#0e2f75_0%,#081d4f_45%,#030b1d_100%)] px-4 py-5 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl space-y-6 animate-pulse">
+      <div className="mx-auto w-full max-w-6xl space-y-6 animate-pulse">
           <div className="h-28 rounded-2xl border border-[#173b70] bg-[#081b45]" />
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
@@ -220,16 +220,14 @@ export default function GroupAnalyticsPage() {
             <div className="h-80 rounded-2xl border border-[#173b70] bg-[#081b45]" />
           </div>
           <div className="h-72 rounded-2xl border border-[#173b70] bg-[#081b45]" />
-        </div>
       </div>
     );
   }
 
   if (fetchError) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_18%_0%,#0e2f75_0%,#081d4f_45%,#030b1d_100%)] px-4 py-5 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-center py-28 text-center">
-          <div className="max-w-md rounded-2xl border border-[#1a3c72] bg-[#06173f]/88 p-8">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-center py-28 text-center">
+        <div className="max-w-md rounded-2xl border border-[#1a3c72] bg-[#06173f]/88 p-8">
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10">
               <AlertCircle className="h-9 w-9 text-red-400" />
             </div>
@@ -250,7 +248,6 @@ export default function GroupAnalyticsPage() {
                 Back to Group
               </button>
             </div>
-          </div>
         </div>
       </div>
     );
@@ -258,12 +255,10 @@ export default function GroupAnalyticsPage() {
 
   if (!hasData) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_18%_0%,#0e2f75_0%,#081d4f_45%,#030b1d_100%)] px-4 py-5 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-center py-28 text-center">
-          <div className="max-w-md rounded-2xl border border-[#1a3c72] bg-[#06173f]/88 p-8">
-            <p className="text-lg font-semibold text-white">No data available</p>
-            <p className="mt-2 text-sm text-slate-400">Add some expenses to populate the analytics dashboard.</p>
-          </div>
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-center py-28 text-center">
+        <div className="max-w-md rounded-2xl border border-[#1a3c72] bg-[#06173f]/88 p-8">
+          <p className="text-lg font-semibold text-white">No data available</p>
+          <p className="mt-2 text-sm text-slate-400">Add some expenses to populate the analytics dashboard.</p>
         </div>
       </div>
     );
@@ -276,9 +271,9 @@ export default function GroupAnalyticsPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="min-h-screen bg-[radial-gradient(circle_at_18%_0%,#0e2f75_0%,#081d4f_45%,#030b1d_100%)] px-4 py-5 text-white sm:px-6 lg:px-8"
+        className="w-full"
       >
-        <div className="mx-auto max-w-6xl space-y-6">
+        <div className="mx-auto w-full max-w-6xl space-y-6">
           <motion.header
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}

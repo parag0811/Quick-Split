@@ -15,6 +15,7 @@ import {
   Trash2,
   UserMinus,
   X,
+  Plus,
   RefreshCw,
   RefreshCcw,
   Copy,
@@ -222,7 +223,7 @@ export default function GroupOverview() {
       default: "w-9 h-9 text-xs",
       medium: "w-10 h-10 text-sm",
     };
-    if (member.image) {
+    if (member?.image) {
       return (
         <img
           src={member.image}
@@ -235,24 +236,25 @@ export default function GroupOverview() {
       <div
         className={`${sizeClasses[size]} bg-linear-to-br from-gray-700 to-gray-800 rounded-full flex items-center justify-center font-bold text-white border-2 border-[#1a1a1a]`}
       >
-        {member.name.charAt(0).toUpperCase()}
+        {(member?.name || "?").charAt(0).toUpperCase()}
       </div>
     );
   };
 
   if (loading) {
     return (
-      <div className="w-full min-h-[calc(100vh-6rem)] bg-[radial-gradient(circle_at_20%_0%,#0d2b73_0%,#07163f_45%,#020817_100%)] p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto w-full max-w-[1600px] space-y-6 animate-pulse">
+      <div className="w-full">
+        <div className="mx-auto w-full max-w-400 space-y-6 animate-pulse">
           <div className="rounded-2xl border border-[#17345f] bg-[#06173f]/80 p-4 sm:p-6">
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between xl:gap-8">
               <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                 <div className="h-12 w-12 shrink-0 rounded-xl bg-[#102850] sm:h-16 sm:w-16" />
                 <div className="min-w-0 flex-1 space-y-3 pt-1">
-                  <div className="h-4 w-28 rounded bg-[#102850]" />
-                  <div className="h-8 w-56 rounded bg-[#102850] sm:h-12" />
+                  <div className="h-3 w-24 rounded bg-[#102850]" />
+                  <div className="h-8 w-64 max-w-full rounded bg-[#102850] sm:h-11" />
                   <div className="h-4 w-72 max-w-full rounded bg-[#102850]" />
                   <div className="flex gap-2 pt-1">
+                    <div className="h-8 w-8 rounded-full bg-[#102850]" />
                     <div className="h-8 w-8 rounded-full bg-[#102850]" />
                     <div className="h-8 w-8 rounded-full bg-[#102850]" />
                     <div className="h-8 w-8 rounded-full bg-[#102850]" />
@@ -266,42 +268,65 @@ export default function GroupOverview() {
               </div>
 
               <div className="flex flex-col gap-3 xl:w-105">
-                <div className="h-28 rounded-2xl border border-[#17345f] bg-[#081a43]" />
-                <div className="flex gap-2">
-                  <div className="h-10 flex-1 rounded-lg bg-[#102850]" />
-                  <div className="h-10 flex-1 rounded-lg bg-[#102850]" />
+                <div className="h-11 rounded-xl border border-[#17345f] bg-[#081a43]" />
+                <div className="rounded-2xl border border-[#17345f] bg-[#081a43] p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="h-3 w-20 rounded bg-[#102850]" />
+                    <div className="h-7 w-24 rounded-lg bg-[#102850]" />
+                  </div>
+                  <div className="h-12 rounded-lg bg-[#102850]" />
+                  <div className="mt-3 flex gap-2">
+                    <div className="h-9 flex-1 rounded-lg bg-[#102850]" />
+                    <div className="h-9 flex-1 rounded-lg bg-[#102850]" />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="rounded-2xl border border-[#17345f] bg-[#06173f]/80 p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-3">
-              <div className="h-5 w-24 rounded bg-[#102850]" />
-              <div className="h-9 w-24 rounded-lg bg-[#102850]" />
-            </div>
-            <div className="flex gap-3 overflow-hidden">
-              <div className="h-10 w-10 rounded-full bg-[#102850]" />
-              <div className="h-10 w-10 rounded-full bg-[#102850]" />
-              <div className="h-10 w-10 rounded-full bg-[#102850]" />
-              <div className="h-10 w-10 rounded-full bg-[#102850]" />
+            <div className="mt-5 rounded-2xl border border-[#17345f] bg-[#06173f]/80 p-4 sm:p-5">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-[#102850]" />
+                  <div className="space-y-2">
+                    <div className="h-4 w-24 rounded bg-[#102850]" />
+                    <div className="h-3 w-16 rounded bg-[#102850]" />
+                  </div>
+                </div>
+                <div className="h-8 w-24 rounded-lg bg-[#102850]" />
+              </div>
+              <div className="flex gap-3">
+                <div className="h-9 w-9 rounded-full bg-[#102850]" />
+                <div className="h-9 w-9 rounded-full bg-[#102850]" />
+                <div className="h-9 w-9 rounded-full bg-[#102850]" />
+                <div className="h-9 w-9 rounded-full bg-[#102850]" />
+                <div className="h-9 w-9 rounded-full bg-[#102850]" />
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {[1, 2, 3].map((item) => (
               <div
-                key={item}
+                key={`stat-skeleton-${item}`}
                 className="h-32 rounded-xl border border-[#17345f] bg-[#06173f]/80"
               />
             ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {[1, 2, 3].map((item) => (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {[1, 2].map((item) => (
               <div
-                key={item}
-                className="h-28 rounded-xl border border-[#17345f] bg-[#06173f]/80"
+                key={`balance-skeleton-${item}`}
+                className="h-40 rounded-xl border border-[#17345f] bg-[#06173f]/80"
+              />
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((item) => (
+              <div
+                key={`action-skeleton-${item}`}
+                className="h-32 rounded-xl border border-[#17345f] bg-[#06173f]/80"
               />
             ))}
           </div>
@@ -312,7 +337,7 @@ export default function GroupOverview() {
 
   if (fetchError) {
     return (
-      <div className="w-full min-h-screen bg-[#0f0f0f] p-4 sm:p-6 lg:p-8">
+      <div className="w-full">
         <div className="max-w-5xl mx-auto flex flex-col items-center justify-center py-28 px-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -349,8 +374,7 @@ export default function GroupOverview() {
       </div>
     );
   }
-
-  const activeInviteLink = inviteData?.inviteLink || data?.inviteLink || null;
+  const activeInviteLink = inviteData?.inviteLink || data?.inviteLink || "";
   const activeInviteExpiry =
     inviteData?.inviteTokenExpiresAt || data?.inviteTokenExpiresAt || null;
   const group = data?.group ?? {
@@ -376,9 +400,9 @@ export default function GroupOverview() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full min-h-screen bg-[radial-gradient(circle_at_20%_0%,#0d2b73_0%,#07163f_45%,#020817_100%)] p-4 sm:p-6 lg:p-8"
+        className="w-full"
       >
-        <div className="mx-auto w-full max-w-[1600px] space-y-6">
+        <div className="mx-auto w-full max-w-400 space-y-6">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -436,6 +460,7 @@ export default function GroupOverview() {
                     </div>
                     <span>{members.length} members active</span>
                   </div>
+
                 </motion.div>
               </div>
 
@@ -472,6 +497,20 @@ export default function GroupOverview() {
               </div>
 
               <div className="flex flex-col gap-3 xl:w-105">
+                <motion.button
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.15 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() =>
+                    router.push(`/dashboard/groups/${group.id}/expense/create`)
+                  }
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#00CDFF]/40 bg-[#00CDFF]/15 px-4 py-2.5 text-sm font-semibold text-[#00CDFF] transition hover:bg-[#00CDFF]/25"
+                >
+                  <Plus size={18} />
+                  Add Expense
+                </motion.button>
                 <div className="rounded-2xl border border-[#17345f] bg-[#081a43] p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <p className="text-[10px] uppercase tracking-[0.18em] text-[#7f97c3]">
@@ -690,10 +729,10 @@ export default function GroupOverview() {
                 transition={{ delay: 0.6, type: "spring", stiffness: 200 }}
                 className="text-3xl font-bold text-[#dce8ff] mb-1"
               >
-                ₹{data.totalExpenses.toFixed(2)}
+                ₹{totalExpenses.toFixed(2)}
               </motion.div>
               <div className="text-xs text-[#8ea4cd]">
-                {data.expenseCount} expense{data.expenseCount !== 1 ? "s" : ""}{" "}
+                {expenseCount} expense{expenseCount !== 1 ? "s" : ""}{" "}
                 recorded
               </div>
             </motion.div>
@@ -730,7 +769,7 @@ export default function GroupOverview() {
                 className={`text-3xl font-bold mb-1 ${isPositiveBalance ? "text-[#00CDFF]" : isZeroBalance ? "text-[#8ea4cd]" : "text-[#FF2D65]"}`}
               >
                 {isPositiveBalance ? "+" : ""}₹
-                {Math.abs(data.yourBalance).toFixed(2)}
+                {Math.abs(yourBalance).toFixed(2)}
               </motion.div>
               <div className="text-xs text-[#8ea4cd]">
                 {isPositiveBalance
@@ -750,7 +789,7 @@ export default function GroupOverview() {
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="text-sm font-medium text-[#8ea4cd]">
-                  Pending Expenses
+                  Pending Settlements
                 </div>
                 <motion.div
                   whileHover={{ rotate: 360, scale: 1.2 }}
@@ -810,7 +849,7 @@ export default function GroupOverview() {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.9 + index * 0.1 }}
                             whileHover={{ scale: 1.02, x: 5 }}
-                            className="flex items-center justify-between p-3 bg-[#0f0f0f] rounded-lg"
+                            className="flex items-center justify-between rounded-lg border border-[#17345f] bg-[#081a43] p-3"
                           >
                             <div className="flex items-center gap-3">
                               <motion.div

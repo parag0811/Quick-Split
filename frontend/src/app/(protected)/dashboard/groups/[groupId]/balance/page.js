@@ -207,7 +207,7 @@ export default function GroupBalancePage() {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen bg-[radial-gradient(circle_at_18%_0%,#0e2f75_0%,#081d4f_45%,#030b1d_100%)] p-4 sm:p-6 lg:p-8">
+      <div className="w-full">
         <div className="mx-auto w-full max-w-6xl animate-pulse space-y-6">
           <div className="h-12 w-44 rounded-lg bg-[#10274f]" />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -227,7 +227,7 @@ export default function GroupBalancePage() {
 
   if (fetchError) {
     return (
-      <div className="w-full min-h-screen bg-[radial-gradient(circle_at_18%_0%,#0e2f75_0%,#081d4f_45%,#030b1d_100%)] p-4 sm:p-6 lg:p-8">
+      <div className="w-full">
         <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-center py-28 text-center">
           <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-red-400/30 bg-red-500/12">
             <AlertCircle className="h-9 w-9 text-red-400" />
@@ -263,7 +263,7 @@ export default function GroupBalancePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.35 }}
-        className="w-full min-h-screen bg-[radial-gradient(circle_at_18%_0%,#0e2f75_0%,#081d4f_45%,#030b1d_100%)] p-4 sm:p-6 lg:p-8"
+        className="w-full"
       >
         <div className="mx-auto w-full max-w-6xl space-y-6">
           <motion.button
