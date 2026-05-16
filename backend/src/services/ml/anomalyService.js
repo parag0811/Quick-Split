@@ -73,6 +73,14 @@ export const detectAnomaly = async (userId, currentAmount, excludeExpenseId = nu
 
   // Calling fastAPi microservice
   const baseUrl = process.env.ANOMALY_ML_SERVICE_URL;
+  if (!baseUrl) {
+    console.error("ANOMALY_ML_SERVICE_URL is not configured.");
+    return {
+      isAnomalous: false,
+      anomalyScore: 0,
+      anomalyReason: "",
+    };
+  }
   try {
     const response = await fetch(`${baseUrl}/predict`, {
       method: "POST",
@@ -89,8 +97,8 @@ export const detectAnomaly = async (userId, currentAmount, excludeExpenseId = nu
     const data = await response.json();
     console.log("Anomaly detection response:", data);
 
-    const isAnomalous = data.is_suspicious ?? false;
-    const anomalyScore = data.anomaly_score ?? 0;
+    const isAnomalous = Boolean(data.is_suspicious ?? false);
+    const anomalyScore = Number(data.anomaly_score ?? 0);
 
     let anomalyReason = "";
     if (isAnomalous) {
@@ -116,10 +124,14 @@ export const detectAnomaly = async (userId, currentAmount, excludeExpenseId = nu
       }
     }
 
+    const resolvedReason = isAnomalous && !anomalyReason
+      ? `Spending pattern flagged as unusual (score: ${anomalyScore.toFixed(2)}).`
+      : anomalyReason;
+
     return {
-      isAnomalous: anomalyReason.length > 0,
-      anomalyScore: anomalyReason.length > 0 ? anomalyScore : 0,
-      anomalyReason,
+      isAnomalous,
+      anomalyScore: isAnomalous ? anomalyScore : 0,
+      anomalyReason: resolvedReason,
     };
   } catch (error) {
     console.error("ML Service Error:", error.message);

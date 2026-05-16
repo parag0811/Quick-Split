@@ -67,6 +67,13 @@ export const predictSettlementRisk = async (userId, currentAmount) => {
   };
 
   const baseUrl = process.env.SETTLEMENT_RISK_ML_SERVICE_URL;
+  if (!baseUrl) {
+    console.error("SETTLEMENT_RISK_ML_SERVICE_URL is not configured.");
+    return {
+      delay_probability: 0.0,
+      risk_level: "Low",
+    };
+  }
 
   try {
     const response = await fetch(`${baseUrl}/predict`, {
@@ -85,9 +92,14 @@ export const predictSettlementRisk = async (userId, currentAmount) => {
 
     const data = await response.json();
 
+    const delayProbability = Number(
+      data.delay_probability ?? data.delayProbability ?? 0,
+    );
+    const riskLevel = data.risk_level ?? data.riskLevel ?? "Low";
+
     return {
-      delay_probability: data.delay_probability,
-      risk_level: data.risk_level,
+      delay_probability: delayProbability,
+      risk_level: riskLevel,
     };
   } catch (error) {
     console.error("Settlement ML Error:", error.message);
